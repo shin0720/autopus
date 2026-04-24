@@ -43,7 +43,7 @@ methodology:
 router:
     strategy: balanced
     tiers:
-        economy: codex
+        economy: gemini
         premium: opus
         standard: codex
     categories:
@@ -106,7 +106,7 @@ orchestra:
             strategy: consensus
             providers: [claude, codex, gemini]
 quality:
-    default: balanced
+    default: ultra
     presets:
         balanced:
             description: 설계는 Claude(Opus), 구현은 Codex(Sonnet), 리뷰는 Gemini(Haiku).

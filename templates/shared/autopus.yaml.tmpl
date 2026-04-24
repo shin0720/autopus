@@ -2,7 +2,7 @@
 # Autopus-ADK 하네스 설정 파일
 # 이 파일을 수정하여 프로젝트에 맞게 커스터마이징하세요.
 
-mode: {{.Mode}}
+mode: full
 project_name: {{.ProjectName}}
 platforms:
 {{range .Platforms}}  - {{.}}
@@ -34,7 +34,7 @@ methodology:
 router:
   strategy: balanced
   tiers:
-    economy: codex
+    economy: gemini
     smart: codex
     ultra: opus
   categories:
@@ -101,7 +101,7 @@ orchestra:
       providers: [claude, codex, gemini]
 
 quality:
-  default: balanced
+  default: ultra
   presets:
     balanced:
       description: 설계는 Claude(Opus), 구현은 Codex(Sonnet), 리뷰는 Gemini(Haiku).
@@ -117,3 +117,17 @@ quality:
         spec-writer: opus
         tester: sonnet
         validator: sonnet
+    ultra:
+      description: 모든 에이전트를 Opus로 실행. 최고 품질.
+      agents:
+        architect: opus
+        debugger: opus
+        devops: opus
+        executor: opus
+        explorer: opus
+        planner: opus
+        reviewer: opus
+        security-auditor: opus
+        spec-writer: opus
+        tester: opus
+        validator: opus
