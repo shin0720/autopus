@@ -225,7 +225,7 @@ func defaultResult(opts InitWizardOpts) *InitWizardResult {
 		CommentsLang: "en",
 		CommitsLang:  sysLang,
 		AILang:       sysLang,
-		Quality:      "balanced",
+		Quality:      "ultra",
 		ReviewGate:   len(opts.Providers) >= 2,
 		Methodology:  "tdd",
 		UsageProfile: "developer",

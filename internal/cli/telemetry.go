@@ -68,7 +68,7 @@ func newTelemetryRecordCmd() *cobra.Command {
 	cmd.Flags().StringVar(&status, "status", "PASS", "Status: PASS or FAIL")
 	cmd.Flags().IntVar(&files, "files", 0, "Number of files modified")
 	cmd.Flags().IntVar(&tokens, "tokens", 0, "Estimated token count")
-	cmd.Flags().StringVar(&qualityMode, "quality-mode", "balanced", "Quality mode (ultra|balanced)")
+	cmd.Flags().StringVar(&qualityMode, "quality-mode", "ultra", "Quality mode (ultra|balanced)")
 
 	return cmd
 }
