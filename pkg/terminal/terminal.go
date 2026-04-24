@@ -1,0 +1,61 @@
+// Package terminal provides a unified interface for interacting with terminal multiplexers.
+package terminal
+
+import "context"
+
+// Direction represents the split direction for pane creation.
+type Direction int
+
+const (
+	// Horizontal splits the pane horizontally (side by side).
+	Horizontal Direction = iota
+	// Vertical splits the pane vertically (top and bottom).
+	Vertical
+)
+
+// PaneID is the identifier for a terminal pane.
+type PaneID string
+
+// ReadScreenOpts configures ReadScreen behavior.
+type ReadScreenOpts struct {
+	Scrollback      bool // include scrollback buffer
+	Lines           int  // limit to N lines (0 = all)
+	ScrollbackLines int  // scrollback buffer depth in lines (0 = use terminal default)
+}
+
+// SurfaceCreator is an optional interface for terminals that support independent
+// surfaces (tabs) instead of splits. Prevents pane width starvation when
+// multiple providers run in parallel.
+type SurfaceCreator interface {
+	// CreateSurface creates a new independent surface (tab) and returns its ID.
+	CreateSurface(ctx context.Context) (PaneID, error)
+}
+
+// Terminal is the unified interface for terminal multiplexer adapters.
+// @AX:ANCHOR [AUTO] core public API contract — all adapters (cmux, tmux, plain) implement this interface
+// @AX:REASON: any method signature change here breaks all three adapters and every CLI handler that calls them; treat as a stable boundary
+type Terminal interface {
+	// Name returns the terminal adapter name (e.g., "cmux", "tmux", "plain").
+	Name() string
+	// CreateWorkspace creates a named workspace/session.
+	CreateWorkspace(ctx context.Context, name string) error
+	// SplitPane splits the current pane in the given direction.
+	SplitPane(ctx context.Context, direction Direction) (PaneID, error)
+	// SendCommand sends a command string to the specified pane.
+	SendCommand(ctx context.Context, paneID PaneID, cmd string) error
+	// SendLongText sends a potentially long text string to the specified pane.
+	// For short text, delegates to SendCommand. For long text, uses buffer-based
+	// delivery to avoid truncation (e.g., tmux load-buffer/paste-buffer).
+	// Callers must send Enter separately after this call.
+	SendLongText(ctx context.Context, paneID PaneID, text string) error
+	// Notify displays a notification message in the terminal.
+	Notify(ctx context.Context, message string) error
+	// ReadScreen reads the visible content of the specified pane.
+	ReadScreen(ctx context.Context, paneID PaneID, opts ReadScreenOpts) (string, error)
+	// PipePaneStart starts streaming pane output to the specified file.
+	PipePaneStart(ctx context.Context, paneID PaneID, outputFile string) error
+	// PipePaneStop stops pipe-pane output streaming.
+	PipePaneStop(ctx context.Context, paneID PaneID) error
+	// Close removes the workspace/session.
+	Close(ctx context.Context, name string) error
+}

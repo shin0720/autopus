@@ -1,0 +1,275 @@
+# Autopus Branding Formats
+
+> Format specifications for Autopus visual feedback and progress displays.
+> These formats MUST be used by all agents as defined per subcommand context.
+
+> **Canonical Source**: This file is the single source of truth for all Autopus visual output formats.
+> All agents and rules MUST reference this file rather than duplicating format definitions inline.
+> The first banner line `🐙 Autopus ─────────────────────────` is the canonical minimal header when only a header is rendered.
+
+---
+
+## A0: Session Start Format
+
+Display on the first response of a new conversation (Tier 1 — Session Start).
+
+**Case 1: SPECs exist**
+
+```
+🐙 Autopus ─────────────────────────
+  프로젝트: {project-name} | 모드: {mode}
+  SPEC: {draft}개 draft · {approved}개 approved · {implemented}개 구현중 · {completed}개 완료
+  최근 완료: {SPEC-ID} ({title})
+  다음: {next-step recommendation}
+```
+
+**Case 2: No SPECs**
+
+```
+🐙 Autopus ─────────────────────────
+  프로젝트: {project-name} | 모드: {mode}
+  SPEC: 없음
+  다음: /auto plan "기능 설명" 으로 시작하세요
+```
+
+**Field mappings:**
+- `{project-name}` — project name from autopus.yaml
+- `{mode}` — current mode (full, lite, etc.) from autopus.yaml
+- `{draft}` — count of SPECs in draft status
+- `{approved}` — count of SPECs in approved status
+- `{implemented}` — count of SPECs currently being implemented
+- `{completed}` — count of SPECs fully completed
+- `{SPEC-ID}` — identifier of most recently completed SPEC (e.g., `SPEC-UX-001`)
+- `{title}` — title of most recently completed SPEC
+- `{next-step recommendation}` — contextual suggestion based on project state
+
+**Rules:**
+- R1: Show Case 1 format when any SPECs exist in the project
+- R2: Show Case 2 format when no SPECs exist
+- R3: "최근 완료" line is omitted when no completed SPECs exist
+
+---
+
+## A1: Pipeline Progress Format
+
+Display at the start of subagent/teams mode and after each Phase transition in the `go` subcommand.
+
+```
+🐙 Pipeline ─────────────────────────
+  ✓ Phase 1: Planning
+  → Phase 2: Implementation [N/M tasks]
+  ○ Phase 3: Testing
+  ○ Phase 4: Review
+```
+
+**Status symbols:**
+- `✓` — Phase completed successfully
+- `→` — Current active phase
+- `○` — Phase pending
+
+**Rules:**
+- Replace `[N/M tasks]` with actual completed/total task counts (e.g., `[3/7 tasks]`)
+- Update the display after each phase transition
+- Always show all 4 phases regardless of current position
+
+---
+
+## A2: Workflow Lifecycle Format
+
+Display after each subcommand (plan, go, sync) completes to show position in the full cycle.
+
+```
+🐙 Workflow: {SPEC-ID}
+  ✓ plan  →  ● go  →  ○ sync
+```
+
+**Status symbols:**
+- `✓` — Stage completed
+- `●` — Current stage (just completed)
+- `○` — Stage pending
+
+**Stage combinations:**
+
+After `plan` completes:
+```
+🐙 Workflow: {SPEC-ID}
+  ● plan  →  ○ go  →  ○ sync
+```
+
+After `go` completes:
+```
+🐙 Workflow: {SPEC-ID}
+  ✓ plan  →  ● go  →  ○ sync
+```
+
+After `sync` completes:
+```
+🐙 Workflow: {SPEC-ID}
+  ✓ plan  →  ✓ go  →  ● sync
+```
+
+**With idea stage** (when `--from-idea` or `--idea` flag is used):
+
+After `idea` completes:
+```
+🐙 Workflow: BS-{ID}
+  ● idea  →  ○ plan  →  ○ go  →  ○ sync
+```
+
+After `plan` completes (from idea):
+```
+🐙 Workflow: BS-{ID} → {SPEC-ID}
+  ✓ idea  →  ● plan  →  ○ go  →  ○ sync
+```
+
+After `go` completes (from idea):
+```
+🐙 Workflow: BS-{ID} → {SPEC-ID}
+  ✓ idea  →  ✓ plan  →  ● go  →  ○ sync
+```
+
+After `sync` completes (from idea):
+```
+🐙 Workflow: BS-{ID} → {SPEC-ID}
+  ✓ idea  →  ✓ plan  →  ✓ go  →  ● sync
+```
+
+**With discover stage** (when `/auto discover` is used):
+
+After `discover` completes:
+```
+🐙 Workflow: BS-{ID}
+  ● discover  →  ○ plan  →  ○ go  →  ○ sync
+```
+
+After `plan` completes (from discover):
+```
+🐙 Workflow: BS-{ID} → {SPEC-ID}
+  ✓ discover  →  ● plan  →  ○ go  →  ○ sync
+```
+
+---
+
+## A3: Agent Result Format
+
+Standardized result summary displayed after each subagent completes its work.
+
+```
+🐙 {agent-name} ─────────────────────
+  {key metric 1} | {key metric 2} | {key metric 3}
+  다음: {next step guidance}
+```
+
+**Per-agent templates:**
+
+spec-writer:
+```
+🐙 spec-writer ──────────────────────
+  SPEC: {SPEC-ID} | 파일: 4개 | 요구사항: {N}개
+  다음: /auto go {SPEC-ID}
+```
+
+executor:
+```
+🐙 executor ─────────────────────────
+  파일: {N}개 수정 | 테스트: {N}개 추가 | 커버리지: {N}%
+  다음: 검증 단계로 진행
+```
+
+reviewer:
+```
+🐙 reviewer ─────────────────────────
+  Verdict: {APPROVE|REQUEST_CHANGES} | Issues: {N}개 | 심각도: {low|medium|high}
+  다음: {verdict-based guidance}
+```
+
+tester:
+```
+🐙 tester ───────────────────────────
+  테스트: {N}개 추가 | 커버리지: {before}% → {after}% | 통과: {N}/{N}
+  다음: 리뷰 단계로 진행
+```
+
+validator:
+```
+🐙 validator ────────────────────────
+  Verdict: {PASS|FAIL} | 검사 항목: {N}개 | 이슈: {N}개
+  다음: {pass → 테스트 단계 | fail → 수정 후 재검증}
+```
+
+---
+
+## A3.5: Triage Format
+
+Display when a natural language request triggers the triage process (smart routing).
+
+**Interactive mode** (default):
+
+1. Display analysis text:
+
+```
+🐙 Triage ───────────────────────────
+  요청: "{natural language request}"
+
+  분석:
+  - 변경 유형: {bug fix | enhancement | new feature | refactor | config}
+  - 예상 영향: ~{N}개 파일 / {N}개 패키지
+  - 난이도: {LOW | MEDIUM | HIGH | CRITICAL}
+
+  추천: {recommended flow description}
+```
+
+2. Use `AskUserQuestion` tool for selection (NOT text-based numbered options):
+
+```
+AskUserQuestion(
+  questions = [{
+    question: "어떤 플로우로 진행할까요?",
+    header: "Triage",
+    multiSelect: false,
+    options: [
+      { label: "바로 수정 (Recommended)", description: "/auto fix — SPEC 없이 직접 수정" },
+      { label: "SPEC만 생성", description: "/auto plan --skip-prd — PRD 생략, SPEC만 작성" },
+      { label: "PRD + SPEC 전체", description: "/auto plan — PRD 작성 후 SPEC 생성" }
+    ]
+  }]
+)
+```
+
+Place recommended option FIRST with "(Recommended)" suffix.
+
+**Auto mode** (`--auto` flag):
+
+```
+🐙 Triage ───────────────────────────
+  요청: "{request}"
+  난이도: {level} → {flow} (자동 진행)
+```
+
+**Difficulty → recommended option mapping:**
+- LOW → "바로 수정" first (Recommended)
+- MEDIUM → "SPEC만 생성" first (Recommended)
+- HIGH → "PRD + SPEC 전체" first (Recommended)
+- CRITICAL → "바로 수정" first (Recommended) + recommend `/auto secure` after
+
+---
+
+## A4: Milestone Celebration Format
+
+Display when a full pipeline cycle (plan → go → sync) completes successfully.
+
+```
+╭────────────────────────────────────╮
+│ 🐙 파이프라인 완료!                 │
+│ {SPEC-ID}: {title}                 │
+│ 태스크: N/N | 커버리지: N%          │
+│ 리뷰: {verdict}                    │
+╰────────────────────────────────────╯
+```
+
+**Field mappings:**
+- `{SPEC-ID}` — e.g., `SPEC-UX-001`
+- `{title}` — SPEC title from spec.md (truncate to fit if needed)
+- `N/N` in 태스크 — completed tasks / total tasks from plan.md
+- `N%` in 커버리지 — final test coverage percentage (use `N/A` if not applicable)
+- `{verdict}` — final reviewer verdict: `APPROVE` or `N/A` (if review skipped)

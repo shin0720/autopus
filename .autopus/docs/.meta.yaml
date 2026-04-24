@@ -1,0 +1,39 @@
+generated_at: 2026-04-18T04:28:36.6254793Z
+autopus_version: 0.40.32
+project_hash: 33a5ea1b2ccb65779cee64b6aed0f5dc797565b3f9ec1e6db7dd7b61930ffd40
+files:
+    architecture.md:
+        content_hash: 80e90eb5f9066b40309197549f9c29694373ef0a94f80a4211228524b4ecea99
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949
+    boundaries.md:
+        content_hash: 032e2cb3c720e9dcc2d612156bd6b95cc2e67d814728e6c7c2780bed53a10a69
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949
+    commands.md:
+        content_hash: 02bc75db61cb6545032ab483a4b8d4b65bce9ea5e98a10553040acee9012c39d
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949
+    conventions.md:
+        content_hash: 2b49c65b8a197575584fbff399bc77dba96b18b30edaad7deceb7fe160c6dd86
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949
+    index.md:
+        content_hash: a40c1320fe0a438e54c8b94cdf223ba809064a398903bc4baef9eff47b07cf62
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949
+    structure.md:
+        content_hash: 5785cfe4da054eb4acca4bda819be36a912711d4c7baa77557331393151e1b67
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949
+    testing.md:
+        content_hash: 0ca7d15d1d25c2775181d0c53289ac7e9790a2e9993c0fa06256c5ca052ad764
+        source_hashes:
+            - Makefile:sha256:9d0d4c0e49d42432d77524f91735e6c678df2683e1e44740bbac7a71b6e8ebe4
+            - go.mod:sha256:bea41cc59d75eda935eb55c0494c2134b6fe0521804fde5e8287b921d69d0949

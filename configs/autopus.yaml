@@ -1,0 +1,111 @@
+# autopus.yaml — Autopus-ADK 기본 설정
+# 'auto init' 명령어로 자동 생성되는 기본 Full 모드 설정입니다.
+
+mode: full
+project_name: my-project
+platforms:
+  - claude-code
+
+architecture:
+  auto_generate: true
+  enforce: true
+  layers:
+    - cmd
+    - internal
+    - pkg
+    - domain
+    - infrastructure
+
+lore:
+  enabled: true
+  auto_inject: true
+  required_trailers:
+    - Why
+    - Decision
+  stale_threshold_days: 90
+
+spec:
+  id_format: "SPEC-{NAME}-{NUMBER}"
+  ears_types:
+    - ubiquitous
+    - event_driven
+    - unwanted_behavior
+    - state_driven
+    - optional
+
+methodology:
+  mode: tdd
+  enforce: true
+  review_gate: true
+
+router:
+  strategy: category
+  tiers:
+    fast: gemini-2.0-flash
+    smart: claude-sonnet-4-6
+    ultra: claude-opus-4-7
+  categories:
+    visual: fast
+    deep: ultra
+    quick: fast
+    ultrabrain: ultra
+    writing: smart
+    git: fast
+    adaptive: smart
+  intent_gate: true
+
+hooks:
+  pre_commit_arch: true
+  pre_commit_lore: true
+  react_ci_failure: true
+  react_review: true
+
+session:
+  handoff_enabled: true
+  continue_file: .auto-continue.md
+  max_context_tokens: 2000
+
+orchestra:
+  enabled: true
+  default_strategy: consensus
+  timeout_seconds: 120
+  providers:
+    claude:
+      binary: claude
+      args: ["-p", "", "--output-format", "json"]
+      pane_args: ["--print", "--model", "opus", "--effort", "high"]
+      prompt_via_args: true
+      subprocess:
+        schema_flag: "--json-schema"
+        output_format: "json"
+    codex:
+      binary: codex
+      args: ["exec", "--full-auto", "-m", "gpt-5.4", "--output-last-message", "-"]
+      pane_args: ["-m", "gpt-5.4"]
+      prompt_via_args: true
+      subprocess:
+        schema_flag: "--output-schema"
+        output_format: "json"
+    gemini:
+      binary: gemini
+      args: ["-m", "gemini-3.1-pro-preview", "-p", "", "--output-format", "json"]
+      pane_args: ["-m", "gemini-3.1-pro-preview"]
+      prompt_via_args: true
+      subprocess:
+        output_format: "json"
+  commands:
+    plan:
+      strategy: consensus
+      providers: [claude, codex, gemini]
+    review:
+      strategy: debate
+      providers: [claude, codex, gemini]
+    secure:
+      strategy: consensus
+      providers: [claude, codex, gemini]
+    brainstorm:
+      strategy: debate
+      providers: [claude, codex, gemini]
+
+quality:
+  default: balanced
