@@ -2,6 +2,9 @@ mode: full
 project_name: autopus-adk
 platforms:
     - claude-code
+    - codex
+    - gemini-cli
+    - opencode
 isolate_rules: true
 language:
     comments: en
@@ -40,9 +43,9 @@ methodology:
 router:
     strategy: balanced
     tiers:
-        economy: claude-sonnet-4-6
-        premium: claude-opus-4-7
-        standard: claude-sonnet-4-6
+        economy: codex
+        premium: opus
+        standard: codex
     categories:
         deep: premium
         git: economy
@@ -74,20 +77,20 @@ orchestra:
             subprocess:
                 schema_flag: --json-schema
                 output_format: json
-        gemini:
-            binary: gemini
-            args: [-m, gemini-3.1-pro-preview, -p, "", --output-format, json]
-            pane_args: [-m, gemini-3.1-pro-preview]
-            prompt_via_args: true
-            subprocess:
-                output_format: json
         codex:
             binary: codex
-            args: [exec, --full-auto, -m, gpt-5.4, --output-last-message, "-"]
+            args: [exec, --full-auto, -m, gpt-5.4, --output-last-message, '-']
             pane_args: [-m, gpt-5.4]
             prompt_via_args: true
             subprocess:
                 schema_flag: --output-schema
+                output_format: json
+        gemini:
+            binary: gemini
+            args: [-m, gemini-1.5-pro, -p, "", --output-format, json]
+            pane_args: [-m, gemini-1.5-pro]
+            prompt_via_args: true
+            subprocess:
                 output_format: json
     commands:
         brainstorm:
@@ -106,7 +109,7 @@ quality:
     default: balanced
     presets:
         balanced:
-            description: 핵심 분석은 Opus, 기본 작업은 Sonnet. Haiku 미사용.
+            description: 설계는 Claude(Opus), 구현은 Codex(Sonnet), 리뷰는 Gemini(Haiku).
             agents:
                 architect: opus
                 debugger: sonnet
@@ -114,7 +117,7 @@ quality:
                 executor: sonnet
                 explorer: sonnet
                 planner: opus
-                reviewer: sonnet
+                reviewer: haiku
                 security-auditor: opus
                 spec-writer: opus
                 tester: sonnet

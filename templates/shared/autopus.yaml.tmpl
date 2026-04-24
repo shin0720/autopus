@@ -25,45 +25,95 @@ spec:
 {{if .Spec.EARSTypes}}  ears_types:
 {{range .Spec.EARSTypes}}    - {{.}}
 {{end}}{{end}}
-{{if .IsFullMode}}
+
 methodology:
-  mode: {{.Methodology.Mode}}
-  enforce: {{.Methodology.Enforce}}
-  review_gate: {{.Methodology.ReviewGate}}
+  mode: tdd
+  enforce: true
+  review_gate: true
 
 router:
-  strategy: {{.Router.Strategy}}
-  intent_gate: {{.Router.IntentGate}}
-{{if .Router.Tiers}}  tiers:
-{{range $k, $v := .Router.Tiers}}    {{$k}}: {{$v}}
-{{end}}{{end}}
-{{if .Router.Categories}}  categories:
-{{range $k, $v := .Router.Categories}}    {{$k}}: {{$v}}
-{{end}}{{end}}
-session:
-  handoff_enabled: {{.Session.HandoffEnabled}}
-  continue_file: "{{.Session.ContinueFile}}"
-  max_context_tokens: {{.Session.MaxContextTokens}}
-{{end}}
+  strategy: balanced
+  tiers:
+    economy: codex
+    smart: codex
+    ultra: opus
+  categories:
+    visual: smart
+    deep: ultra
+    quick: economy
+    ultrabrain: ultra
+    writing: smart
+    git: economy
+    adaptive: smart
+  intent_gate: true
+
 hooks:
-  pre_commit_arch: {{.Hooks.PreCommitArch}}
-  pre_commit_lore: {{.Hooks.PreCommitLore}}
-  react_ci_failure: {{.Hooks.ReactCIFailure}}
-  react_review: {{.Hooks.ReactReview}}
-{{if .IsFullMode}}
+  pre_commit_arch: true
+  pre_commit_lore: true
+  react_ci_failure: true
+  react_review: true
+
+session:
+  handoff_enabled: true
+  continue_file: .auto-continue.md
+  max_context_tokens: 2000
+
 orchestra:
-  enabled: {{.Orchestra.Enabled}}
-  default_strategy: {{.Orchestra.DefaultStrategy}}
-  timeout_seconds: {{.Orchestra.TimeoutSeconds}}
-{{if .Orchestra.Providers}}  providers:
-{{range $k, $v := .Orchestra.Providers}}    {{$k}}:
-      binary: {{$v.Binary}}
-{{if $v.Args}}      args: [{{range $i, $a := $v.Args}}{{if $i}}, {{end}}"{{$a}}"{{end}}]
-{{end}}{{if $v.PaneArgs}}      pane_args: [{{range $i, $a := $v.PaneArgs}}{{if $i}}, {{end}}"{{$a}}"{{end}}]
-{{end}}{{if $v.PromptViaArgs}}      prompt_via_args: {{$v.PromptViaArgs}}
-{{end}}{{if $v.InteractiveInput}}      interactive_input: {{$v.InteractiveInput}}
-{{end}}{{end}}{{end}}{{if .Orchestra.Commands}}  commands:
-{{range $k, $v := .Orchestra.Commands}}    {{$k}}:
-      strategy: {{$v.Strategy}}
-      providers: [{{range $i, $p := $v.Providers}}{{if $i}}, {{end}}{{$p}}{{end}}]
-{{end}}{{end}}{{end}}
+  enabled: true
+  default_strategy: consensus
+  timeout_seconds: 120
+  providers:
+    claude:
+      binary: claude
+      args: ["-p", "", "--output-format", "json"]
+      pane_args: ["--print", "--model", "opus", "--effort", "high"]
+      prompt_via_args: true
+      subprocess:
+        schema_flag: "--json-schema"
+        output_format: "json"
+    codex:
+      binary: codex
+      args: ["exec", "--full-auto", "-m", "gpt-5.4", "--output-last-message", "-"]
+      pane_args: ["-m", "gpt-5.4"]
+      prompt_via_args: true
+      subprocess:
+        schema_flag: "--output-schema"
+        output_format: "json"
+    gemini:
+      binary: gemini
+      args: ["-m", "gemini-1.5-pro", "-p", "", "--output-format", "json"]
+      pane_args: ["-m", "gemini-1.5-pro"]
+      prompt_via_args: true
+      subprocess:
+        output_format: "json"
+  commands:
+    plan:
+      strategy: consensus
+      providers: [claude, codex, gemini]
+    review:
+      strategy: debate
+      providers: [claude, codex, gemini]
+    secure:
+      strategy: consensus
+      providers: [claude, codex, gemini]
+    brainstorm:
+      strategy: debate
+      providers: [claude, codex, gemini]
+
+quality:
+  default: balanced
+  presets:
+    balanced:
+      description: 설계는 Claude(Opus), 구현은 Codex(Sonnet), 리뷰는 Gemini(Haiku).
+      agents:
+        architect: opus
+        debugger: sonnet
+        devops: sonnet
+        executor: sonnet
+        explorer: sonnet
+        planner: opus
+        reviewer: haiku
+        security-auditor: opus
+        spec-writer: opus
+        tester: sonnet
+        validator: sonnet
