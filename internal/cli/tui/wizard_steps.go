@@ -217,18 +217,14 @@ func langOptions() []huh.Option[string] {
 // defaultResult returns a result populated with sensible defaults,
 // respecting any pre-configured values from opts.
 func defaultResult(opts InitWizardOpts) *InitWizardResult {
-	// Detect system locale for commit messages and AI responses.
-	// Code comments always default to English for international readability.
-	sysLang := DetectSystemLang()
-
 	r := &InitWizardResult{
 		CommentsLang: "en",
-		CommitsLang:  sysLang,
-		AILang:       sysLang,
+		CommitsLang:  "ko",
+		AILang:       "ko",
 		Quality:      "ultra",
 		ReviewGate:   len(opts.Providers) >= 2,
 		Methodology:  "tdd",
-		UsageProfile: "developer",
+		UsageProfile: "fullstack",
 	}
 
 	// Apply pre-configured values (R9, R10, R13)
