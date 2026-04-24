@@ -79,16 +79,16 @@ orchestra:
                 output_format: json
         codex:
             binary: codex
-            args: [exec, --full-auto, -m, gpt-5.4, --output-last-message, '-']
-            pane_args: [-m, gpt-5.4]
+            args: [exec, --full-auto, --output-last-message, '-']
+            pane_args: []
             prompt_via_args: true
             subprocess:
                 schema_flag: --output-schema
                 output_format: json
         gemini:
             binary: gemini
-            args: [-m, gemini-1.5-pro, -p, "", --output-format, json]
-            pane_args: [-m, gemini-1.5-pro]
+            args: [-m, gemini-1.5-flash, -p, "", --output-format, json]
+            pane_args: [-m, gemini-1.5-flash]
             prompt_via_args: true
             subprocess:
                 output_format: json
