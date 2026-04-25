@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os/exec"
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
@@ -19,15 +21,31 @@ func newUICmd() *cobra.Command {
 		Long:  "n8n 스타일의 노드 기반 워크플로우 대시보드를 실행합니다.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
+			
+			// 전역 플래그에서 컨텍스트 가져오기
+			ctx := cmd.Context()
+			cfg, _ := config.GetConfig(ctx)
+
 			fmt.Printf("🐙 Autopus Dashboard 시작 중... http://%s\n", addr)
 
-			// 브라우저 자동 열기
-			openBrowser("http://" + addr)
-
-			// 임시 메시지 서버
-			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, "<h1>🐙 Autopus Dashboard (n8n Style)</h1><p>현재 대시보드 기능을 구축 중입니다. 에이전트 상태와 워크플로우 시각화가 여기에 표시됩니다.</p>")
+			// API: 현재 설정 및 에이전트 상태 반환
+			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"project": cfg.ProjectName,
+					"agents":  cfg.Orchestra.Providers,
+					"quality": cfg.Quality.Default,
+				})
 			})
+
+			// UI Main Page (n8n Style Prototype)
+			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				fmt.Fprintf(w, dashboardHTML)
+			})
+
+			// 브라우저 자동 열기
+			go openBrowser("http://" + addr)
 
 			return http.ListenAndServe(addr, nil)
 		},
@@ -37,6 +55,65 @@ func newUICmd() *cobra.Command {
 
 	return cmd
 }
+
+const dashboardHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Autopus Dashboard</title>
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; overflow: hidden; }
+        .canvas { width: 100vw; height: 100vh; position: relative; background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 20px 20px; }
+        .node { position: absolute; background: #1e293b; border: 2px solid #3b82f6; border-radius: 8px; width: 200px; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: move; }
+        .node-header { font-weight: bold; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; align-self: center; }
+        .node-body { font-size: 12px; color: #94a3b8; }
+        .connector { position: absolute; width: 100px; height: 2px; background: #3b82f6; top: 50%; left: 200px; }
+        .toolbar { position: fixed; top: 20px; left: 20px; background: rgba(30, 41, 59, 0.8); padding: 10px; border-radius: 8px; backdrop-filter: blur(4px); }
+        h1 { margin: 0; font-size: 18px; color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>🐙 Autopus Dashboard</h1>
+        <div id="project-name">Loading project...</div>
+    </div>
+    <div class="canvas" id="canvas">
+        <!-- Nodes will be injected here -->
+    </div>
+
+    <script>
+        async function loadStatus() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            document.getElementById('project-name').innerText = "Project: " + data.project;
+            
+            const canvas = document.getElementById('canvas');
+            let x = 100;
+            for (const [name, p] of Object.entries(data.agents)) {
+                const node = document.createElement('div');
+                node.className = 'node';
+                node.style.left = x + 'px';
+                node.style.top = '200px';
+                node.innerHTML = `
+                    <div class="node-header">
+                        ${p.name}
+                        <div class="status-dot"></div>
+                    </div>
+                    <div class="node-body">
+                        Model: ${p.args.join(' ')}<br>
+                        Binary: ${p.binary}
+                    </div>
+                `;
+                canvas.appendChild(node);
+                x += 300;
+            }
+        }
+        loadStatus();
+    </script>
+</body>
+</html>
+`
 
 func openBrowser(url string) {
 	var err error
