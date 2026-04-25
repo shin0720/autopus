@@ -3,7 +3,7 @@
 ## 기존 코드 분석
 
 ### 프로젝트 구조
-- **모듈**: `github.com/insajin/autopus-adk` (Go 1.26)
+- **모듈**: `github.com/shin0720/auto-adk` (Go 1.26)
 - **CLI 프레임워크**: Cobra (`github.com/spf13/cobra v1.9.1`)
 - **테스트**: `github.com/stretchr/testify v1.11.1`
 - **TUI**: Charmbracelet lipgloss (`github.com/charmbracelet/lipgloss v1.1.0`)

@@ -7,7 +7,7 @@
 | Item | Value |
 |------|-------|
 | Language | Go 1.26 |
-| Module | `github.com/insajin/autopus-adk` |
+| Module | `github.com/shin0720/auto-adk` |
 | Binary | `auto` |
 
 ## Dependencies
@@ -33,9 +33,9 @@
 ### Version Injection
 
 ```
--X github.com/insajin/autopus-adk/pkg/version.version=$(VERSION)
--X github.com/insajin/autopus-adk/pkg/version.commit=$(COMMIT)
--X github.com/insajin/autopus-adk/pkg/version.date=$(DATE)
+-X github.com/shin0720/auto-adk/pkg/version.version=$(VERSION)
+-X github.com/shin0720/auto-adk/pkg/version.commit=$(COMMIT)
+-X github.com/shin0720/auto-adk/pkg/version.date=$(DATE)
 ```
 
 ## Release

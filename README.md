@@ -8,7 +8,7 @@ Make your AI coding tools (Claude Code, Codex, Gemini CLI, OpenCode) work like a
 
 **16 agents. 40 skills. One config. Every platform.**
 
-[![GitHub Stars](https://img.shields.io/github/stars/Insajin/autopus-adk?style=social)](https://github.com/Insajin/autopus-adk/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/Insajin/autopus-adk?style=social)](https://github.com/shin0720/auto-adk/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://golang.org)
 [![Platforms](https://img.shields.io/badge/Platforms-4-orange)](#-one-config-four-platforms)
@@ -570,10 +570,10 @@ Platform command syntax:
 brew install insajin/tap/autopus-adk
 
 # go install (requires Go 1.26+)
-go install github.com/Insajin/autopus-adk/cmd/auto@latest
+go install github.com/shin0720/auto-adk/cmd/auto@latest
 
 # Build from source
-git clone https://github.com/Insajin/autopus-adk.git
+git clone https://github.com/shin0720/auto-adk.git
 cd autopus-adk && make build && make install
 
 # After manual install, initialize:
@@ -1201,8 +1201,8 @@ sh install.sh            # Run only after review
 ```bash
 # Download binary + checksums separately
 VERSION=$(curl -s https://api.github.com/repos/Insajin/autopus-adk/releases/latest | grep tag_name | sed 's/.*"v\(.*\)".*/\1/')
-curl -LO "https://github.com/Insajin/autopus-adk/releases/download/v${VERSION}/autopus-adk_${VERSION}_$(uname -s | tr A-Z a-z)_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz"
-curl -LO "https://github.com/Insajin/autopus-adk/releases/download/v${VERSION}/checksums.txt"
+curl -LO "https://github.com/shin0720/auto-adk/releases/download/v${VERSION}/autopus-adk_${VERSION}_$(uname -s | tr A-Z a-z)_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz"
+curl -LO "https://github.com/shin0720/auto-adk/releases/download/v${VERSION}/checksums.txt"
 
 # Verify SHA256
 shasum -a 256 -c checksums.txt --ignore-missing

@@ -5,7 +5,7 @@
 ## Project
 
 - **Name**: autopus-adk (Agentic Development Kit)
-- **Module**: `github.com/insajin/autopus-adk`
+- **Module**: `github.com/shin0720/auto-adk`
 - **Binary**: `auto`
 - **Version**: v0.6.0
 - **Mode**: full

@@ -20,9 +20,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/insajin/autopus-adk/pkg/version.version={{.Version}}
-      - -X github.com/insajin/autopus-adk/pkg/version.commit={{.ShortCommit}}
-      - -X github.com/insajin/autopus-adk/pkg/version.date={{.Date}}
+      - -X github.com/shin0720/auto-adk/pkg/version.version={{.Version}}
+      - -X github.com/shin0720/auto-adk/pkg/version.commit={{.ShortCommit}}
+      - -X github.com/shin0720/auto-adk/pkg/version.date={{.Date}}
 
 archives:
   - id: auto
@@ -70,7 +70,7 @@ changelog:
 #     repository:
 #       owner: insajin
 #       name: homebrew-autopus
-#     homepage: "https://github.com/insajin/autopus-adk"
+#     homepage: "https://github.com/shin0720/auto-adk"
 #     description: "Agentic Development Kit for coding CLIs"
 #     license: "MIT"
 #     install: |
