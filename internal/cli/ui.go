@@ -22,7 +22,6 @@ func newUICmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
 			
-			// 현재 디렉토리에서 설정 로드
 			cfg, err := config.Load(".")
 			if err != nil {
 				fmt.Printf("설정 로드 실패: %v\n", err)
@@ -90,7 +89,7 @@ const dashboardHTML = `
             --text-dim: #94a3b8;
             --success: #22c55e;
         }
-        body { background: var(--bg-color); color: var(--text-main); font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; }
+        body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; overflow: hidden; }
         .canvas { width: 100vw; height: 100vh; position: relative; background-image: radial-gradient(#2d334a 1px, transparent 1px); background-size: 30px 30px; }
         
         .toolbar { 
@@ -141,7 +140,7 @@ const dashboardHTML = `
 </head>
 <body>
     <div class="toolbar">
-        <div class="logo">🐙 Autopus 오케스트레이션</div>
+        <div class="logo">🐙 Autopus 제어 센터</div>
         <div class="project-info" id="project-name">프로젝트 로딩 중...</div>
     </div>
 
@@ -160,8 +159,8 @@ const dashboardHTML = `
                 const data = await res.json();
                 
                 document.getElementById('project-name').innerText = "현재 프로젝트: " + data.project;
-                document.getElementById('agent-count').innerText = data.agents.length;
-                document.getElementById('quality-mode').innerText = data.quality.toUpperCase();
+                document.getElementById('agent-count').innerText = data.agents ? Object.keys(data.agents).length : 0;
+                document.getElementById('quality-mode').innerText = data.quality ? data.quality.toUpperCase() : "-";
                 
                 const canvas = document.getElementById('canvas');
                 canvas.innerHTML = '';
@@ -169,29 +168,31 @@ const dashboardHTML = `
                 let x = 100;
                 let y = 150;
                 
-                data.agents.forEach((p, index) => {
+                const providers = data.agents || [];
+                providers.forEach((p, index) => {
                     const node = document.createElement('div');
                     node.className = 'node';
                     node.style.left = x + 'px';
                     node.style.top = y + 'px';
                     
-                    const modelName = p.args ? p.args.find(a => a.includes('gpt') || a.includes('gemini') || a.includes('opus')) || "기본 모델" : "기본 모델";
+                    let modelName = "기본 모델";
+                    if (p.args) {
+                        const found = p.args.find(a => a.includes('gpt') || a.includes('gemini') || a.includes('opus'));
+                        if (found) modelName = found;
+                    }
 
-                    node.innerHTML = `
-                        <div class="node-header">
-                            <div class="node-title">${p.name.toUpperCase()}</div>
-                            <div class="status-badge">대기 중</div>
-                        </div>
-                        <div class="node-body">
-                            <div class="info-row"><span class="info-label">모델</span><span class="info-value">${modelName}</span></div>
-                            <div class="info-row"><span class="info-label">플랫폼</span><span class="info-value">${p.binary}</span></div>
-                            <div class="info-row"><span class="info-label">모드</span><span class="info-value">Subprocess</span></div>
-                        </div>
-                    `;
+                    node.innerHTML = '<div class="node-header">' +
+                            '<div class="node-title">' + p.name.toUpperCase() + '</div>' +
+                            '<div class="status-badge">대기 중</div>' +
+                        '</div>' +
+                        '<div class="node-body">' +
+                            '<div class="info-row"><span class="info-label">모델</span><span class="info-value">' + modelName + '</span></div>' +
+                            '<div class="info-row"><span class="info-label">플랫폼</span><span class="info-value">' + p.binary + '</span></div>' +
+                            '<div class="info-row"><span class="info-label">모드</span><span class="info-value">Subprocess</span></div>' +
+                        '</div>';
                     canvas.appendChild(node);
                     
-                    // 연결선 시각화 (마지막 노드 제외)
-                    if (index < data.agents.length - 1) {
+                    if (index < providers.length - 1) {
                         const line = document.createElement('div');
                         line.className = 'connector-line';
                         line.style.left = (x + 260) + 'px';
@@ -201,7 +202,6 @@ const dashboardHTML = `
                     }
                     
                     x += 300;
-                    // 지그재그 배치
                     y = (y === 150) ? 220 : 150;
                 });
             } catch (e) {
@@ -210,7 +210,7 @@ const dashboardHTML = `
         }
         
         loadStatus();
-        setInterval(loadStatus, 5000); // 5초마다 갱신
+        setInterval(loadStatus, 5000);
     </script>
 </body>
 </html>
