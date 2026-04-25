@@ -76,47 +76,141 @@ func openBrowser(url string) {
 
 const dashboardHTML = `
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>Autopus Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Autopus 제어 센터</title>
     <style>
-        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; overflow: hidden; }
-        .canvas { width: 100vw; height: 100vh; position: relative; background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 20px 20px; }
-        .node { position: absolute; background: #1e293b; border: 2px solid #3b82f6; border-radius: 8px; width: 200px; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: move; }
-        .node-header { font-weight: bold; border-bottom: 1px solid #334155; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; align-self: center; }
-        .node-body { font-size: 12px; color: #94a3b8; }
-        .toolbar { position: fixed; top: 20px; left: 20px; background: rgba(30, 41, 59, 0.8); padding: 10px; border-radius: 8px; backdrop-filter: blur(4px); z-index: 10; }
-        h1 { margin: 0; font-size: 18px; color: #3b82f6; }
+        :root {
+            --bg-color: #0b0f1a;
+            --panel-color: #161b2c;
+            --border-color: #2d334a;
+            --accent-color: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+        }
+        body { background: var(--bg-color); color: var(--text-main); font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; }
+        .canvas { width: 100vw; height: 100vh; position: relative; background-image: radial-gradient(#2d334a 1px, transparent 1px); background-size: 30px 30px; }
+        
+        .toolbar { 
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: rgba(22, 27, 44, 0.8); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; padding: 0 20px; z-index: 100;
+            justify-content: space-between;
+        }
+        .logo { font-size: 20px; font-weight: 800; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
+        .project-info { font-size: 14px; color: var(--text-dim); background: #1e293b; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color); }
+
+        .node { 
+            position: absolute; background: var(--panel-color); 
+            border: 1px solid var(--border-color); border-radius: 12px; 
+            width: 260px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .node:hover { border-color: var(--accent-color); transform: translateY(-2px); }
+        .node-header { 
+            padding: 12px 15px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(59, 130, 246, 0.05); border-radius: 12px 12px 0 0;
+        }
+        .node-title { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
+        .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+        
+        .node-body { padding: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+        .info-label { color: var(--text-dim); }
+        .info-value { color: var(--text-main); font-family: monospace; }
+
+        .connector-line {
+            position: absolute; height: 2px; background: linear-gradient(90deg, var(--accent-color), transparent);
+            transform-origin: left center; z-index: -1; opacity: 0.5;
+        }
+
+        .bottom-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--panel-color); padding: 10px 25px; border-radius: 30px;
+            border: 1px solid var(--border-color); display: flex; gap: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+        .stat-item { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .stat-label { color: var(--text-dim); }
+        .stat-value { font-weight: 600; color: var(--accent-color); }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <h1>🐙 Autopus Dashboard</h1>
-        <div id="project-name">Loading project...</div>
+        <div class="logo">🐙 Autopus 오케스트레이션</div>
+        <div class="project-info" id="project-name">프로젝트 로딩 중...</div>
     </div>
+
     <div class="canvas" id="canvas"></div>
+
+    <div class="bottom-bar">
+        <div class="stat-item"><span class="stat-label">에이전트</span><span class="stat-value" id="agent-count">0</span></div>
+        <div class="stat-item"><span class="stat-label">품질 모드</span><span class="stat-value" id="quality-mode">-</span></div>
+        <div class="stat-item"><span class="stat-label">상태</span><span class="stat-value" style="color:var(--success)">연결됨</span></div>
+    </div>
 
     <script>
         async function loadStatus() {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            document.getElementById('project-name').innerText = "Project: " + data.project;
-            
-            const canvas = document.getElementById('canvas');
-            let x = 100;
-            data.agents.forEach(p => {
-                const node = document.createElement('div');
-                node.className = 'node';
-                node.style.left = x + 'px';
-                node.style.top = '200px';
-                node.innerHTML = '<div class="node-header">' + p.name + '<div class="status-dot"></div></div>' +
-                               '<div class="node-body">Model: ' + (p.args ? p.args.join(" ") : "default") + '<br>Binary: ' + p.binary + '</div>';
-                canvas.appendChild(node);
-                x += 300;
-            });
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                document.getElementById('project-name').innerText = "현재 프로젝트: " + data.project;
+                document.getElementById('agent-count').innerText = data.agents.length;
+                document.getElementById('quality-mode').innerText = data.quality.toUpperCase();
+                
+                const canvas = document.getElementById('canvas');
+                canvas.innerHTML = '';
+                
+                let x = 100;
+                let y = 150;
+                
+                data.agents.forEach((p, index) => {
+                    const node = document.createElement('div');
+                    node.className = 'node';
+                    node.style.left = x + 'px';
+                    node.style.top = y + 'px';
+                    
+                    const modelName = p.args ? p.args.find(a => a.includes('gpt') || a.includes('gemini') || a.includes('opus')) || "기본 모델" : "기본 모델";
+
+                    node.innerHTML = `
+                        <div class="node-header">
+                            <div class="node-title">${p.name.toUpperCase()}</div>
+                            <div class="status-badge">대기 중</div>
+                        </div>
+                        <div class="node-body">
+                            <div class="info-row"><span class="info-label">모델</span><span class="info-value">${modelName}</span></div>
+                            <div class="info-row"><span class="info-label">플랫폼</span><span class="info-value">${p.binary}</span></div>
+                            <div class="info-row"><span class="info-label">모드</span><span class="info-value">Subprocess</span></div>
+                        </div>
+                    `;
+                    canvas.appendChild(node);
+                    
+                    // 연결선 시각화 (마지막 노드 제외)
+                    if (index < data.agents.length - 1) {
+                        const line = document.createElement('div');
+                        line.className = 'connector-line';
+                        line.style.left = (x + 260) + 'px';
+                        line.style.top = (y + 45) + 'px';
+                        line.style.width = '40px';
+                        canvas.appendChild(line);
+                    }
+                    
+                    x += 300;
+                    // 지그재그 배치
+                    y = (y === 150) ? 220 : 150;
+                });
+            } catch (e) {
+                console.error("데이터 로드 실패:", e);
+            }
         }
+        
         loadStatus();
+        setInterval(loadStatus, 5000); // 5초마다 갱신
     </script>
 </body>
 </html>
