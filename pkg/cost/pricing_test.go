@@ -3,7 +3,7 @@ package cost_test
 import (
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/cost"
+	"github.com/shin0720/auto-adk/pkg/cost"
 )
 
 func TestDefaultPricingTable_ContainsAllModels(t *testing.T) {

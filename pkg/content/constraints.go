@@ -3,8 +3,8 @@ package content
 import (
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/constraint"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/constraint"
 )
 
 // GenerateConstraintInstruction produces the anti-pattern constraint section

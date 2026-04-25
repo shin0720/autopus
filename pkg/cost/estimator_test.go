@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/cost"
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/cost"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // roundTo6 rounds a float64 to 6 decimal places for stable comparisons.

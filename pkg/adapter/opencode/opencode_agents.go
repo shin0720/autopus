@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	contentfs "github.com/insajin/autopus-adk/content"
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	pkgcontent "github.com/insajin/autopus-adk/pkg/content"
+	contentfs "github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	pkgcontent "github.com/shin0720/auto-adk/pkg/content"
 )
 
 func (a *Adapter) prepareAgentMappings() ([]adapter.FileMapping, error) {

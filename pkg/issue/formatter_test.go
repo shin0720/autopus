@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/issue"
+	"github.com/shin0720/auto-adk/pkg/issue"
 )
 
 func TestFormatMarkdown_ContainsExpectedSections(t *testing.T) {

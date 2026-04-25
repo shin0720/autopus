@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // waitAndCollectResults waits for completion and collects cleaned results.

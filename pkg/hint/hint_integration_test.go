@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 func TestRecordSuccess_RealStore(t *testing.T) {

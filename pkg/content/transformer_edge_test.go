@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 // TestLoadAgentSourcesFromFS_ReadFileError verifies error on unreadable file.

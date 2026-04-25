@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/lsp"
+	"github.com/shin0720/auto-adk/pkg/lsp"
 )
 
 // TestMockClient는 모의 클라이언트를 이용한 커맨드 테스트이다.

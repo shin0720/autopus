@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 // TestDetectTestRunner_Jest verifies that Jest is detected when package.json

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // FormatCostReport produces a Markdown cost breakdown table for all agents in a pipeline run.

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/config"
-	pkgcontent "github.com/insajin/autopus-adk/pkg/content"
-	"github.com/insajin/autopus-adk/templates"
+	"github.com/shin0720/auto-adk/pkg/config"
+	pkgcontent "github.com/shin0720/auto-adk/pkg/content"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 func (a *Adapter) renderRouterSkill(cfg *config.HarnessConfig) (string, error) {

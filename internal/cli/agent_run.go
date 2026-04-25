@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/insajin/autopus-adk/pkg/learn"
+	"github.com/shin0720/auto-adk/pkg/learn"
 	"gopkg.in/yaml.v3"
 )
 

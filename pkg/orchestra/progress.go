@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -45,9 +46,10 @@ type ProgressTracker struct {
 }
 
 type providerState struct {
-	status  ProviderStatus
-	started time.Time
-	elapsed time.Duration
+	status   ProviderStatus
+	started  time.Time
+	elapsed  time.Duration
+	errorMsg string
 }
 
 // NewProgressTracker creates a tracker for the given provider names.
@@ -87,13 +89,14 @@ func (pt *ProgressTracker) MarkDone(name string) {
 	pt.render()
 }
 
-// MarkFailed updates a provider to failed state.
-func (pt *ProgressTracker) MarkFailed(name string) {
+// MarkFailed updates a provider to failed state with an error message.
+func (pt *ProgressTracker) MarkFailed(name string, err string) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 	if s, ok := pt.providers[name]; ok {
 		s.status = StatusFailed
 		s.elapsed = time.Since(s.started)
+		s.errorMsg = err
 	}
 	pt.render()
 }
@@ -120,8 +123,18 @@ func (pt *ProgressTracker) renderTTY() {
 		if s.status == StatusRunning {
 			elapsed = time.Since(s.started)
 		}
-		fmt.Fprintf(pt.writer, "\033[2K  %s %-12s %6.1fs\n",
-			s.status.String(), name, elapsed.Seconds())
+
+		msg := ""
+		if s.status == StatusFailed && s.errorMsg != "" {
+			if containsTokenError(s.errorMsg) {
+				msg = " (⚠️ Token Limit)"
+			} else {
+				msg = fmt.Sprintf(" (%s)", truncate(s.errorMsg, 20))
+			}
+		}
+
+		fmt.Fprintf(pt.writer, "\033[2K  %s %-12s %6.1fs%s\n",
+			s.status.String(), name, elapsed.Seconds(), msg)
 	}
 }
 
@@ -129,11 +142,17 @@ func (pt *ProgressTracker) renderTTY() {
 func (pt *ProgressTracker) renderLog() {
 	for _, name := range pt.order {
 		s := pt.providers[name]
-		if s.status == StatusDone || s.status == StatusFailed {
-			fmt.Fprintf(pt.writer, "[%s] %s: %.1fs\n",
-				s.status.String(), name, s.elapsed.Seconds())
+		if s.status == StatusDone {
+			fmt.Fprintf(pt.writer, "[✓] %s: %.1fs\n", name, s.elapsed.Seconds())
+		} else if s.status == StatusFailed {
+			fmt.Fprintf(pt.writer, "[✗] %s: %.1fs (%s)\n", name, s.elapsed.Seconds(), s.errorMsg)
 		}
 	}
+}
+
+func containsTokenError(err string) bool {
+	low := strings.ToLower(err)
+	return strings.Contains(low, "token") || strings.Contains(low, "quota") || strings.Contains(low, "rate limit") || strings.Contains(low, "429")
 }
 
 // isTerminal checks if stderr is a terminal.

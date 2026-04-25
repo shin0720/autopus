@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/experiment"
+	"github.com/shin0720/auto-adk/pkg/experiment"
 )
 
 // newExperimentSummaryCmd creates `auto experiment summary`.

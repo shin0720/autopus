@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/docs"
+	"github.com/shin0720/auto-adk/pkg/docs"
 )
 
 // newDocsCacheCmd creates the `auto docs cache` subcommand with list and clear subcommands.

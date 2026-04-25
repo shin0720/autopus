@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/content"
-	"github.com/insajin/autopus-adk/templates"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/content"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 // generateSettings renders settings.json.tmpl and returns a file mapping.

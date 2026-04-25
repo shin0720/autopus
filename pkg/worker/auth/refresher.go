@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // Credentials holds the authentication tokens.

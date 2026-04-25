@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // Strategy는 오케스트레이션 전략이다.

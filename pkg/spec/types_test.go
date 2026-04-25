@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/spec"
+	"github.com/shin0720/auto-adk/pkg/spec"
 )
 
 func TestValidationError_Error(t *testing.T) {

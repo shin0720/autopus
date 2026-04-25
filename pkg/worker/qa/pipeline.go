@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/security"
+	"github.com/shin0720/auto-adk/pkg/worker/security"
 )
 
 // PipelineResult holds the aggregated results of all pipeline stages.

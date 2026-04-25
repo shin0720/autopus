@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 // @AX:NOTE [AUTO] subcommand registration point for "auto permission" — extend here to add new permission subcommands

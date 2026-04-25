@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 func TestGenerateRoutingInstruction(t *testing.T) {

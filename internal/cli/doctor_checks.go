@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/internal/cli/tui"
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/internal/cli/tui"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 // checkQualityGate validates quality preset, review gate providers, and methodology config.

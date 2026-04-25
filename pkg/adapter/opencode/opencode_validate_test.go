@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 func TestAdapter_Validate_WarnsWhenContext7FallbackMissing(t *testing.T) {

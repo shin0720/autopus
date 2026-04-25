@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/security"
+	"github.com/shin0720/auto-adk/pkg/worker/security"
 )
 
 func (wl *WorkerLoop) taskExecutionDeadline(taskID string) (time.Time, bool) {

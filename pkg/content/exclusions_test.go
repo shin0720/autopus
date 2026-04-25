@@ -3,7 +3,7 @@ package content_test
 import (
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 // hasPattern reports whether exclusions contain a given pattern.

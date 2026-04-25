@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/connect"
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/connect"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

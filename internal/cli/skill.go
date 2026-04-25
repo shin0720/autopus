@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	contentfs "github.com/insajin/autopus-adk/content"
-	"github.com/insajin/autopus-adk/pkg/content"
+	contentfs "github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 // newSkillCmd는 skill 서브커맨드를 생성한다.

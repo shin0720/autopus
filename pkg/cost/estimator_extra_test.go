@@ -3,8 +3,8 @@ package cost_test
 import (
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/cost"
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/cost"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 )
 

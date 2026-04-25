@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/search"
+	"github.com/shin0720/auto-adk/pkg/search"
 )
 
 // newSearchCmd는 search 서브커맨드를 생성한다.

@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
-	tmpl "github.com/insajin/autopus-adk/pkg/template"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
+	tmpl "github.com/shin0720/auto-adk/pkg/template"
 )
 
 const (

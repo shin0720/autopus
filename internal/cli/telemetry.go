@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/cost"
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/cost"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // newTelemetryCmd creates the `auto telemetry` command group with subcommands

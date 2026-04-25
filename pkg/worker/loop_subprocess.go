@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
-	"github.com/insajin/autopus-adk/pkg/worker/budget"
-	"github.com/insajin/autopus-adk/pkg/worker/security"
-	"github.com/insajin/autopus-adk/pkg/worker/stream"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/budget"
+	"github.com/shin0720/auto-adk/pkg/worker/security"
+	"github.com/shin0720/auto-adk/pkg/worker/stream"
 )
 
 const maxSubprocessLineBytes = 8 * 1024 * 1024

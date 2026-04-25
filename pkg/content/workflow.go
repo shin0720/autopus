@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // WorkflowDoc는 파싱된 워크플로우 문서이다.

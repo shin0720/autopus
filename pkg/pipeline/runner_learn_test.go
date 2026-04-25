@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/learn"
+	"github.com/shin0720/auto-adk/pkg/learn"
 )
 
 // mockBackend is a simple test double for PhaseBackend that cycles through outputs.

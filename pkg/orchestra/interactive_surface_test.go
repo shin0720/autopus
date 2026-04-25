@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // surfaceMock extends mockTerminal with per-pane ReadScreen error control.

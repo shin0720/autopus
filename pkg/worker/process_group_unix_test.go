@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
 	"github.com/stretchr/testify/require"
 )
 

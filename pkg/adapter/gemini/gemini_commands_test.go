@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/adapter/gemini"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/adapter/gemini"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 func TestGeminiGenerateCommands(t *testing.T) {

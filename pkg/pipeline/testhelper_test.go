@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/shin0720/auto-adk/pkg/pipeline"
 )
 
 // FakeBackend is a test double for pipeline.PhaseBackend that records calls

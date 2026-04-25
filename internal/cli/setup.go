@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/internal/cli/tui"
-	"github.com/insajin/autopus-adk/pkg/setup"
+	"github.com/shin0720/auto-adk/internal/cli/tui"
+	"github.com/shin0720/auto-adk/pkg/setup"
 )
 
 func newSetupCmd() *cobra.Command {

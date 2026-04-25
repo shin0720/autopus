@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // --- SPEC-ORCHCFG-001 Phase 1.5: Threshold Test Scaffolds ---

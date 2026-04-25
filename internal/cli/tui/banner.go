@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/insajin/autopus-adk/pkg/version"
+	"github.com/shin0720/auto-adk/pkg/version"
 )
 
 const bannerWidth = 40

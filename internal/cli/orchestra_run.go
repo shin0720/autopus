@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/orchestra"
+	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
 // newOrchestraRunCmd creates the `auto orchestra run` subcommand.

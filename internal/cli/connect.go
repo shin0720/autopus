@@ -10,9 +10,9 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/internal/cli/tui"
-	"github.com/insajin/autopus-adk/pkg/connect"
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/internal/cli/tui"
+	"github.com/shin0720/auto-adk/pkg/connect"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // @AX:NOTE [AUTO] @AX:REASON: hardcoded production server URL — overridable via --server flag

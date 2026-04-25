@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/a2a"
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
-	"github.com/insajin/autopus-adk/pkg/worker/budget"
-	"github.com/insajin/autopus-adk/pkg/worker/security"
-	"github.com/insajin/autopus-adk/pkg/worker/routing"
+	"github.com/shin0720/auto-adk/pkg/worker/a2a"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/budget"
+	"github.com/shin0720/auto-adk/pkg/worker/security"
+	"github.com/shin0720/auto-adk/pkg/worker/routing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

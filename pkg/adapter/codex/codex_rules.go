@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	contentfs "github.com/insajin/autopus-adk/content"
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
-	pkgcontent "github.com/insajin/autopus-adk/pkg/content"
+	contentfs "github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
+	pkgcontent "github.com/shin0720/auto-adk/pkg/content"
 )
 
 // generateRuleFiles reads Codex rule templates from embedded FS,

@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/insajin/autopus-adk/pkg/worker/a2a"
-	"github.com/insajin/autopus-adk/pkg/worker/workspace"
+	"github.com/shin0720/auto-adk/pkg/worker/a2a"
+	"github.com/shin0720/auto-adk/pkg/worker/workspace"
 )
 
 // WorkspaceConfig holds connection details for a single workspace.

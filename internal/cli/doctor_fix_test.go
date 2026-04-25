@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 // makeStatus is a test helper that builds a DependencyStatus.

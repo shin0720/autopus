@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 // runDebate executes the full debate flow:

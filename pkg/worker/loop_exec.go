@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
-	"github.com/insajin/autopus-adk/pkg/worker/budget"
-	"github.com/insajin/autopus-adk/pkg/worker/security"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/budget"
+	"github.com/shin0720/auto-adk/pkg/worker/security"
 )
 
 func (wl *WorkerLoop) detachedTaskContext(parent context.Context) (context.Context, context.CancelFunc) {

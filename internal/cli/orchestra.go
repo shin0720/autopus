@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/orchestra"
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/orchestra"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // newOrchestraCmd creates the orchestra root command.

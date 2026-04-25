@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 func TestDefaultRules(t *testing.T) {

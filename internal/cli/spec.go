@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/spec"
+	"github.com/shin0720/auto-adk/pkg/spec"
 )
 
 // newSpecCmd는 spec 서브커맨드를 생성한다.

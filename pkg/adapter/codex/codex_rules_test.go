@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/adapter/codex"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/adapter/codex"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 func TestGenerateRuleFiles_ProducesManagedRuleSet(t *testing.T) {

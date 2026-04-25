@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/detect"
-	"github.com/insajin/autopus-adk/pkg/orchestra"
-	"github.com/insajin/autopus-adk/pkg/spec"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/orchestra"
+	"github.com/shin0720/auto-adk/pkg/spec"
 )
 
 const defaultMaxRevisions = 3

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/config"
-	tmpl "github.com/insajin/autopus-adk/pkg/template"
+	"github.com/shin0720/auto-adk/pkg/config"
+	tmpl "github.com/shin0720/auto-adk/pkg/template"
 )
 
 // 템플릿 루트 디렉터리 — 테스트 파일이 templates/ 디렉터리에 있으므로 현재 디렉터리 사용

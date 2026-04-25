@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // apiEnvelope is the standard backend response wrapper: { success, data }.

@@ -6,7 +6,7 @@ import (
 	"path"
 	"text/template"
 
-	"github.com/insajin/autopus-adk/templates"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 // orchestraTemplates lists all orchestra template files that must be parsed together

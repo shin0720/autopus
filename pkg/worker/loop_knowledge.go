@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/insajin/autopus-adk/pkg/worker/knowledge"
+	"github.com/shin0720/auto-adk/pkg/worker/knowledge"
 )
 
 var knowledgeWordCleaner = regexp.MustCompile(`[^a-zA-Z0-9._/-]+`)

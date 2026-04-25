@@ -4,7 +4,7 @@ import (
 	"context"
 	"os/exec"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // execCommand is a package-level variable for exec.Command, mockable in tests.

@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // mockTerminal implements terminal.Terminal for testing factory routing.

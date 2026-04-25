@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/e2e"
+	"github.com/shin0720/auto-adk/pkg/e2e"
 )
 
 // newAutoTestCmd creates the `auto test` parent command with the `run` subcommand.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/constraint"
+	"github.com/shin0720/auto-adk/pkg/constraint"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

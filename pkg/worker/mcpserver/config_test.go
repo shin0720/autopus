@@ -4,7 +4,7 @@ package mcpserver_test
 import (
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/worker/mcpserver"
+	"github.com/shin0720/auto-adk/pkg/worker/mcpserver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

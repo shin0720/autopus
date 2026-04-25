@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/adapter"
 )
 
 // hookEntry represents a single hook matcher and its commands.

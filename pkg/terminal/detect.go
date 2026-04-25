@@ -1,7 +1,7 @@
 // Package terminal provides terminal multiplexer detection.
 package terminal
 
-import "github.com/insajin/autopus-adk/pkg/detect"
+import "github.com/shin0720/auto-adk/pkg/detect"
 
 // isInstalled is a mockable wrapper around detect.IsInstalled for testing.
 // @AX:WARN [AUTO] global state mutation — isInstalled is a mutable package-level variable replaced by tests

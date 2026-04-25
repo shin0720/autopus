@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/lsp"
+	"github.com/shin0720/auto-adk/pkg/lsp"
 )
 
 // TestNewClient_ValidCommand는 유효한 명령으로 클라이언트 생성을 테스트한다.

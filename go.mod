@@ -1,4 +1,4 @@
-module github.com/insajin/autopus-adk
+module github.com/shin0720/auto-adk
 
 go 1.26
 

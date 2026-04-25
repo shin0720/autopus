@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/pkg/e2e"
+	"github.com/shin0720/auto-adk/pkg/e2e"
 )
 
 // @AX:NOTE [AUTO] @AX:REASON: design choice — extraction failures are non-fatal; writes minimal empty ScenarioSet on error to avoid blocking setup flow; fan_in=2 (engine.go:Generate and engine.go:Update)

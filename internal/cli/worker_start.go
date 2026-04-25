@@ -9,9 +9,9 @@ import (
 	"strings"
 	"syscall"
 
-	worker "github.com/insajin/autopus-adk/pkg/worker"
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	worker "github.com/shin0720/auto-adk/pkg/worker"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // runWorkerForeground loads config and credentials, then starts the WorkerLoop.

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 )
 

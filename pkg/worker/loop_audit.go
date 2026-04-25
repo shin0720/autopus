@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/audit"
+	"github.com/shin0720/auto-adk/pkg/worker/audit"
 )
 
 // AuditEvent represents a structured audit log entry for task execution.

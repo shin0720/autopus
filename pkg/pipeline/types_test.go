@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/shin0720/auto-adk/pkg/pipeline"
 )
 
 // TestCheckpointStatus_String verifies that CheckpointStatus converts to its

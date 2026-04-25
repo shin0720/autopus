@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	contentfs "github.com/insajin/autopus-adk/content"
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/templates"
+	contentfs "github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 // prepareFiles는 Generate와 동일한 파일을 준비하되, 디스크에 쓰지 않고 내용만 반환한다.

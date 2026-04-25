@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/orchestra"
+	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
 // saveOrchestraResult writes orchestra results to a timestamped markdown file

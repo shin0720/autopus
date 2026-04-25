@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/constraint"
+	"github.com/shin0720/auto-adk/pkg/constraint"
 )
 
 // TestCheck_CategoryFilterNoMatch verifies that category filter with no matching constraints returns nil.

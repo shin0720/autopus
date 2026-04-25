@@ -10,13 +10,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/internal/cli/tui"
-	"github.com/insajin/autopus-adk/pkg/adapter/claude"
-	"github.com/insajin/autopus-adk/pkg/adapter/codex"
-	"github.com/insajin/autopus-adk/pkg/adapter/gemini"
-	"github.com/insajin/autopus-adk/pkg/adapter/opencode"
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/internal/cli/tui"
+	"github.com/shin0720/auto-adk/pkg/adapter/claude"
+	"github.com/shin0720/auto-adk/pkg/adapter/codex"
+	"github.com/shin0720/auto-adk/pkg/adapter/gemini"
+	"github.com/shin0720/auto-adk/pkg/adapter/opencode"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 var initSupportedPlatforms = map[string]bool{

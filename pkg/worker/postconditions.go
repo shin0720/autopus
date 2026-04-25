@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
 )
 
 var (

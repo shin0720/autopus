@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/learn"
-	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/shin0720/auto-adk/pkg/learn"
+	"github.com/shin0720/auto-adk/pkg/pipeline"
 )
 
 // pipelineRunConfig holds parsed flag values for the pipeline run command.

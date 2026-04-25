@@ -3,8 +3,8 @@ package cli
 import (
 	"io"
 
-	"github.com/insajin/autopus-adk/internal/cli/tui"
-	"github.com/insajin/autopus-adk/pkg/constraint"
+	"github.com/shin0720/auto-adk/internal/cli/tui"
+	"github.com/shin0720/auto-adk/pkg/constraint"
 )
 
 // generateDefaultConstraints creates a default constraints.yaml for the project.

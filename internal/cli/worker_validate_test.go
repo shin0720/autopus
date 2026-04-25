@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/worker/a2a"
-	"github.com/insajin/autopus-adk/pkg/worker/security"
+	"github.com/shin0720/auto-adk/pkg/worker/a2a"
+	"github.com/shin0720/auto-adk/pkg/worker/security"
 )
 
 func TestRunWorkerValidate_VerifiesPolicySignature(t *testing.T) {

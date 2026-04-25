@@ -30,7 +30,7 @@ spec:
     - complex
   review_gate:
     enabled: true
-    strategy: debate
+    strategy: consensus
     providers: [claude, codex, gemini]
     judge: codex
     max_revisions: 2
@@ -94,13 +94,13 @@ orchestra:
         output_format: json
   commands:
     brainstorm:
-      strategy: debate
+      strategy: consensus
       providers: [claude, codex, gemini]
     plan:
       strategy: consensus
       providers: [claude, codex, gemini]
     review:
-      strategy: debate
+      strategy: consensus
       providers: [claude, codex, gemini]
     secure:
       strategy: consensus
@@ -136,3 +136,4 @@ quality:
         spec-writer: opus
         tester: opus
         validator: opus
+

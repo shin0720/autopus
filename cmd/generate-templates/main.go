@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 func main() {

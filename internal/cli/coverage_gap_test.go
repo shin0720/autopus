@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/lore"
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/lore"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // TestResolveDirFromArgs_WithArg verifies that resolveDirFromArgs returns the dir from args.

@@ -4,7 +4,7 @@ package adapter
 import (
 	"context"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // PlatformAdapter는 코딩 CLI 플랫폼별 어댑터 인터페이스이다.

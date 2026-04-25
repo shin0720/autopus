@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // resolveSingleRun returns the latest PipelineRun, optionally filtered by specID.

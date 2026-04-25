@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // GitHookScript는 Git 훅 스크립트이다.

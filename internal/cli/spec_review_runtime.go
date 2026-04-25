@@ -3,8 +3,8 @@ package cli
 import (
 	"context"
 
-	"github.com/insajin/autopus-adk/pkg/orchestra"
-	"github.com/insajin/autopus-adk/pkg/spec"
+	"github.com/shin0720/auto-adk/pkg/orchestra"
+	"github.com/shin0720/auto-adk/pkg/spec"
 )
 
 var (

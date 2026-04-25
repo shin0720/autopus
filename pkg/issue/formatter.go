@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/insajin/autopus-adk/templates"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 const (

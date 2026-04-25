@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // SurfaceManager monitors surface health in the background and provides

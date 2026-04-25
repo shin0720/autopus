@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/issue"
+	"github.com/shin0720/auto-adk/pkg/issue"
 )
 
 // mockRunner is a test double for CommandRunner.

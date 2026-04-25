@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 func (a *Adapter) renderPluginWorkflowShim(cfg *config.HarnessConfig, spec workflowSpec) (string, error) {

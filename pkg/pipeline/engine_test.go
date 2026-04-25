@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/shin0720/auto-adk/pkg/pipeline"
 )
 
 // TestSubprocessEngine_Run_ExecutesAllPhases verifies that SubprocessEngine

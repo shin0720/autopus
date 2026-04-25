@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/arch"
-	"github.com/insajin/autopus-adk/pkg/lore"
+	"github.com/shin0720/auto-adk/pkg/arch"
+	"github.com/shin0720/auto-adk/pkg/lore"
 )
 
 const (

@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/worker/mcpserver"
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/mcpserver"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 func newWorkerMCPServeCmd() *cobra.Command {

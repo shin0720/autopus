@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/insajin/autopus-adk/pkg/version"
+	"github.com/shin0720/auto-adk/pkg/version"
 )
 
 const metaFileName = ".meta.yaml"

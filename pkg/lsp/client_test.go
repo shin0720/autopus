@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/lsp"
+	"github.com/shin0720/auto-adk/pkg/lsp"
 )
 
 func TestNewClient_InvalidCommand(t *testing.T) {

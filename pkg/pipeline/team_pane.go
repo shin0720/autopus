@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // TeammatePaneInfo tracks a teammate's terminal pane and log file.

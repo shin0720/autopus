@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/sigmap"
+	"github.com/shin0720/auto-adk/pkg/sigmap"
 )
 
 // TestExtractorRegistry_Get_Go verifies that the registry returns the Go

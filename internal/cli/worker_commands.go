@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/worker/daemon"
-	"github.com/insajin/autopus-adk/pkg/worker/pidlock"
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/daemon"
+	"github.com/shin0720/auto-adk/pkg/worker/pidlock"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // addWorkerSubcommands registers all worker subcommands on the parent command.

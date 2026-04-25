@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/adapter"
 )
 
 const minProjectDocMaxBytes = 262144

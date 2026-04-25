@@ -3,7 +3,7 @@ package tui_test
 import (
 	"testing"
 
-	"github.com/insajin/autopus-adk/internal/cli/tui"
+	"github.com/shin0720/auto-adk/internal/cli/tui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

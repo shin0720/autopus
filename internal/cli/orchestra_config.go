@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/config"
-	"github.com/insajin/autopus-adk/pkg/orchestra"
+	"github.com/shin0720/auto-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
 // loadOrchestraConfig loads the orchestra configuration from autopus.yaml

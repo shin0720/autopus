@@ -2,7 +2,7 @@
 package cost
 
 import (
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // Estimator implements telemetry.CostEstimator using a pricing table and quality mode.

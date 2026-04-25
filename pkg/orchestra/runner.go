@@ -3,11 +3,12 @@ package orchestra
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/detect"
 )
 
 // RunOrchestra executes orchestration according to the given config.
@@ -22,7 +23,13 @@ func RunOrchestra(ctx context.Context, cfg OrchestraConfig) (*OrchestraResult, e
 
 	// Delegate to pane runner for non-plain terminals
 	if !cfg.SubprocessMode && cfg.Terminal != nil && cfg.Terminal.Name() != "plain" {
-		return RunPaneOrchestra(ctx, cfg)
+		result, err := RunPaneOrchestra(ctx, cfg)
+		if err == nil {
+			return result, nil
+		}
+		// Fallback to subprocess mode if pane splitting fails (e.g., no tmux session)
+		fmt.Fprintf(os.Stderr, "⚠️  Pane splitting failed (%v). Falling back to subprocess mode...\n", err)
+		cfg.SubprocessMode = true
 	}
 
 	timeout := cfg.TimeoutSeconds
@@ -107,6 +114,12 @@ func RunOrchestra(ctx context.Context, cfg OrchestraConfig) (*OrchestraResult, e
 // runParallel executes all providers in parallel with per-goroutine context (R1)
 // and per-provider timeout (R2). Error is non-nil only when ALL providers fail.
 func runParallel(ctx context.Context, cfg OrchestraConfig) ([]ProviderResponse, []FailedProvider, error) {
+	names := make([]string, len(cfg.Providers))
+	for i, p := range cfg.Providers {
+		names[i] = p.Name
+	}
+	pt := NewProgressTracker(names)
+
 	results := make([]providerResult, len(cfg.Providers))
 	var wg sync.WaitGroup
 
@@ -123,11 +136,24 @@ func runParallel(ctx context.Context, cfg OrchestraConfig) ([]ProviderResponse, 
 		go func(idx int, provider ProviderConfig, cancel context.CancelFunc) {
 			defer wg.Done()
 			defer cancel()
+
+			pt.MarkRunning(provider.Name)
 			resp, err := runProvider(childCtx, provider, cfg.Prompt)
 			if err != nil {
+				pt.MarkFailed(provider.Name, err.Error())
 				results[idx] = providerResult{err: err, idx: idx}
 				return
 			}
+
+			if resp.TimedOut {
+				errMsg := fmt.Sprintf("timeout: %v exceeded", perTimeout)
+				pt.MarkFailed(provider.Name, errMsg)
+			} else if resp.EmptyOutput {
+				pt.MarkFailed(provider.Name, "empty output")
+			} else {
+				pt.MarkDone(provider.Name)
+			}
+
 			results[idx] = providerResult{resp: *resp, idx: idx}
 		}(i, p, childCancel)
 	}

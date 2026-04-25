@@ -4,7 +4,7 @@ package template
 import (
 	"unicode/utf8"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // SkillMeta holds minimal skill metadata extracted from harness config.

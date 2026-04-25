@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/shin0720/auto-adk/pkg/pipeline"
 )
 
 // TestEvaluateGate_Validation_PassOnSuccess verifies that "PASS" in output

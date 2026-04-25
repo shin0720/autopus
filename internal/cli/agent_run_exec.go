@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
-	"github.com/insajin/autopus-adk/pkg/worker/stream"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/stream"
 )
 
 // execResult holds the outcome of running a provider subprocess.

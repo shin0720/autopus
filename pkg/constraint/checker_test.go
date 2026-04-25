@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/constraint"
+	"github.com/shin0720/auto-adk/pkg/constraint"
 )
 
 // TestCheck_NoConstraints verifies early return when constraint list is empty.

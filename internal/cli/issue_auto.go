@@ -3,7 +3,7 @@ package cli
 import (
 	"log"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // triggerAutoIssueReport checks config and triggers automatic issue reporting on pipeline failure.

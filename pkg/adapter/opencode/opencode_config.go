@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/adapter"
 )
 
 func (a *Adapter) prepareConfigMapping() (adapter.FileMapping, error) {

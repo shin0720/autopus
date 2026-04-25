@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/worker/a2a"
-	"github.com/insajin/autopus-adk/pkg/worker/budget"
-	"github.com/insajin/autopus-adk/pkg/worker/workspace"
+	"github.com/shin0720/auto-adk/pkg/worker/a2a"
+	"github.com/shin0720/auto-adk/pkg/worker/budget"
+	"github.com/shin0720/auto-adk/pkg/worker/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

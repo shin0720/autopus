@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/learn"
+	"github.com/shin0720/auto-adk/pkg/learn"
 )
 
 var (

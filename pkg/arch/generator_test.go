@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/arch"
+	"github.com/shin0720/auto-adk/pkg/arch"
 )
 
 func TestGenerate_BasicOutput(t *testing.T) {

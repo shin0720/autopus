@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // teamMockTerminal is a test double that tracks all terminal operations.

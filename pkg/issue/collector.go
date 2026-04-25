@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/version"
+	"github.com/shin0720/auto-adk/pkg/version"
 )
 
 const (

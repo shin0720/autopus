@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	pkgcontent "github.com/insajin/autopus-adk/pkg/content"
-	"github.com/insajin/autopus-adk/templates"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	pkgcontent "github.com/shin0720/auto-adk/pkg/content"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 const agentsTemplateDir = "gemini/agents"

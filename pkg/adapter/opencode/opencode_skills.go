@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	contentfs "github.com/insajin/autopus-adk/content"
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
-	pkgcontent "github.com/insajin/autopus-adk/pkg/content"
-	"github.com/insajin/autopus-adk/templates"
+	contentfs "github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
+	pkgcontent "github.com/shin0720/auto-adk/pkg/content"
+	"github.com/shin0720/auto-adk/templates"
 )
 
 func (a *Adapter) prepareSkillMappings(cfg *config.HarnessConfig) ([]adapter.FileMapping, error) {

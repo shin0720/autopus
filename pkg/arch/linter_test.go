@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/arch"
+	"github.com/shin0720/auto-adk/pkg/arch"
 )
 
 func TestLint_NoViolations(t *testing.T) {

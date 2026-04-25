@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/experiment"
+	"github.com/shin0720/auto-adk/pkg/experiment"
 )
 
 // experimentFlags holds flags shared across experiment subcommands.

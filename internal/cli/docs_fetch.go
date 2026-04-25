@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/docs"
+	"github.com/shin0720/auto-adk/pkg/docs"
 )
 
 // docsCacheDir returns the cache directory from env or a default under the user cache dir.

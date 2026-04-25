@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/arch"
-	"github.com/insajin/autopus-adk/pkg/lore"
+	"github.com/shin0720/auto-adk/pkg/arch"
+	"github.com/shin0720/auto-adk/pkg/lore"
 )
 
 func TestRender_IndexLineLimit(t *testing.T) {

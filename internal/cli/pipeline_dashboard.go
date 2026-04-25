@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/shin0720/auto-adk/pkg/pipeline"
 )
 
 // newPipelineCmd creates the `auto pipeline` parent command with subcommands.

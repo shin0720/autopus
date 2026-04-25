@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/issue"
+	"github.com/shin0720/auto-adk/pkg/issue"
 )
 
 func TestSanitizePath(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // @AX:NOTE [AUTO] sentinel marker written to output files to signal provider completion

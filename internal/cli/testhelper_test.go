@@ -4,8 +4,8 @@ package cli_test
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/internal/cli"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/internal/cli"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // newTestRootCmd는 테스트용 루트 커맨드를 생성한다.

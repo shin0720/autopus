@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // TestExecuteRound_Round2_SurfaceValidation verifies that executeRound in round 2

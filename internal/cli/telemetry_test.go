@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // writePipelineRun seeds a JSONL file under baseDir with a complete pipeline_end event.

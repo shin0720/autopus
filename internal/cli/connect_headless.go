@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/connect"
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/connect"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // headlessAuthDeps implements connect.AuthDeps for headless mode.

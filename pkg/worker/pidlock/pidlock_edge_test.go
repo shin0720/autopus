@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/worker/pidlock"
+	"github.com/shin0720/auto-adk/pkg/worker/pidlock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

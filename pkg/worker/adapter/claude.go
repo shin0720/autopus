@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/insajin/autopus-adk/pkg/worker/stream"
+	"github.com/shin0720/auto-adk/pkg/worker/stream"
 )
 
 // ClaudeAdapter implements ProviderAdapter for Claude Code CLI.

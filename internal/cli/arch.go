@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/arch"
+	"github.com/shin0720/auto-adk/pkg/arch"
 )
 
 // newArchCmd는 arch 서브커맨드를 생성한다.

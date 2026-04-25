@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // LayoutPlan describes the sequential split strategy for team panes.

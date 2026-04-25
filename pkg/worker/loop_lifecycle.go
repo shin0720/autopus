@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/a2a"
-	"github.com/insajin/autopus-adk/pkg/worker/audit"
-	"github.com/insajin/autopus-adk/pkg/worker/auth"
-	"github.com/insajin/autopus-adk/pkg/worker/knowledge"
-	workerNet "github.com/insajin/autopus-adk/pkg/worker/net"
-	"github.com/insajin/autopus-adk/pkg/worker/reaper"
-	"github.com/insajin/autopus-adk/pkg/worker/scheduler"
+	"github.com/shin0720/auto-adk/pkg/worker/a2a"
+	"github.com/shin0720/auto-adk/pkg/worker/audit"
+	"github.com/shin0720/auto-adk/pkg/worker/auth"
+	"github.com/shin0720/auto-adk/pkg/worker/knowledge"
+	workerNet "github.com/shin0720/auto-adk/pkg/worker/net"
+	"github.com/shin0720/auto-adk/pkg/worker/reaper"
+	"github.com/shin0720/auto-adk/pkg/worker/scheduler"
 )
 
 // startServices initializes and starts all lifecycle services.

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/insajin/autopus-adk/content"
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	pkgcontent "github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	pkgcontent "github.com/shin0720/auto-adk/pkg/content"
 )
 
 // renderExtendedSkills transforms embedded content skills for the Codex platform

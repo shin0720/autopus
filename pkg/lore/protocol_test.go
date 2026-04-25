@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/lore"
+	"github.com/shin0720/auto-adk/pkg/lore"
 )
 
 func TestParseTrailers_FullEntry(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 func TestStepSaveAndCheckProviders_UsesJWTForWorkerAndMCPSkipsBridge(t *testing.T) {

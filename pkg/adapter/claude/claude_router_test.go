@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/adapter/claude"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/adapter/claude"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // TestRouter_Generate_CreatesSingleAutoMD는 Generate가 단일 auto.md 파일을 생성하는지 테스트한다.

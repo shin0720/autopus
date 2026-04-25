@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 const (

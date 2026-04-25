@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/adapter"
 )
 
 // Validate checks the validity of installed OpenCode files.

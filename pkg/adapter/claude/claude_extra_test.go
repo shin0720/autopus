@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/adapter/claude"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/adapter/claude"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // TestClaudeAdapter_CleanRemovesFiles는 Clean이 파일을 삭제하는지 테스트한다.

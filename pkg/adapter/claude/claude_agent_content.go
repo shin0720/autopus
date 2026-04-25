@@ -1,6 +1,6 @@
 package claude
 
-import pkgcontent "github.com/insajin/autopus-adk/pkg/content"
+import pkgcontent "github.com/shin0720/auto-adk/pkg/content"
 
 func normalizeClaudeContent(subDir string, data []byte) []byte {
 	if subDir != "agents" {

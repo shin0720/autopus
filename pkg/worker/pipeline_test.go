@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/worker/adapter"
-	"github.com/insajin/autopus-adk/pkg/worker/budget"
-	"github.com/insajin/autopus-adk/pkg/worker/compress"
+	"github.com/shin0720/auto-adk/pkg/worker/adapter"
+	"github.com/shin0720/auto-adk/pkg/worker/budget"
+	"github.com/shin0720/auto-adk/pkg/worker/compress"
 )
 
 func TestPipelineExecutor_AggregateResults(t *testing.T) {

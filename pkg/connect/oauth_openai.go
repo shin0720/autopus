@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // @AX:NOTE [AUTO] @AX:REASON: hardcoded OpenAI OAuth endpoints and client ID — update if OpenAI changes auth infrastructure

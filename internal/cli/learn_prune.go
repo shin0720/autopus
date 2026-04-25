@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/learn"
+	"github.com/shin0720/auto-adk/pkg/learn"
 )
 
 // newLearnPruneCmd returns the `auto learn prune` subcommand.

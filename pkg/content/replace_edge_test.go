@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insajin/autopus-adk/pkg/content"
+	"github.com/shin0720/auto-adk/pkg/content"
 )
 
 // TestReplacePlatformReferences_GeminiCLI verifies gemini-cli platform normalization.

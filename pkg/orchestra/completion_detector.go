@@ -3,7 +3,7 @@ package orchestra
 import (
 	"context"
 
-	"github.com/insajin/autopus-adk/pkg/terminal"
+	"github.com/shin0720/auto-adk/pkg/terminal"
 )
 
 // CompletionDetector defines the strategy for detecting provider completion.

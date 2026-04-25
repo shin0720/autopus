@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insajin/autopus-adk/pkg/sigmap"
+	"github.com/shin0720/auto-adk/pkg/sigmap"
 )
 
 // TestTSExtractor_ExportFunction verifies that an exported TypeScript function

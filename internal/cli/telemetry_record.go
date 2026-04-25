@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/insajin/autopus-adk/pkg/telemetry"
+	"github.com/shin0720/auto-adk/pkg/telemetry"
 )
 
 // recordParams holds the parsed flags for `auto telemetry record`.

@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/insajin/autopus-adk/pkg/adapter"
-	"github.com/insajin/autopus-adk/pkg/config"
+	"github.com/shin0720/auto-adk/pkg/adapter"
+	"github.com/shin0720/auto-adk/pkg/config"
 )
 
 // injectMarkerSection은 CLAUDE.md의 AUTOPUS 마커 섹션을 생성하거나 업데이트한다.

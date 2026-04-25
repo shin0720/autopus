@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/insajin/autopus-adk/pkg/worker/setup"
+	"github.com/shin0720/auto-adk/pkg/worker/setup"
 )
 
 // newWorkerEnsureCmd returns the `auto worker ensure` cobra command.

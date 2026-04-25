@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/insajin/autopus-adk/pkg/learn"
+	"github.com/shin0720/auto-adk/pkg/learn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
