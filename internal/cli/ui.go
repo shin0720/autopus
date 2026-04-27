@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,107 +28,84 @@ func newUICmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
 			cfg, err := config.Load(".")
-			if err != nil {
-				return err
-			}
+			if err != nil { return err }
 
-			fmt.Printf("🐙 Autopus Virtual Studio 실행 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio (Final) 시작 중... http://%s\n", addr)
 
-			// API: 현재 설정 및 에이전트 상태
-			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{
-					"project": cfg.ProjectName,
-					"agents":  cfg.Orchestra.Providers,
-					"quality": cfg.Quality.Default,
-				})
-			})
-
-			// API: AI 연결 상태 체크
+			// API: AI 상태 체크 및 상세 에러 보고
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				health := make(map[string]bool)
+				health := make(map[string]interface{})
 				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
 				health["gemini"] = os.Getenv("GEMINI_API_KEY") != ""
 				health["codex"] = true
 				json.NewEncoder(w).Encode(health)
 			})
 
-			// API: API 키 등록
-			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				if req.Provider == "claude" {
-					os.Setenv("ANTHROPIC_API_KEY", req.Key); os.Setenv("CLAUDE_API_KEY", req.Key)
-				} else if req.Provider == "gemini" {
-					os.Setenv("GEMINI_API_KEY", req.Key)
-				}
-				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
-			})
-
-			// API: 연쇄 워크플로우 실행 (Chained Execution)
+			// API: 연쇄 워크플로우 실행
 			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { 
-					AgentID string `json:"agentId"`
-					Prompt  string `json:"prompt"`
-					Context []string `json:"context"`
+					AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` 
 				}
 				json.NewDecoder(r.Body).Decode(&req)
 
-				fmt.Printf("⛓️ 워크플로우 시작 [%s]: %s\n", req.AgentID, req.Prompt)
-
-				// 1. 컨텍스트 로드
-				var ctxContent strings.Builder
+				// 1. 컨텍스트 구성
+				var ctxFiles strings.Builder
 				for _, p := range req.Context {
 					data, _ := os.ReadFile(p)
-					ctxContent.WriteString(fmt.Sprintf("\n--- FILE: %s ---\n%s\n", p, string(data)))
+					ctxFiles.WriteString(fmt.Sprintf("\n[File: %s]\n%s\n", p, string(data)))
 				}
 
-				// 2. 에이전트 실행 (진짜 AI)
+				// 2. 에이전트 전문 프롬프트
+				finalPrompt := fmt.Sprintf("당신은 %s 전문가입니다. 다음 요청을 프로젝트 상황에 맞춰 해결하세요. 반드시 한국어로 답변하세요.\n\n[요청]\n%s\n\n[참조코드]\n%s", 
+					req.AgentID, req.Prompt, ctxFiles.String())
+
+				// 3. AI 엔진 실행
 				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
-					providers = append(providers, orchestra.ProviderConfig{
-						Name: name, Binary: p.Binary, Args: p.Args,
-					})
+					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
 				}
 
-				finalPrompt := fmt.Sprintf("당신은 %s 전문가입니다. 다음 요청을 수행하세요.\n\n요청: %s\n\n참조코드: %s", req.AgentID, req.Prompt, ctxContent.String())
-				
 				orchCfg := orchestra.OrchestraConfig{
 					Prompt: finalPrompt, Strategy: orchestra.StrategyFastest,
-					Providers: providers, TimeoutSeconds: 120, SubprocessMode: true,
+					Providers: providers, TimeoutSeconds: 180, SubprocessMode: true,
 				}
 
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
 				if err != nil {
-					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
+					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "모든 AI 엔진이 응답하지 않습니다. API 키가 정확히 등록되었는지 확인하세요. (Error: " + err.Error() + ")"})
 					return
 				}
 
-				// 3. 결과 반환 (이 결과가 프론트엔드에서 다음 노드로 전달됨)
 				json.NewEncoder(w).Encode(map[string]interface{}{
 					"status": "success",
 					"output": result.Merged,
-					"nextAgent": getNextAgent(req.AgentID), // 다음으로 일할 사람 자동 지정
+					"nextAgent": getNextAgentFull(req.AgentID),
 				})
 			})
 
-			// API: 파일 목록 및 읽기
+			// API: 나머지 (기존과 동일)
+			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+				json.NewEncoder(w).Encode(map[string]interface{}{"project": cfg.ProjectName, "agents": cfg.Orchestra.Providers})
+			})
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err != nil || info.IsDir() || strings.HasPrefix(path, ".") || strings.Contains(path, "node_modules") { return nil }
-					files = append(files, path)
+					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") { files = append(files, path) }
 					return nil
 				})
 				json.NewEncoder(w).Encode(files)
 			})
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
-				path := r.URL.Query().Get("path")
-				content, _ := os.ReadFile(path)
-				w.Write(content)
+				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
+			})
+			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				if req.Provider == "claude" { os.Setenv("ANTHROPIC_API_KEY", req.Key); os.Setenv("CLAUDE_API_KEY", req.Key) }
+				if req.Provider == "gemini" { os.Setenv("GEMINI_API_KEY", req.Key) }
+				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 			})
 
-			// UI 서빙
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				data, _ := content.FS.ReadFile("ui/dashboard.html")
@@ -138,22 +116,19 @@ func newUICmd() *cobra.Command {
 			return http.ListenAndServe(addr, nil)
 		},
 	}
-
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "서버 포트 번호")
 	return cmd
 }
 
-// getNextAgent는 워크플로우 상의 다음 에이전트를 반환한다.
-func getNextAgent(currentID string) string {
-	workflow := map[string]string{
-		"planner": "spec",
-		"spec":    "arch",
-		"arch":    "exec",
-		"exec":    "test",
-		"test":    "val",
-		"val":     "rev",
+// 16인 에이전트 전체 협업 지도
+func getNextAgentFull(id string) string {
+	m := map[string]string{
+		"planner": "spec", "spec": "arch", "arch": "expl", "expl": "exec",
+		"exec": "deep", "deep": "dbug", "dbug": "anno", "anno": "test",
+		"test": "val", "val": "fend", "fend": "uxv", "uxv": "perf",
+		"perf": "rev", "rev": "sec", "sec": "devops",
 	}
-	return workflow[currentID]
+	return m[id]
 }
 
 func openBrowser(url string) {

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Virtual Studio</title>
+    <title>Autopus Virtual Studio (Final)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -11,12 +11,12 @@
             --accent-blue: #58a6ff;
             --accent-green: #3fb950;
             --accent-orange: #d29922;
+            --accent-red: #f85149;
             --text-main: #c9d1d9;
             --text-dim: #8b949e;
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout */
         .sidebar-left { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 50; }
         .main-area { flex: 1; display: flex; flex-direction: column; position: relative; }
         .sidebar-right { width: 450px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; z-index: 50; }
@@ -24,6 +24,7 @@
         .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
         .provider-status { display: flex; gap: 15px; }
         .status-item { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+        .status-item:hover { background: #21262d; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; transition: background 0.3s; }
         .dot.online { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
         .dot.offline { background: var(--accent-red); }
@@ -46,12 +47,17 @@
         .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
         .node-role { font-size: 11px; color: var(--text-dim); }
 
-        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 100; display: none; flex-direction: column; }
-        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
+        .terminal { height: 160px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px; }
+        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 100; display: none; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        .panel-header { padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; background: #161b22; border-radius: 12px 12px 0 0; }
+        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #d1d5db; }
 
-        textarea { flex: 1; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 20px; margin: 15px 0; resize: none; font-size: 15px; line-height: 1.6; }
+        textarea { flex: 1; width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 20px; margin: 15px 0; resize: none; font-size: 15px; line-height: 1.6; box-sizing: border-box; }
         .btn-run { background: var(--accent-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 450px; padding: 25px; }
+        input[type="password"] { width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 6px; color: white; padding: 12px; margin: 15px 0; box-sizing: border-box; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
@@ -66,11 +72,11 @@
 
     <div class="main-area">
         <div class="top-bar">
-            <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS Virtual Studio</div>
+            <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS STUDIO</div>
             <div class="provider-status">
                 <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
                 <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
-                <div class="status-item" onclick="openKeyModal('codex')"><div id="dot-codex" class="dot online"></div> Codex</div>
+                <div class="status-item" onclick="openKeyModal('codex')"><div id="dot-codex" class="dot"></div> Codex</div>
             </div>
             <div id="proj-name" style="font-size:12px; color:var(--accent-green)">로딩 중...</div>
         </div>
@@ -82,24 +88,23 @@
                 <div class="lane" id="lane-qa"><div class="lane-title">검증 & QA</div></div>
                 <div class="lane" id="lane-ops"><div class="lane-title">리뷰 & 배포</div></div>
             </div>
-
             <div class="overlay-panel" id="overlay-panel">
-                <div style="padding:10px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; background:#161b22;">
-                    <span id="panel-title">내용</span>
+                <div class="panel-header">
+                    <span id="panel-title" style="font-weight:bold; color:var(--accent-blue)">내용</span>
                     <button class="btn-run" style="padding:4px 12px; background:transparent; border:1px solid var(--border-color)" onclick="closePanel()">닫기</button>
                 </div>
                 <div class="panel-body" id="panel-content"></div>
             </div>
         </div>
-
-        <div class="terminal" id="terminal"><div>[System] 연쇄 워크플로우 엔진이 활성화되었습니다.</div></div>
+        <div class="terminal" id="terminal"><div>[System] 가상 스튜디오가 활성화되었습니다. AI를 클릭하여 업무를 시작하세요.</div></div>
     </div>
 
     <div class="sidebar-right" id="sidebar-right">
         <h3 id="drawer-title" style="color:var(--accent-blue); margin:0;">업무 할당</h3>
         <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin:5px 0 20px 0;"></p>
+        <button class="btn-run" style="background:var(--accent-orange); width:100%; margin-bottom:10px;" onclick="startWorkflow()">⛓️ 연쇄 협업 시작 (Chained)</button>
         <textarea id="prompt-input" placeholder="에이전트에게 내릴 지시사항을 입력하세요..."></textarea>
-        <button class="btn-run" id="btn-workflow" onclick="startWorkflow()">⛓️ 연쇄 워크플로우 시작 (Chained)</button>
+        <button class="btn-run" style="width:100%;" onclick="assignTask()">단일 에이전트 실행</button>
         <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
     </div>
 
@@ -115,10 +120,7 @@
     </div>
 
     <script>
-        let selectedAgent = null;
-        let selectedFiles = new Set();
-        let targetProvider = '';
-
+        let selectedAgent = null; let selectedFiles = new Set(); let targetProvider = '';
         const agents = [
             { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "분석 및 태스크 분해" },
             { id: "spec", name: "Spec Writer", role: "명세 작성자", dept: "plan", desc: "SPEC.md 작성" },
@@ -131,12 +133,18 @@
             { id: "test", name: "Tester", role: "테스터", dept: "qa", desc: "테스트 작성" },
             { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "품질 검증" },
             { id: "fend", name: "Frontend Spec", role: "UI 전문가", dept: "qa", desc: "E2E 테스트" },
-            { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 회귀" },
-            { id: "perf", name: "Perf Engineer", role: "성능 전문가", dept: "qa", desc: "병목 분석" },
+            { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 검사" },
+            { id: "perf", name: "Perf Engineer", role: "성능 전문가", dept: "qa", desc: "성능 분석" },
             { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", desc: "코드 리뷰" },
             { id: "sec", name: "Security Audit", role: "보안 감사", dept: "ops", desc: "보안 점검" },
             { id: "devops", name: "DevOps", role: "운영자", dept: "ops", desc: "배포 자동화" }
         ];
+
+        function getIcon(f) {
+            const ext = f.split('.').pop().toLowerCase();
+            const dict = { py:'🐍', go:'🐹', md:'📝', json:'📦', yaml:'⚙️', yml:'⚙️', sh:'🐚', bat:'🐚' };
+            return dict[ext] || '📄';
+        }
 
         async function loadFiles() {
             const res = await fetch('/api/files/list');
@@ -147,59 +155,14 @@
                 const item = document.createElement('div');
                 item.className = 'file-item';
                 const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.className = 'file-checkbox';
+                cb.type = 'checkbox'; cb.className = 'file-checkbox';
                 cb.onchange = () => { if(cb.checked) selectedFiles.add(f); else selectedFiles.delete(f); document.getElementById('sel-count').innerText = selectedFiles.size; };
                 const span = document.createElement('span');
-                span.innerHTML = '📄 ' + f;
-                span.onclick = async () => {
-                    const r = await fetch('/api/files/read?path=' + encodeURIComponent(f));
-                    showPanel(f, await r.text());
-                };
-                item.appendChild(cb);
-                item.appendChild(span);
+                span.className = 'file-name'; span.innerHTML = getIcon(f) + ' ' + f;
+                span.onclick = async () => { const r = await fetch('/api/files/read?path=' + encodeURIComponent(f)); showPanel(f, await r.text()); };
+                item.appendChild(cb); item.appendChild(span);
                 list.appendChild(item);
             });
-        }
-
-        async function startWorkflow() {
-            let currentId = selectedAgent.id;
-            let prompt = document.getElementById('prompt-input').value;
-            closeDrawer();
-            addLog("System", "연쇄 워크플로우를 시작합니다.");
-
-            while(currentId) {
-                const node = document.getElementById('node-' + currentId);
-                node.classList.add('active');
-                addLog(currentId.toUpperCase(), "작업을 시작합니다...");
-
-                const res = await fetch('/api/workflow/run', {
-                    method: 'POST',
-                    body: JSON.stringify({ agentId: currentId, prompt, context: Array.from(selectedFiles) })
-                });
-                const data = await res.json();
-
-                node.classList.remove('active');
-                node.classList.add('completed');
-                addLog(currentId.toUpperCase(), "작업 완료. 다음 단계로 넘깁니다.");
-
-                // 다음 단계 설정
-                currentId = data.nextAgent;
-                prompt = data.output; // AI의 답변이 다음 에이전트의 입력이 됨!
-                if(!currentId) {
-                    addLog("System", "모든 워크플로우가 성공적으로 끝났습니다.");
-                    break;
-                }
-                await new Promise(r => setTimeout(r, 1000)); // 시각적 효과를 위한 대기
-            }
-        }
-
-        function addLog(agent, msg) {
-            const term = document.getElementById('terminal');
-            const div = document.createElement('div');
-            div.innerHTML = '<span style="color:var(--accent-orange)">[' + agent + ']</span> ' + msg;
-            term.appendChild(div);
-            term.scrollTop = term.scrollHeight;
         }
 
         function openKeyModal(p) { targetProvider = p; document.getElementById('key-modal-title').innerText = p.toUpperCase() + ' API 키 등록'; document.getElementById('key-modal').style.display = 'flex'; }
@@ -207,37 +170,85 @@
         async function saveApiKey() {
             const key = document.getElementById('api-key-input').value;
             await fetch('/api/providers/keys', { method: 'POST', body: JSON.stringify({ provider: targetProvider, key }) });
-            closeKeyModal();
-            updateHealth();
+            closeKeyModal(); updateHealth();
         }
 
         async function updateHealth() {
-            const res = await fetch('/api/providers/health');
-            const data = await res.json();
-            Object.keys(data).forEach(id => {
-                const d = document.getElementById('dot-' + id);
-                if(d) d.className = 'dot ' + (data[id] ? 'online' : 'offline');
-            });
+            try {
+                const res = await fetch('/api/providers/health');
+                const data = await res.json();
+                Object.keys(data).forEach(id => {
+                    const d = document.getElementById('dot-' + id);
+                    if(d) d.className = 'dot ' + (data[id] ? 'online' : 'offline');
+                });
+            } catch(e) {}
         }
 
         function showPanel(t, c) { document.getElementById('panel-title').innerText = t; document.getElementById('panel-content').innerText = c; document.getElementById('overlay-panel').style.display = 'flex'; }
         function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
         function openDrawer(a) { selectedAgent = a; document.getElementById('drawer-title').innerText = a.name; document.getElementById('drawer-desc').innerText = a.desc; document.getElementById('sidebar-right').style.display = 'flex'; }
         function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
+        function addLog(agent, msg) {
+            const term = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.innerHTML = '<span style="color:var(--accent-orange)">[' + agent + ']</span> ' + msg;
+            term.appendChild(div); term.scrollTop = term.scrollHeight;
+        }
+
+        async function assignTask() {
+            const prompt = document.getElementById('prompt-input').value; if(!prompt) return;
+            const agent = selectedAgent; closeDrawer();
+            const node = document.getElementById('node-' + agent.id);
+            node.classList.add('active');
+            addLog(agent.name, "분석 시작...");
+            
+            const res = await fetch('/api/workflow/run', {
+                method: 'POST', body: JSON.stringify({ agentId: agent.id, prompt, context: Array.from(selectedFiles) })
+            });
+            const data = await res.json();
+            node.classList.remove('active');
+            if(data.status === 'error') {
+                addLog("System", "❌ 에러: " + data.message);
+                alert(data.message);
+            } else {
+                addLog(agent.name, "작업 완료.");
+                showPanel(agent.name + "의 분석 보고서", data.output);
+            }
+        }
+
+        async function startWorkflow() {
+            let currentId = selectedAgent.id;
+            let prompt = document.getElementById('prompt-input').value;
+            if(!prompt) return;
+            closeDrawer();
+            addLog("System", "연쇄 협업 모드를 시작합니다.");
+            while(currentId) {
+                const node = document.getElementById('node-' + currentId);
+                node.classList.add('active');
+                addLog(currentId.toUpperCase(), "작업 수행 중...");
+                const res = await fetch('/api/workflow/run', {
+                    method: 'POST', body: JSON.stringify({ agentId: currentId, prompt, context: Array.from(selectedFiles) })
+                });
+                const data = await res.json();
+                node.classList.remove('active');
+                if(data.status === 'error') { addLog("System", "❌ 중단됨: " + data.message); break; }
+                node.classList.add('completed');
+                currentId = data.nextAgent; prompt = data.output;
+                if(!currentId) { addLog("System", "🏁 모든 과정이 완료되었습니다."); break; }
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
 
         function init() {
             agents.forEach(a => {
                 const lane = document.getElementById('lane-' + a.dept);
                 const node = document.createElement('div');
-                node.className = 'node';
-                node.id = 'node-' + a.id;
+                node.className = 'node'; node.id = 'node-' + a.id;
                 node.onclick = () => openDrawer(a);
                 node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>';
                 lane.appendChild(node);
             });
-            loadFiles();
-            updateHealth();
-            setInterval(updateHealth, 5000);
+            loadFiles(); updateHealth(); setInterval(updateHealth, 5000);
             fetch('/api/status').then(r => r.json()).then(d => document.getElementById('proj-name').innerText = "PROJECT: " + d.project.toUpperCase());
         }
         init();
