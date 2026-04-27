@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -77,18 +76,15 @@ func newUICmd() *cobra.Command {
 
 				fmt.Printf("🚀 [%s] AI 분석 시작: %s\n", req.AgentID, req.Prompt)
 
-				// 1. 참조 파일 내용 읽기 (Context 주입)
 				var contextContent strings.Builder
 				for _, path := range req.Context {
 					data, _ := os.ReadFile(path)
 					contextContent.WriteString(fmt.Sprintf("\n--- File: %s ---\n%s\n", path, string(data)))
 				}
 
-				// 2. 최종 프롬프트 구성 (역할 부여)
 				finalPrompt := fmt.Sprintf("당신은 %s 역할의 AI 에이전트입니다. 다음 요청을 분석하고 답변하세요.\n\n[요청]\n%s\n\n[참조 코드]%s", 
 					req.AgentID, req.Prompt, contextContent.String())
 
-				// 3. 실제 AI 엔진 실행
 				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
 					providers = append(providers, orchestra.ProviderConfig{
@@ -98,7 +94,7 @@ func newUICmd() *cobra.Command {
 
 				orchCfg := orchestra.OrchestraConfig{
 					Prompt:         finalPrompt,
-					Strategy:       orchestra.StrategyFastest, // 단일 에이전트 요청은 가장 빠른 응답 사용
+					Strategy:       orchestra.StrategyFastest,
 					Providers:      providers,
 					TimeoutSeconds: 120,
 					SubprocessMode: true,
@@ -110,14 +106,13 @@ func newUICmd() *cobra.Command {
 					return
 				}
 
-				// 4. 실제 AI가 한 답변 전달
 				json.NewEncoder(w).Encode(map[string]string{
 					"status": "success",
 					"message": result.Merged,
 				})
 			})
 
-			// API: 3인 협업 토론 실행 (Orchestra 전용)
+			// API: 3인 협업 토론 실행
 			http.HandleFunc("/api/orchestra/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
