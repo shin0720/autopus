@@ -11,67 +11,68 @@
             --accent-blue: #58a6ff;
             --accent-green: #3fb950;
             --accent-red: #f85149;
-            --accent-orange: #d29922;
             --text-main: #c9d1d9;
             --text-dim: #8b949e;
-            --terminal-bg: #010409;
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .sidebar-left { width: 250px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 50; }
+        /* Layout */
+        .sidebar-left { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 50; }
         .main-area { flex: 1; display: flex; flex-direction: column; position: relative; }
         .sidebar-right { width: 400px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; z-index: 50; }
         
-        .top-bar { height: 50px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
-        .provider-status { display: flex; gap: 15px; font-size: 11px; }
-        .status-item { display: flex; align-items: center; gap: 5px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; transition: background 0.3s; }
-        .dot.online { background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
-        .dot.offline { background: var(--accent-red); box-shadow: 0 0 5px var(--accent-red); }
+        .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
+        .provider-status { display: flex; gap: 15px; }
+        .status-item { display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.2s; }
+        .status-item:hover { background: #21262d; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; }
+        .dot.online { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .dot.offline { background: var(--accent-red); }
 
+        /* File Explorer */
+        .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
+        .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .file-item:hover { background: #1f242c; }
+        .file-checkbox { width: 14px; height: 14px; cursor: pointer; margin: 0; }
+        .file-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Canvas & Nodes */
         .canvas { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; }
         .lane-container { display: flex; width: 100%; height: 100%; position: absolute; pointer-events: none; }
         .lane { flex: 1; border-right: 1px dashed #30363d; display: flex; flex-direction: column; align-items: center; padding-top: 40px; }
         .lane-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 20px; background: #1f242c; padding: 3px 10px; border-radius: 10px; }
+        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 12px; margin-bottom: 15px; pointer-events: auto; cursor: pointer; transition: 0.2s; }
+        .node:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+        .node.active { border-color: var(--accent-blue); animation: pulse 1.5s infinite; }
 
-        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 170px; padding: 12px; margin-bottom: 15px; pointer-events: auto; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
-        .node:hover { border-color: var(--accent-blue); transform: scale(1.03); }
-        .node.active { border-color: var(--accent-orange); box-shadow: 0 0 15px rgba(210, 153, 34, 0.4); animation: pulse 1.5s infinite; }
-        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
-        .node-role { font-size: 11px; color: var(--text-dim); }
-
-        .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
-        .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .file-item:hover { background: #1f242c; }
-
-        .terminal { height: 180px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
-        .log-entry { margin-bottom: 5px; }
-        .log-agent { color: var(--accent-orange); font-weight: bold; margin-right: 10px; }
-
-        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 100; display: none; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        .panel-header { padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; background: #161b22; border-radius: 12px 12px 0 0; }
-        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; color: #d1d5db; line-height: 1.6; }
-
-        textarea { flex: 1; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 15px; margin: 15px 0; resize: none; font-size: 14px; }
+        /* Overlay & Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 12px; width: 450px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+        .modal h3 { margin: 0 0 15px 0; color: var(--accent-blue); }
+        input[type="password"], textarea { width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 6px; color: white; padding: 12px; margin: 15px 0; font-size: 14px; box-sizing: border-box; }
         .btn-run { background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-orchestra { background: var(--accent-orange); margin-bottom: 10px; }
+        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
+    <!-- Sidebar: File Explorer -->
     <div class="sidebar-left">
-        <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:bold;">📁 파일 탐색기</div>
+        <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:bold; display:flex; justify-content:space-between;">
+            📁 파일 탐색기 <span id="sel-count" style="color:var(--accent-blue); font-size:10px;">0</span>
+        </div>
         <div class="file-list" id="file-list"></div>
     </div>
 
+    <!-- Main Area -->
     <div class="main-area">
         <div class="top-bar">
-            <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS STUDIO</div>
+            <div style="font-weight:900; color:var(--accent-blue); cursor:pointer;" onclick="location.reload()">🐙 AUTOPUS STUDIO</div>
             <div class="provider-status">
-                <div class="status-item"><div id="dot-claude" class="dot"></div> Claude</div>
-                <div class="status-item"><div id="dot-gemini" class="dot"></div> Gemini</div>
-                <div class="status-item"><div id="dot-codex" class="dot"></div> Codex</div>
+                <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
+                <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
+                <div class="status-item"><div id="dot-codex" class="dot online"></div> Codex</div>
             </div>
             <div id="proj-name" style="font-size:12px; color:var(--accent-green)">로딩 중...</div>
         </div>
@@ -84,44 +85,59 @@
                 <div class="lane" id="lane-ops"><div class="lane-title">리뷰 & 배포</div></div>
             </div>
 
-            <div class="overlay-panel" id="overlay-panel">
-                <div style="padding:10px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; background:#161b22;">
-                    <span id="panel-title">내용</span>
+            <!-- Overlay for Reports/Code -->
+            <div id="overlay-panel" style="position:absolute; top:20px; left:20px; right:20px; bottom:20px; background:#0d1117; border:1px solid var(--border-color); border-radius:12px; z-index:100; display:none; flex-direction:column;">
+                <div style="padding:10px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; background:#161b22; border-radius:12px 12px 0 0;">
+                    <span id="panel-title" style="font-weight:bold; color:var(--accent-blue)">내용</span>
                     <button class="btn-run" style="padding:4px 12px; background:transparent; border:1px solid var(--border-color)" onclick="closePanel()">닫기</button>
                 </div>
-                <div class="panel-body" id="panel-content"></div>
+                <div id="panel-content" style="flex:1; padding:25px; overflow:auto; white-space:pre-wrap; font-size:13px; line-height:1.6;"></div>
             </div>
         </div>
 
-        <div class="terminal" id="terminal">
-            <div>[System] 스튜디오가 준비되었습니다.</div>
-        </div>
+        <div class="terminal" id="terminal"><div>[System] 스튜디오 연결 완료. AI 이름을 클릭하여 API 키를 등록하세요.</div></div>
     </div>
 
+    <!-- Right Sidebar: Work Panel -->
     <div class="sidebar-right" id="sidebar-right">
-        <div style="font-size:18px; font-weight:bold; color:var(--accent-blue); margin-bottom:5px;" id="drawer-title"></div>
-        <div style="font-size:11px; color:var(--text-dim); margin-bottom:20px;" id="drawer-desc"></div>
+        <h3 id="drawer-title" style="color:var(--accent-blue); margin:0;">업무 할당</h3>
+        <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin:5px 0 20px 0;"></p>
         
-        <button class="btn-run btn-orchestra" id="btn-orchestra" onclick="runOrchestra()">🎭 3인 AI 협업 토론 실행</button>
-        
-        <textarea id="prompt-input" placeholder="지시사항을 입력하세요..."></textarea>
-        <button class="btn-run" onclick="assignTask()">단일 에이전트 실행</button>
-        <button class="btn-run" style="background:transparent; color:var(--text-dim); margin-top:10px;" onclick="closeDrawer()">취소</button>
+        <button class="btn-run" style="background:var(--accent-orange); width:100%; margin-bottom:10px;" onclick="runOrchestra()">🎭 3인 AI 협업 토론 (Orchestra)</button>
+        <textarea id="prompt-input" placeholder="상세 지시사항을 입력하세요..."></textarea>
+        <button class="btn-run" style="width:100%;" onclick="assignTask()">단일 에이전트 실행</button>
+        <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay" id="key-modal">
+        <div class="modal">
+            <h3 id="key-modal-title">API 키 등록</h3>
+            <p style="font-size:12px; color:var(--text-dim);">입력한 키는 현재 세션에 즉시 적용됩니다.</p>
+            <input type="password" id="api-key-input" placeholder="키를 입력하세요 (sk-...)">
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-run" style="background:transparent; color:var(--text-dim);" onclick="closeKeyModal()">취소</button>
+                <button class="btn-run" onclick="saveApiKey()">적용하기</button>
+            </div>
+        </div>
     </div>
 
     <script>
         let selectedAgent = null;
+        let selectedFiles = new Set();
+        let currentTargetProvider = '';
+
         const agents = [
-            { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "요구사항 분석 및 태스크 분해" },
-            { id: "spec", name: "Spec Writer", role: "명세 작성자", dept: "plan", desc: "EARS 명세서 작성" },
-            { id: "arch", name: "Architect", role: "아키텍트", dept: "plan", desc: "시스템 구조 설계" },
-            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", desc: "코드분석" },
+            { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "분석 및 태스크 분해" },
+            { id: "spec", name: "Spec Writer", role: "명세 작성자", dept: "plan", desc: "SPEC.md 작성" },
+            { id: "arch", name: "Architect", role: "아키텍트", dept: "plan", desc: "구조 설계" },
+            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", desc: "코드 분석" },
             { id: "exec", name: "Executor", role: "실행자", dept: "dev", desc: "코드 구현" },
-            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "복잡 태스크" },
+            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "장기 태스크" },
             { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", desc: "버그 수정" },
             { id: "anno", name: "Annotator", role: "태그 관리자", dept: "dev", desc: "주석 관리" },
             { id: "test", name: "Tester", role: "테스터", dept: "qa", desc: "테스트 작성" },
-            { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "코드 검증" },
+            { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "품질 검증" },
             { id: "fend", name: "Frontend Spec", role: "UI 전문가", dept: "qa", desc: "E2E 테스트" },
             { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 검사" },
             { id: "perf", name: "Perf Engineer", role: "성능 전문가", dept: "qa", desc: "성능 분석" },
@@ -130,13 +146,60 @@
             { id: "devops", name: "DevOps", role: "운영자", dept: "ops", desc: "배포 자동화" }
         ];
 
-        function getFileIcon(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            if (ext === 'py') return '🐍';
-            if (ext === 'md') return '📝';
-            if (ext === 'go') return '🐹';
-            if (ext === 'json') return '📦';
-            return '📄';
+        function getFileIcon(f) {
+            const ext = f.split('.').pop().toLowerCase();
+            const icons = { py: '🐍', go: '🐹', md: '📝', json: '📦', yaml: '⚙️', yml: '⚙️', sh: '🐚', bat: '🐚', txt: '📄', log: '📄' };
+            return icons[ext] || '📄';
+        }
+
+        async function loadFiles() {
+            const res = await fetch('/api/files/list');
+            const files = await res.json();
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            files.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'file-checkbox';
+                cb.onchange = (e) => {
+                    if (cb.checked) selectedFiles.add(f); else selectedFiles.delete(f);
+                    document.getElementById('sel-count').innerText = selectedFiles.size;
+                };
+
+                const span = document.createElement('span');
+                span.className = 'file-name';
+                span.innerHTML = getFileIcon(f) + ' ' + f;
+                span.onclick = async () => {
+                    const r = await fetch('/api/files/read?path=' + encodeURIComponent(f));
+                    showPanel(f, await r.text());
+                };
+
+                item.appendChild(cb);
+                item.appendChild(span);
+                list.appendChild(item);
+            });
+        }
+
+        function openKeyModal(provider) {
+            currentTargetProvider = provider;
+            document.getElementById('key-modal-title').innerText = provider.toUpperCase() + ' API 키 등록';
+            document.getElementById('api-key-input').value = '';
+            document.getElementById('key-modal').style.display = 'flex';
+        }
+        function closeKeyModal() { document.getElementById('key-modal').style.display = 'none'; }
+        async function saveApiKey() {
+            const key = document.getElementById('api-key-input').value;
+            if (!key) return alert('키를 입력하세요.');
+            await fetch('/api/providers/keys', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ provider: currentTargetProvider, key })
+            });
+            closeKeyModal();
+            updateHealth();
         }
 
         async function updateHealth() {
@@ -150,88 +213,54 @@
             } catch(e) {}
         }
 
-        async function loadFiles() {
-            const res = await fetch('/api/files/list');
-            const files = await res.json();
-            const list = document.getElementById('file-list');
-            list.innerHTML = '';
-            files.forEach(f => {
-                const item = document.createElement('div');
-                item.className = 'file-item';
-                item.innerHTML = getFileIcon(f) + ' ' + f;
-                item.onclick = async () => {
-                    const r = await fetch('/api/files/read?path=' + encodeURIComponent(f));
-                    showPanel(f, await r.text());
-                };
-                list.appendChild(item);
-            });
-        }
-
         function showPanel(t, c) {
             document.getElementById('panel-title').innerText = t;
             document.getElementById('panel-content').innerText = c;
             document.getElementById('overlay-panel').style.display = 'flex';
         }
         function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
-        
         function openDrawer(a) {
             selectedAgent = a;
             document.getElementById('drawer-title').innerText = a.name;
             document.getElementById('drawer-desc').innerText = a.desc;
             document.getElementById('sidebar-right').style.display = 'flex';
-            // 토론 버튼은 기획/설계 단계 에이전트에서만 보이게 하거나 항상 보이게 할 수 있음
-            document.getElementById('btn-orchestra').style.display = (a.dept === 'plan') ? 'block' : 'none';
         }
         function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
 
-        function addLog(agent, msg) {
-            const term = document.getElementById('terminal');
-            const div = document.createElement('div');
-            div.innerHTML = '<span class="log-agent">[' + agent + ']</span> ' + msg;
-            term.appendChild(div);
-            term.scrollTop = term.scrollHeight;
-        }
-
-        // 3인 협업 토론 실행 (실제 오케스트라 엔진 호출)
         async function runOrchestra() {
             const prompt = document.getElementById('prompt-input').value;
-            if (!prompt) return alert('프롬프트를 입력하세요!');
+            if (!prompt) return alert('지시사항을 입력하세요.');
             closeDrawer();
+            const activeNodes = ['planner', 'spec', 'arch'].map(id => document.getElementById('node-' + id));
+            activeNodes.forEach(n => n.classList.add('active'));
             
-            // 시각적 효과: 관련 에이전트들 모두 활성화
-            const activeIds = ['planner', 'spec', 'arch']; 
-            activeIds.forEach(id => document.getElementById('node-' + id).classList.add('active'));
-            addLog("System", "3인 AI 협업 토론을 시작합니다. (Claude, Gemini, Codex 대기 중)");
-
             const res = await fetch('/api/orchestra/run', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ prompt })
             });
             const data = await res.json();
-            
-            activeIds.forEach(id => document.getElementById('node-' + id).classList.remove('active'));
-            showPanel("3인 협업 토론 결과", data.message);
-            addLog("System", "협업 토론이 완료되었습니다.");
+            activeNodes.forEach(n => n.classList.remove('active'));
+            showPanel("3인 토론 결과 보고서", data.message);
         }
 
         async function assignTask() {
             const prompt = document.getElementById('prompt-input').value;
+            if (!prompt) return alert('지시사항을 입력하세요.');
             const agent = selectedAgent;
-            if (!prompt) return;
             closeDrawer();
             const node = document.getElementById('node-' + agent.id);
             node.classList.add('active');
             
             const res = await fetch('/api/agent/assign', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ agentId: agent.id, prompt })
             });
             const data = await res.json();
             setTimeout(() => {
                 node.classList.remove('active');
-                showPanel(agent.name + " 결과", data.message);
+                showPanel(agent.name + " 작업 완료", data.message);
             }, 1000);
         }
 
@@ -248,10 +277,9 @@
             loadFiles();
             updateHealth();
             setInterval(updateHealth, 5000);
+            fetch('/api/status').then(r => r.json()).then(d => document.getElementById('proj-name').innerText = "프로젝트: " + d.project.toUpperCase());
         }
-
         init();
-        fetch('/api/status').then(r => r.json()).then(d => document.getElementById('proj-name').innerText = "프로젝트: " + d.project.toUpperCase());
     </script>
 </body>
 </html>

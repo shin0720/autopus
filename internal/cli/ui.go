@@ -44,7 +44,7 @@ func newUICmd() *cobra.Command {
 				})
 			})
 
-			// API: AI 연결 상태
+			// API: AI 연결 상태 확인
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
 				health := make(map[string]bool)
 				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
@@ -53,7 +53,21 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(health)
 			})
 
-			// API: 3인 AI 토론 실행
+			// API: API 키 서버에 등록 (메모리 반영)
+			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				if req.Provider == "claude" {
+					os.Setenv("ANTHROPIC_API_KEY", req.Key)
+					os.Setenv("CLAUDE_API_KEY", req.Key)
+				} else if req.Provider == "gemini" {
+					os.Setenv("GEMINI_API_KEY", req.Key)
+				}
+				fmt.Printf("🔑 [%s] API 키가 새롭게 등록되었습니다.\n", req.Provider)
+				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+			})
+
+			// API: 3인 토론 실행
 			http.HandleFunc("/api/orchestra/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -61,43 +75,30 @@ func newUICmd() *cobra.Command {
 				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
 					providers = append(providers, orchestra.ProviderConfig{
-						Name:   name,
-						Binary: p.Binary,
-						Args:   p.Args,
+						Name: name, Binary: p.Binary, Args: p.Args,
 					})
 				}
 
 				orchCfg := orchestra.OrchestraConfig{
-					Prompt:         req.Prompt,
-					Strategy:       orchestra.StrategyConsensus,
-					Providers:      providers,
-					TimeoutSeconds: 120,
-					SubprocessMode: true,
+					Prompt: req.Prompt, Strategy: orchestra.StrategyConsensus,
+					Providers: providers, TimeoutSeconds: 120, SubprocessMode: true,
 				}
 
-				ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
-				defer cancel()
-
-				result, err := orchestra.RunOrchestra(ctx, orchCfg)
+				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
 					return
 				}
 
-				var finalReport strings.Builder
-				finalReport.WriteString("### 🎭 3인 AI 협업 토론 결과 보고서\n\n")
+				var report strings.Builder
+				report.WriteString("### 🎭 3인 협업 토론 결과\n\n")
 				for _, resp := range result.Responses {
-					finalReport.WriteString(fmt.Sprintf("#### [%s] 의견\n%s\n\n", resp.Provider, resp.Output))
+					report.WriteString(fmt.Sprintf("#### [%s]\n%s\n\n", resp.Provider, resp.Output))
 				}
-
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
-					"status": "success",
-					"message": finalReport.String(),
-				})
+				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": report.String()})
 			})
 
-			// API: 파일 목록
+			// API: 파일 목록 및 내용
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
@@ -107,26 +108,13 @@ func newUICmd() *cobra.Command {
 				})
 				json.NewEncoder(w).Encode(files)
 			})
-
-			// API: 파일 내용 읽기
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path")
 				content, _ := os.ReadFile(path)
 				w.Write(content)
 			})
 
-			// API: 단일 업무 할당
-			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				time.Sleep(1 * time.Second)
-				json.NewEncoder(w).Encode(map[string]string{
-					"status": "success", 
-					"message": fmt.Sprintf("%s 에이전트가 작업을 완료했습니다.", req.AgentID),
-				})
-			})
-
-			// UI 서빙
+			// UI 서빙 (Embed FS 사용)
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				data, _ := content.FS.ReadFile("ui/dashboard.html")
