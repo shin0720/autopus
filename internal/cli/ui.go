@@ -58,7 +58,6 @@ func newUICmd() *cobra.Command {
 				var req struct { Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
 
-				// 타입 변환: map[string]config.ProviderEntry -> []orchestra.ProviderConfig
 				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
 					providers = append(providers, orchestra.ProviderConfig{
@@ -88,7 +87,7 @@ func newUICmd() *cobra.Command {
 				var finalReport strings.Builder
 				finalReport.WriteString("### 🎭 3인 AI 협업 토론 결과 보고서\n\n")
 				for _, resp := range result.Responses {
-					finalReport.WriteString(fmt.Sprintf("#### [%s] 의견\n%s\n\n", resp.ProviderName, resp.RawOutput))
+					finalReport.WriteString(fmt.Sprintf("#### [%s] 의견\n%s\n\n", resp.Provider, resp.Output))
 				}
 
 				w.Header().Set("Content-Type", "application/json")
@@ -116,7 +115,7 @@ func newUICmd() *cobra.Command {
 				w.Write(content)
 			})
 
-			// API: 단일 업무 할당 (Simulated)
+			// API: 단일 업무 할당
 			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
