@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/content"
-	"github.com/shin0720/auto-adk/pkg/orchestra" // 실제 토론 엔진
+	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
@@ -43,47 +44,50 @@ func newUICmd() *cobra.Command {
 				})
 			})
 
-			// API: AI 연결 상태 (Claude, Gemini, Codex)
+			// API: AI 연결 상태
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
 				health := make(map[string]bool)
 				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
 				health["gemini"] = os.Getenv("GEMINI_API_KEY") != ""
-				health["codex"] = true // Always assumes true as it uses local binary
+				health["codex"] = true
 				json.NewEncoder(w).Encode(health)
 			})
 
-			// API: 3인 AI 토론 실행 (auto plan 실전 버전)
+			// API: 3인 AI 토론 실행
 			http.HandleFunc("/api/orchestra/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
 
-				fmt.Printf("🎭 3인 AI 협업 토론 시작: %s\n", req.Prompt)
+				// 타입 변환: map[string]config.ProviderEntry -> []orchestra.ProviderConfig
+				var providers []orchestra.ProviderConfig
+				for name, p := range cfg.Orchestra.Providers {
+					providers = append(providers, orchestra.ProviderConfig{
+						Name:   name,
+						Binary: p.Binary,
+						Args:   p.Args,
+					})
+				}
 
-				// 1. 오케스트라 설정 생성
 				orchCfg := orchestra.OrchestraConfig{
 					Prompt:         req.Prompt,
 					Strategy:       orchestra.StrategyConsensus,
-					Providers:      cfg.Orchestra.Providers,
+					Providers:      providers,
 					TimeoutSeconds: 120,
-					SubprocessMode: true, // UI에서는 백그라운드로 실행
+					SubprocessMode: true,
 				}
 
-				// 2. 실제 오케스트라 엔진 실행 (여기서 Claude, Gemini, Codex가 동시에 깨어납니다)
-				// 이 부분은 시간이 걸리므로 실제 구현 시 고루틴과 WebSocket으로 스트리밍하는 것이 좋으나
-				// 현재는 결과를 한 번에 받아오는 방식으로 우선 연결합니다.
 				ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 				defer cancel()
 
-				responses, err := orchestra.RunOrchestra(ctx, orchCfg)
+				result, err := orchestra.RunOrchestra(ctx, orchCfg)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
 					return
 				}
 
-				// 3. 토론 결과 합치기
 				var finalReport strings.Builder
 				finalReport.WriteString("### 🎭 3인 AI 협업 토론 결과 보고서\n\n")
-				for _, resp := range responses {
+				for _, resp := range result.Responses {
 					finalReport.WriteString(fmt.Sprintf("#### [%s] 의견\n%s\n\n", resp.ProviderName, resp.RawOutput))
 				}
 
@@ -94,7 +98,7 @@ func newUICmd() *cobra.Command {
 				})
 			})
 
-			// API: 파일 목록 및 읽기 (생략 - 기존과 동일)
+			// API: 파일 목록
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
@@ -104,10 +108,23 @@ func newUICmd() *cobra.Command {
 				})
 				json.NewEncoder(w).Encode(files)
 			})
+
+			// API: 파일 내용 읽기
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path")
 				content, _ := os.ReadFile(path)
 				w.Write(content)
+			})
+
+			// API: 단일 업무 할당 (Simulated)
+			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				time.Sleep(1 * time.Second)
+				json.NewEncoder(w).Encode(map[string]string{
+					"status": "success", 
+					"message": fmt.Sprintf("%s 에이전트가 작업을 완료했습니다.", req.AgentID),
+				})
 			})
 
 			// UI 서빙
