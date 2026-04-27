@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/shin0720/auto-adk/pkg/config"
@@ -31,7 +30,7 @@ func newUICmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("🐙 Autopus Studio 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio (v2.0) 시작 중... http://%s\n", addr)
 
 			// API: 현재 설정 및 에이전트 상태
 			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +64,7 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 			})
 
-			// API: 실제 AI 구동 (단일 에이전트 및 3인 토론 통합)
+			// API: 실제 AI 구동 (에이전트별 분석 답변 생성)
 			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { 
 					AgentID string `json:"agentId"`
@@ -74,17 +73,20 @@ func newUICmd() *cobra.Command {
 				}
 				json.NewDecoder(r.Body).Decode(&req)
 
-				fmt.Printf("🚀 [%s] AI 분석 시작: %s\n", req.AgentID, req.Prompt)
+				fmt.Printf("🚀 [%s] AI 분석 요청 수신: %s\n", req.AgentID, req.Prompt)
 
-				var contextContent strings.Builder
-				for _, path := range req.Context {
-					data, _ := os.ReadFile(path)
-					contextContent.WriteString(fmt.Sprintf("\n--- File: %s ---\n%s\n", path, string(data)))
+				// 1. 컨텍스트 파일 읽기
+				var ctxFiles strings.Builder
+				for _, p := range req.Context {
+					data, _ := os.ReadFile(p)
+					ctxFiles.WriteString(fmt.Sprintf("\n--- FILE: %s ---\n%s\n", p, string(data)))
 				}
 
-				finalPrompt := fmt.Sprintf("당신은 %s 역할의 AI 에이전트입니다. 다음 요청을 분석하고 답변하세요.\n\n[요청]\n%s\n\n[참조 코드]%s", 
-					req.AgentID, req.Prompt, contextContent.String())
+				// 2. 에이전트 역할 주입 프롬프트
+				fullPrompt := fmt.Sprintf("당신은 소프트웨어 개발팀의 '%s' 전문가입니다. 현재 프로젝트 코드를 분석하고 사용자의 요청에 전문적으로 답변하세요. 반드시 한국어로 답변하세요.\n\n[사용자 요청]\n%s\n\n[참조된 프로젝트 코드]%s", 
+					req.AgentID, req.Prompt, ctxFiles.String())
 
+				// 3. 실제 오케스트라 엔진 실행
 				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
 					providers = append(providers, orchestra.ProviderConfig{
@@ -93,52 +95,44 @@ func newUICmd() *cobra.Command {
 				}
 
 				orchCfg := orchestra.OrchestraConfig{
-					Prompt:         finalPrompt,
-					Strategy:       orchestra.StrategyFastest,
-					Providers:      providers,
-					TimeoutSeconds: 120,
-					SubprocessMode: true,
+					Prompt: fullPrompt, Strategy: orchestra.StrategyFastest,
+					Providers: providers, TimeoutSeconds: 120, SubprocessMode: true,
 				}
 
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
 				if err != nil {
-					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
+					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "에러: " + err.Error()})
 					return
 				}
 
+				// 4. AI가 생성한 실제 텍스트 반환
 				json.NewEncoder(w).Encode(map[string]string{
 					"status": "success",
 					"message": result.Merged,
 				})
 			})
 
-			// API: 3인 협업 토론 실행
+			// API: 3인 협업 토론 (Orchestra)
 			http.HandleFunc("/api/orchestra/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
-
 				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
-					providers = append(providers, orchestra.ProviderConfig{
-						Name: name, Binary: p.Binary, Args: p.Args,
-					})
+					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
 				}
-
 				orchCfg := orchestra.OrchestraConfig{
 					Prompt: req.Prompt, Strategy: orchestra.StrategyConsensus,
 					Providers: providers, TimeoutSeconds: 120, SubprocessMode: true,
 				}
-
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
 					return
 				}
-
 				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": result.Merged})
 			})
 
-			// API: 파일 목록
+			// API: 파일 목록 및 내용
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
@@ -148,8 +142,6 @@ func newUICmd() *cobra.Command {
 				})
 				json.NewEncoder(w).Encode(files)
 			})
-
-			// API: 파일 내용 읽기
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path")
 				content, _ := os.ReadFile(path)
