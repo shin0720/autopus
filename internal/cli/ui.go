@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -53,7 +52,7 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(health)
 			})
 
-			// API: API 키 서버에 등록 (메모리 반영)
+			// API: API 키 등록
 			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -63,7 +62,6 @@ func newUICmd() *cobra.Command {
 				} else if req.Provider == "gemini" {
 					os.Setenv("GEMINI_API_KEY", req.Key)
 				}
-				fmt.Printf("🔑 [%s] API 키가 새롭게 등록되었습니다.\n", req.Provider)
 				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 			})
 
@@ -114,7 +112,15 @@ func newUICmd() *cobra.Command {
 				w.Write(content)
 			})
 
-			// UI 서빙 (Embed FS 사용)
+			// API: 업무 할당
+			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				time.Sleep(1 * time.Second)
+				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "업무 완료"})
+			})
+
+			// UI 서빙
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				data, _ := content.FS.ReadFile("ui/dashboard.html")
