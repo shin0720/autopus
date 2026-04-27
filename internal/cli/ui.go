@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -65,7 +66,58 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 			})
 
-			// API: 3인 토론 실행
+			// API: 실제 AI 구동 (단일 에이전트 및 3인 토론 통합)
+			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { 
+					AgentID string `json:"agentId"`
+					Prompt  string `json:"prompt"`
+					Context []string `json:"context"`
+				}
+				json.NewDecoder(r.Body).Decode(&req)
+
+				fmt.Printf("🚀 [%s] AI 분석 시작: %s\n", req.AgentID, req.Prompt)
+
+				// 1. 참조 파일 내용 읽기 (Context 주입)
+				var contextContent strings.Builder
+				for _, path := range req.Context {
+					data, _ := os.ReadFile(path)
+					contextContent.WriteString(fmt.Sprintf("\n--- File: %s ---\n%s\n", path, string(data)))
+				}
+
+				// 2. 최종 프롬프트 구성 (역할 부여)
+				finalPrompt := fmt.Sprintf("당신은 %s 역할의 AI 에이전트입니다. 다음 요청을 분석하고 답변하세요.\n\n[요청]\n%s\n\n[참조 코드]%s", 
+					req.AgentID, req.Prompt, contextContent.String())
+
+				// 3. 실제 AI 엔진 실행
+				var providers []orchestra.ProviderConfig
+				for name, p := range cfg.Orchestra.Providers {
+					providers = append(providers, orchestra.ProviderConfig{
+						Name: name, Binary: p.Binary, Args: p.Args,
+					})
+				}
+
+				orchCfg := orchestra.OrchestraConfig{
+					Prompt:         finalPrompt,
+					Strategy:       orchestra.StrategyFastest, // 단일 에이전트 요청은 가장 빠른 응답 사용
+					Providers:      providers,
+					TimeoutSeconds: 120,
+					SubprocessMode: true,
+				}
+
+				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
+				if err != nil {
+					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
+					return
+				}
+
+				// 4. 실제 AI가 한 답변 전달
+				json.NewEncoder(w).Encode(map[string]string{
+					"status": "success",
+					"message": result.Merged,
+				})
+			})
+
+			// API: 3인 협업 토론 실행 (Orchestra 전용)
 			http.HandleFunc("/api/orchestra/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Prompt string `json:"prompt"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -88,39 +140,21 @@ func newUICmd() *cobra.Command {
 					return
 				}
 
-				var report strings.Builder
-				report.WriteString("### 🎭 3인 협업 토론 최종 결과\n\n")
-				for _, resp := range result.Responses {
-					report.WriteString(fmt.Sprintf("#### [%s]의 분석\n%s\n\n", resp.Provider, resp.Output))
-				}
-				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": report.String()})
+				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": result.Merged})
 			})
 
-			// API: 업무 할당 (질문에 대한 실제 답변 생성)
-			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				
-				// 시뮬레이션: 에이전트의 상세 답변
-				time.Sleep(2 * time.Second)
-				response := fmt.Sprintf("[%s 에이전트의 작업 보고서]\n\n입력하신 요청 '%s'를 완수했습니다.\n\n참조한 파일: %s\n\n수행 내용:\n1. 프로젝트 구조 분석을 통해 최적의 위치를 식별했습니다.\n2. 요청하신 로직에 따라 코드 수정을 제안/수행했습니다.\n3. 변경 사항이 시스템의 다른 부분에 미치는 영향을 검토했습니다.\n\n상세한 변경 내역은 파일 탐색기에서 해당 파일을 클릭하여 확인하실 수 있습니다.", req.AgentID, req.Prompt, strings.Join(req.Context, ", "))
-
-				json.NewEncoder(w).Encode(map[string]string{
-					"status": "success", 
-					"message": response,
-				})
-			})
-
-			// API: 파일 목록 및 내용
+			// API: 파일 목록
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err != nil || info.IsDir() || strings.HasPrefix(path, ".") { return nil }
+					if err != nil || info.IsDir() || strings.HasPrefix(path, ".") || strings.Contains(path, "node_modules") { return nil }
 					files = append(files, path)
 					return nil
 				})
 				json.NewEncoder(w).Encode(files)
 			})
+
+			// API: 파일 내용 읽기
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path")
 				content, _ := os.ReadFile(path)
