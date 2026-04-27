@@ -89,11 +89,26 @@ func newUICmd() *cobra.Command {
 				}
 
 				var report strings.Builder
-				report.WriteString("### 🎭 3인 협업 토론 결과\n\n")
+				report.WriteString("### 🎭 3인 협업 토론 최종 결과\n\n")
 				for _, resp := range result.Responses {
-					report.WriteString(fmt.Sprintf("#### [%s]\n%s\n\n", resp.Provider, resp.Output))
+					report.WriteString(fmt.Sprintf("#### [%s]의 분석\n%s\n\n", resp.Provider, resp.Output))
 				}
 				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": report.String()})
+			})
+
+			// API: 업무 할당 (질문에 대한 실제 답변 생성)
+			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				
+				// 시뮬레이션: 에이전트의 상세 답변
+				time.Sleep(2 * time.Second)
+				response := fmt.Sprintf("[%s 에이전트의 작업 보고서]\n\n입력하신 요청 '%s'를 완수했습니다.\n\n참조한 파일: %s\n\n수행 내용:\n1. 프로젝트 구조 분석을 통해 최적의 위치를 식별했습니다.\n2. 요청하신 로직에 따라 코드 수정을 제안/수행했습니다.\n3. 변경 사항이 시스템의 다른 부분에 미치는 영향을 검토했습니다.\n\n상세한 변경 내역은 파일 탐색기에서 해당 파일을 클릭하여 확인하실 수 있습니다.", req.AgentID, req.Prompt, strings.Join(req.Context, ", "))
+
+				json.NewEncoder(w).Encode(map[string]string{
+					"status": "success", 
+					"message": response,
+				})
 			})
 
 			// API: 파일 목록 및 내용
@@ -110,14 +125,6 @@ func newUICmd() *cobra.Command {
 				path := r.URL.Query().Get("path")
 				content, _ := os.ReadFile(path)
 				w.Write(content)
-			})
-
-			// API: 업무 할당
-			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				time.Sleep(1 * time.Second)
-				json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "업무 완료"})
 			})
 
 			// UI 서빙

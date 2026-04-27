@@ -1,27 +1,20 @@
-# SPEC-UI-001: 16인 가상 개발팀 시각화 대시보드
+# Autopus Virtual Studio 최종 설계 명세 (Frozen)
 
-## 1. 개요
-Autopus-ADK의 16인 에이전트 협업 체계를 n8n 스타일의 노드 기반 UI로 시각화하여, 사용자가 기획부터 배포까지의 전체 공정을 한눈에 파악하고 제어할 수 있도록 한다.
+## 1. 필수 UI 구성 요소
+- **좌측 파일 탐색기**: 
+    - [ ] 파일명 앞 이모지 아이콘 (py=🐍, go=🐹, md=📝, json=📦, yml=⚙️, sh=🐚)
+    - [ ] 파일 다중 선택을 위한 체크박스
+    - [ ] 파일 클릭 시 중앙 코드 뷰어 활성화
+- **상단 AI 상태바**:
+    - [ ] Claude, Gemini, Codex 상태 표시등 (초록/빨강)
+    - [ ] 클릭 시 API 키 등록 모달 팝업 활성화 (Codex 포함)
+- **중앙 캔버스**: 16인 에이전트 부서별 배치 및 연결선
+- **우측 업무 할당창 (Drawer)**:
+    - [ ] 넓고 쾌적한 텍스트 입력 공간 (최소 높이 300px 이상)
+    - [ ] 3인 토론 및 단일 실행 버튼
+- **하단 터미널**: 실시간 한글 작업 로그 스트리밍
 
-## 2. 핵심 요구사항 (EARS)
-- **WHILE** `auto ui` 서버가 구동 중인 동안, **THE SYSTEM SHALL** 브라우저를 통해 16명의 에이전트 노드를 부서별(기획, 개발, QA, 배포)로 배치하여 보여주어야 한다.
-- **WHEN** 특정 에이전트가 작업을 시작하면, **THE SYSTEM SHALL** 해당 노드의 테두리를 강조(Pulse)하고 실시간 한글 로그를 출력해야 한다.
-- **WHERE** 에이전트 간의 데이터 흐름이 발생할 때, **THE SYSTEM SHALL** 노드 사이의 연결선(Connector)을 따라 애니메이션 효과를 주어야 한다.
-- **THE SYSTEM SHALL** 모든 텍스트를 한국어로 표시하며, 윈도우/WSL 환경에서 모두 동일한 시각적 경험을 제공해야 한다.
-
-## 3. 에이전트 부서 배치 (16인)
-- **기획부**: Planner, Spec Writer, Architect, Explorer
-- **개발부**: Executor, Deep Worker, Debugger, Annotator
-- **QA부**: Tester, Validator, Frontend-Specialist, UX Validator, Perf-Engineer
-- **운영부**: Reviewer, Security Auditor, DevOps
-
-## 4. 기술 스택
-- **Backend**: Go (net/http), JSON API
-- **Frontend**: Vanilla JS (ES6+), CSS Grid/Flex, Canvas API (for lines)
-- **Data Flow**: `/api/status` (실시간 상태 동기화)
-
-## 5. 상태 정의
-- `IDLE`: 대기 중 (회색)
-- `RUNNING`: 작업 중 (파란색 애니메이션)
-- `SUCCESS`: 완료/승인 (초록색)
-- `FAILURE`: 오류/반려 (빨간색)
+## 2. API 통신 규약
+- `/api/agent/assign`: 에이전트의 실제 답변 내용을 `message` 필드에 담아 반환해야 함 (단순 "업무 완료" 금지)
+- `/api/providers/keys`: 입력된 키를 즉시 프로세스 환경 변수에 반영
+- `/api/orchestra/run`: 3인 AI 토론 결과를 통합 보고서 형식으로 반환
