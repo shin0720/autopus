@@ -1,0 +1,15 @@
+refactor(cli): ui.go 파일 분할 및 HTML 임베딩 처리 (300줄 이하 최적화)
+
+ui.go 내부의 거대한 dashboardHTML 상수를 별도 파일로 분리하고 go:embed를 사용하여 읽어오도록 수정하였습니다. 
+이를 통해 ui.go의 줄 수를 116줄로 줄여 프로젝트의 파일 크기 제한을 준수합니다.
+
+Constraint: 소스 코드 파일은 300줄을 초과할 수 없음
+Confidence: high
+Scope-risk: local
+Reversibility: trivial
+Directive: 없음
+Tested: go build, ui.go 줄 수 확인 (116줄)
+Not-tested: 실제 브라우저에서의 렌더링 확인 (환경 제약으로 생략)
+Related: GEMINI.md
+
+🐙 Autopus <noreply@autopus.co>
