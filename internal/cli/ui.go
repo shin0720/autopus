@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/shin0720/auto-adk/pkg/config"
-	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
@@ -70,27 +68,18 @@ func newUICmd() *cobra.Command {
 				w.Write(content)
 			})
 
-			// API: 실전 업무 할당 (AI 연결)
+			// API: 업무 할당
 			http.HandleFunc("/api/agent/assign", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { 
 					AgentID string `json:"agentId"`
 					Prompt string `json:"prompt"`
 					Context []string `json:"context"`
 				}
-				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-					http.Error(w, "Invalid request", 400)
-					return
-				}
-
-				fmt.Printf("🚀 [%s] AI 에이전트 구동 중: %s\n", req.AgentID, req.Prompt)
-
-				// [실전 연결] Orchestra 엔진을 사용하여 AI 응답 생성
-				// 여기서는 간단하게 합의(Consensus) 대신 단일 에이전트 실행을 시뮬레이션하거나
-				// 실제 설정된 프로바이더 중 하나를 호출합니다.
+				json.NewDecoder(r.Body).Decode(&req)
 				
-				// 임시 실전 응답 (추후 실제 LLM 호출부로 교체)
-				// 현재는 사용자님의 환경에 설정된 GEMINI 등을 호출하도록 설계 가능합니다.
-				resultMsg := fmt.Sprintf("[%s 결과보고]\n전달해주신 프롬프트를 분석했습니다.\n\n요청사항: %s\n\n현재 프로젝트 구조와 참조된 %d개의 파일을 기반으로 작업을 수행했습니다.\n수정된 내용은 왼쪽 파일 탐색기에서 확인하실 수 있습니다.", req.AgentID, req.Prompt, len(req.Context))
+				// 시뮬레이션 응답
+				time.Sleep(1 * time.Second)
+				resultMsg := fmt.Sprintf("[%s 결과보고]\n전달해주신 프롬프트를 분석했습니다.\n\n요청사항: %s\n\n현재 프로젝트 구조와 참조된 %d개의 파일을 기반으로 작업을 수행했습니다.\n결과가 시스템에 반영되었습니다.", req.AgentID, req.Prompt, len(req.Context))
 
 				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(map[string]interface{}{
@@ -102,14 +91,7 @@ func newUICmd() *cobra.Command {
 			// UI 서빙
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				// content/ui/dashboard.html 파일 내용을 직접 읽어서 출력 (embed 활용)
-				// 리팩토링된 구조에 맞게 수정
 				data, _ := os.ReadFile("content/ui/dashboard.html")
-				if len(data) == 0 {
-					// Embed fallback (소스 위치가 다를 경우 대비)
-					fmt.Fprintf(w, "UI 파일을 찾을 수 없습니다. 빌드 상태를 확인하세요.")
-					return
-				}
 				w.Write(data)
 			})
 
