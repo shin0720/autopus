@@ -10,59 +10,67 @@
             --border-color: #30363d;
             --accent-blue: #58a6ff;
             --accent-green: #3fb950;
-            --accent-orange: #d29922;
+            --accent-red: #f85149;
             --text-main: #c9d1d9;
             --text-dim: #8b949e;
             --terminal-bg: #010409;
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout */
+        /* Sidebar */
         .sidebar-left { width: 250px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 50; }
         .main-area { flex: 1; display: flex; flex-direction: column; position: relative; }
         .sidebar-right { width: 400px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; z-index: 50; }
         
+        /* Top Bar */
         .top-bar { height: 50px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
-        
+        .provider-status { display: flex; gap: 15px; font-size: 11px; }
+        .status-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; }
+        .dot.online { background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+        .dot.offline { background: var(--accent-red); }
+
+        /* Canvas & Lanes */
+        .canvas { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; }
+        .lane-container { display: flex; width: 100%; height: 100%; position: absolute; pointer-events: none; }
+        .lane { flex: 1; border-right: 1px dashed #30363d; display: flex; flex-direction: column; align-items: center; padding-top: 40px; }
+        .lane-title { font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 20px; background: #1f242c; padding: 3px 10px; border-radius: 10px; }
+
+        /* Nodes */
+        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 170px; padding: 12px; margin-bottom: 15px; pointer-events: auto; cursor: pointer; transition: transform 0.2s; }
+        .node:hover { border-color: var(--accent-blue); transform: scale(1.03); }
+        .node.active { border-color: var(--accent-blue); animation: pulse 1.5s infinite; }
+        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+        .node-role { font-size: 11px; color: var(--text-dim); }
+
+        /* Others */
         .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
         .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .file-item:hover { background: #1f242c; }
-        .file-checkbox { width: 14px; height: 14px; cursor: pointer; }
-
-        .canvas { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 30px 30px; overflow: hidden; }
-        .lane-container { display: flex; width: 100%; height: 100%; position: absolute; pointer-events: none; }
-        .lane { flex: 1; border-right: 1px dashed #30363d; display: flex; flex-direction: column; align-items: center; padding-top: 30px; }
-        .lane-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 15px; }
-
-        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 10px; margin-bottom: 12px; pointer-events: auto; cursor: pointer; transition: 0.2s; }
-        .node:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
-        .node.active { border-color: var(--accent-blue); box-shadow: 0 0 15px rgba(88, 166, 255, 0.4); animation: pulse 1.5s infinite; }
-        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
-
-        .terminal { height: 200px; background: var(--terminal-bg); border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.6; }
-        .log-entry { margin-bottom: 5px; }
-        .log-agent { color: var(--accent-orange); font-weight: bold; margin-right: 10px; }
-
-        /* Code Viewer & Result Viewer */
-        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 100; display: none; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
-        .panel-header { padding: 12px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #161b22; border-radius: 12px 12px 0 0; }
-        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
-
-        textarea { flex: 1; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 15px; margin: 15px 0; resize: none; font-size: 14px; }
-        .btn-run { background: var(--accent-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .terminal { height: 180px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        
+        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 100; display: none; flex-direction: column; }
+        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; }
+        textarea { flex: 1; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 15px; margin: 15px 0; resize: none; }
+        .btn-run { background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="sidebar-left">
-        <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:bold; font-size:13px;">파일 탐색기</div>
+        <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:bold;">파일 탐색기</div>
         <div class="file-list" id="file-list"></div>
     </div>
 
     <div class="main-area">
         <div class="top-bar">
-            <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS Virtual Studio</div>
+            <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS STUDIO</div>
+            <div class="provider-status">
+                <div class="status-item"><div id="dot-claude" class="dot"></div> Claude</div>
+                <div class="status-item"><div id="dot-gemini" class="dot"></div> Gemini</div>
+                <div class="status-item"><div id="dot-codex" class="dot"></div> Codex</div>
+            </div>
             <div id="proj-name" style="font-size:12px; color:var(--accent-green)">로딩 중...</div>
         </div>
         
@@ -74,63 +82,58 @@
                 <div class="lane" id="lane-ops"><div class="lane-title">리뷰 & 배포</div></div>
             </div>
 
-            <!-- Overlay Panel (Result/Code) -->
             <div class="overlay-panel" id="overlay-panel">
-                <div class="panel-header">
-                    <span id="panel-title" style="font-weight:bold; color:var(--accent-blue)">작업 결과</span>
-                    <button class="btn-run" style="padding:5px 15px;" onclick="closePanel()">닫기</button>
+                <div style="padding:10px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; background:#161b22;">
+                    <span id="panel-title">내용</span>
+                    <button class="btn-run" style="padding:4px 10px;" onclick="closePanel()">닫기</button>
                 </div>
                 <div class="panel-body" id="panel-content"></div>
             </div>
         </div>
 
         <div class="terminal" id="terminal">
-            <div class="log-entry"><span class="log-agent">[System]</span> 16인 가상 스튜디오가 연결되었습니다.</div>
+            <div>[System] 스튜디오가 준비되었습니다.</div>
         </div>
     </div>
 
     <div class="sidebar-right" id="sidebar-right">
-        <div style="font-size:20px; font-weight:bold; color:var(--accent-blue); margin-bottom:5px;" id="drawer-title"></div>
-        <div style="font-size:12px; color:var(--text-dim); margin-bottom:20px;" id="drawer-desc"></div>
-        
-        <div style="font-size:12px; font-weight:bold; margin-bottom:8px;">참조할 컨텍스트 (선택된 파일)</div>
-        <div id="ctx-files" style="font-size:11px; color:var(--accent-green); margin-bottom:15px;">선택된 파일 없음</div>
-
-        <textarea id="prompt-input" placeholder="에이전트에게 내릴 상세 지시사항을 입력하세요..."></textarea>
-        <button class="btn-run" onclick="assignTask()">업무 시작 (Start)</button>
+        <div style="font-size:18px; font-weight:bold; color:var(--accent-blue); margin-bottom:5px;" id="drawer-title"></div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:15px;" id="drawer-desc"></div>
+        <textarea id="prompt-input" placeholder="지시사항을 입력하세요..."></textarea>
+        <button class="btn-run" onclick="assignTask()">업무 시작</button>
         <button class="btn-run" style="background:transparent; color:var(--text-dim); margin-top:10px;" onclick="closeDrawer()">취소</button>
     </div>
 
     <script>
         let selectedAgent = null;
-        let selectedFiles = new Set();
-
         const agents = [
-            { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "아이디어 분석 및 태스크 분해" },
+            { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "요구사항 분석 및 태스크 분해" },
             { id: "spec", name: "Spec Writer", role: "명세 작성자", dept: "plan", desc: "EARS 명세서 작성" },
-            { id: "arch", name: "Architect", role: "아키텍트", dept: "plan", desc: "시스템 구조 및 설계" },
-            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", desc: "코드베이스 구조 분석" },
-            { id: "exec", name: "Executor", role: "실행자", dept: "dev", desc: "핵심 로직 TDD 구현" },
-            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "장기 복잡 태스크 전담" },
-            { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", desc: "버그 수정 및 예외 처리" },
-            { id: "anno", name: "Annotator", role: "태그 관리자", dept: "dev", desc: "@AX 태그 및 주석 관리" },
-            { id: "test", name: "Tester", role: "테스터", dept: "qa", desc: "테스트 코드 작성 (85%+)" },
-            { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "코드 품질 및 빌드 검증" },
-            { id: "fend", name: "Frontend Spec", role: "UI 전문가", dept: "qa", desc: "Playwright E2E 테스트" },
-            { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 회귀 및 레이아웃" },
-            { id: "perf", name: "Perf Engineer", role: "성능 전문가", dept: "qa", desc: "벤치마크 및 병목 분석" },
-            { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", desc: "TRUST-5 코드 리뷰" },
-            { id: "sec", name: "Security Audit", role: "보안 감사", dept: "ops", desc: "취약점 스캔 및 강화" },
-            { id: "devops", name: "DevOps", role: "운영자", dept: "ops", desc: "CI/CD 배포 자동화" }
+            { id: "arch", name: "Architect", role: "아키텍트", dept: "plan", desc: "시스템 구조 설계" },
+            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", desc: "코드분석" },
+            { id: "exec", name: "Executor", role: "실행자", dept: "dev", desc: "코드 구현" },
+            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "복잡 태스크" },
+            { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", desc: "버그 수정" },
+            { id: "anno", name: "Annotator", role: "태그 관리자", dept: "dev", desc: "주석 관리" },
+            { id: "test", name: "Tester", role: "테스터", dept: "qa", desc: "테스트 작성" },
+            { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "코드 검증" },
+            { id: "fend", name: "Frontend Spec", role: "UI 전문가", dept: "qa", desc: "E2E 테스트" },
+            { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 검사" },
+            { id: "perf", name: "Perf Engineer", role: "성능 전문가", dept: "qa", desc: "성능 분석" },
+            { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", desc: "코드 리뷰" },
+            { id: "sec", name: "Security Audit", role: "보안 감사", dept: "ops", desc: "보안 점검" },
+            { id: "devops", name: "DevOps", role: "운영자", dept: "ops", desc: "배포 자동화" }
         ];
 
-        function getIcon(f) {
-            const ext = f.split('.').pop();
-            if (ext === 'py') return '🐍';
-            if (ext === 'md') return '📝';
-            if (ext === 'go') return '🐹';
-            if (ext === 'json') return '📦';
-            return '📄';
+        async function updateHealth() {
+            try {
+                const res = await fetch('/api/providers/health');
+                const data = await res.json();
+                Object.keys(data).forEach(id => {
+                    const dot = document.getElementById('dot-' + id);
+                    if (dot) dot.className = 'dot ' + (data[id] ? 'online' : 'offline');
+                });
+            } catch(e) {}
         }
 
         async function loadFiles() {
@@ -141,76 +144,46 @@
             files.forEach(f => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.onclick = (e) => {
-                    e.stopPropagation();
-                    if (cb.checked) selectedFiles.add(f); else selectedFiles.delete(f);
-                    document.getElementById('ctx-files').innerText = Array.from(selectedFiles).join(', ') || '선택된 파일 없음';
+                item.innerText = '📄 ' + f;
+                item.onclick = async () => {
+                    const r = await fetch('/api/files/read?path=' + encodeURIComponent(f));
+                    showPanel(f, await r.text());
                 };
-                const span = document.createElement('span');
-                span.innerText = getIcon(f) + ' ' + f;
-                span.onclick = () => openFile(f);
-                item.appendChild(cb);
-                item.appendChild(span);
                 list.appendChild(item);
             });
         }
 
-        async function openFile(f) {
-            const res = await fetch('/api/files/read?path=' + encodeURIComponent(f));
-            const text = await res.text();
-            showPanel(f, text);
-        }
-
-        function showPanel(title, content) {
-            document.getElementById('panel-title').innerText = title;
-            document.getElementById('panel-content').innerText = content;
+        function showPanel(t, c) {
+            document.getElementById('panel-title').innerText = t;
+            document.getElementById('panel-content').innerText = c;
             document.getElementById('overlay-panel').style.display = 'flex';
         }
-
         function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
-
         function openDrawer(a) {
             selectedAgent = a;
-            document.getElementById('drawer-title').innerText = a.name + ' (' + a.role + ')';
+            document.getElementById('drawer-title').innerText = a.name;
             document.getElementById('drawer-desc').innerText = a.desc;
             document.getElementById('sidebar-right').style.display = 'flex';
         }
-
         function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
-
-        function addLog(agent, msg) {
-            const term = document.getElementById('terminal');
-            const div = document.createElement('div');
-            div.className = 'log-entry';
-            div.innerHTML = '<span class="log-agent">[' + agent + ']</span> ' + msg;
-            term.appendChild(div);
-            term.scrollTop = term.scrollHeight;
-        }
 
         async function assignTask() {
             const prompt = document.getElementById('prompt-input').value;
-            if (!prompt) return;
             const agent = selectedAgent;
             closeDrawer();
-            
             const node = document.getElementById('node-' + agent.id);
             node.classList.add('active');
-            addLog(agent.name, "분석을 시작합니다...");
-
+            
             const res = await fetch('/api/agent/assign', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agentId: agent.id, prompt, context: Array.from(selectedFiles) })
+                body: JSON.stringify({ agentId: agent.id, prompt })
             });
             const data = await res.json();
-
             setTimeout(() => {
                 node.classList.remove('active');
-                addLog(agent.name, "작업이 완료되었습니다. 결과 내용을 확인하세요.");
-                showPanel(agent.name + "의 작업 보고서", data.message);
-            }, 1500);
+                showPanel(agent.name + " 결과", data.message);
+            }, 1000);
         }
 
         function init() {
@@ -224,16 +197,12 @@
                 lane.appendChild(node);
             });
             loadFiles();
-            updateStatus();
-        }
-
-        async function updateStatus() {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            document.getElementById('proj-name').innerText = "PROJECT: " + data.project.toUpperCase();
+            updateHealth();
+            setInterval(updateHealth, 10000);
         }
 
         init();
+        fetch('/api/status').then(r => r.json()).then(d => document.getElementById('proj-name').innerText = "프로젝트: " + d.project.toUpperCase());
     </script>
 </body>
 </html>
