@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Studio (v3.9 Structured Data)</title>
+    <title>Autopus Studio (v4.0 Pro)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -10,62 +10,81 @@
             --border-color: #30363d;
             --accent-blue: #58a6ff;
             --accent-green: #3fb950;
-            --accent-orange: #d29922;
+            --accent-red: #f85149;
             --text-main: #c9d1d9;
             --text-dim: #8b949e;
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Sidebar */
-        .sidebar-left { width: 260px; min-width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; z-index: 100; }
-        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        /* Layout */
+        .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; }
+        .main-container { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .sidebar-right { width: 420px; min-width: 420px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; overflow-y: auto; z-index: 100; }
-        
-        .drive-selector { padding: 10px; display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); }
-        .btn-sm { flex: 1; padding: 4px; font-size: 10px; background: #21262d; border: 1px solid var(--border-color); color: white; border-radius: 4px; cursor: pointer; }
-        
-        .folder-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
-        .folder-item { padding: 6px 8px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .folder-item:hover { background: #1f242c; color: var(--accent-blue); }
+
+        /* File Explorer */
+        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
+        .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px; overflow: hidden; }
+        .file-item:hover { background: #1f242c; }
+        .file-checkbox { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+        .file-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* Top Bar */
-        .top-bar { height: 50px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
-        .logo { font-weight: 900; color: var(--accent-blue); font-size: 16px; }
+        .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
+        .provider-status { display: flex; gap: 12px; }
+        .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; }
+        .status-item:hover { border-color: var(--border-color); background: #21262d; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; transition: background 0.3s; }
+        .dot.online { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .dot.offline { background: var(--accent-red); box-shadow: 0 0 5px var(--accent-red); }
 
         /* Canvas & Nodes */
-        .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: auto; }
-        #flow-svg { position: absolute; top: 0; left: 0; min-width: 2000px; min-height: 2000px; pointer-events: none; }
+        .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
+        #flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         
-        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 150px; padding: 10px; cursor: move; z-index: 20; }
+        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 150px; padding: 12px; cursor: move; z-index: 20; }
         .node:hover { border-color: var(--accent-blue); }
         .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
-        .node.completed { border-color: var(--accent-green); border-width: 2px; }
-        .node-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
-        .node-role { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; pointer-events: none; }
+        .node-role { font-size: 10px; color: var(--text-dim); pointer-events: none; }
 
-        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 10px; overflow-y: auto; font-family: monospace; font-size: 11px; }
+        /* Ports for Connecting */
+        .port { width: 12px; height: 12px; background: var(--accent-blue); border: 2px solid var(--sidebar-bg); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); cursor: crosshair; z-index: 30; }
+        .port:hover { transform: translateY(-50%) scale(1.3); }
+        .port-in { left: -7px; }
+        .port-out { right: -7px; }
+
+        .flow-line { fill: none; stroke: var(--border-color); stroke-width: 2; stroke-dasharray: 4; }
+        .flow-line.active { stroke: var(--accent-blue); stroke-width: 3; animation: dash 10s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: -500; } }
+
+        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 200; display: none; flex-direction: column; }
+        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="sidebar-left">
-        <div class="drive-selector">
-            <button class="btn-sm" onclick="changeWorkspace('/mnt/c')">C:</button>
-            <button class="btn-sm" onclick="changeWorkspace('/mnt/e')">E:</button>
-            <button class="btn-sm" onclick="changeWorkspace('/mnt/c/Users/SAMSUNG/Desktop')">Desktop</button>
+        <div class="sidebar-header">
+            📁 탐색기 <span id="sel-count" style="color:var(--accent-blue)">0개 선택</span>
         </div>
-        <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text-dim)">FOLDER EXPLORER</div>
-        <div class="folder-list" id="folder-list"></div>
-        <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text-dim); border-top: 1px solid var(--border-color)">PROJECT FILES</div>
-        <div class="folder-list" id="file-list"></div>
+        <div class="file-list" id="file-list"></div>
+        <div style="padding:10px; border-top:1px solid var(--border-color)">
+            <button class="btn-run" style="width:100%; font-size:11px;" onclick="changeWorkspace('/mnt/e')">E드라이브 이동</button>
+        </div>
     </div>
 
     <div class="main-container">
         <div class="top-bar">
-            <div class="logo">🐙 AUTOPUS STUDIO v3.9</div>
-            <div id="current-path" style="font-size:11px; color:var(--accent-green)">-</div>
-            <button class="btn-sm" style="flex:none; padding:5px 15px;" onclick="saveCurrentState()">💾 WORKFLOW SAVE</button>
+            <div style="font-weight:900; color:var(--accent-blue); font-size:18px;">🐙 STUDIO v4.0</div>
+            <div class="provider-status">
+                <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
+                <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
+                <div class="status-item" onclick="openKeyModal('codex')"><div id="dot-codex" class="dot"></div> Codex</div>
+                <button onclick="saveWorkflow()" style="background:#238636; color:white; border:none; border-radius:4px; padding:4px 10px; font-size:11px; cursor:pointer;">💾 저장</button>
+            </div>
         </div>
 
         <div class="canvas-area" id="canvas-area">
@@ -73,97 +92,204 @@
             <div id="nodes-container"></div>
         </div>
 
-        <div class="terminal" id="terminal"><div>[System] 16인 가상 스튜디오 에디터 가동 중...</div></div>
+        <div class="terminal" id="terminal"><div>[System] v4.0 Pro 에디터 연결됨. 노드 사이를 마우스로 연결하세요.</div></div>
+    </div>
+
+    <div class="sidebar-right" id="sidebar-right">
+        <h3 id="drawer-title" style="color:var(--accent-blue)">지시사항</h3>
+        <p id="drawer-desc" style="font-size:11px; color:var(--text-dim)"></p>
+        <textarea id="prompt-input" placeholder="에이전트에게 내릴 지시사항..."></textarea>
+        <button class="btn-run" style="width:100%; background:var(--accent-orange)" onclick="runWorkflow()">⛓️ 워크플로우 시작</button>
+        <button class="btn-run" style="width:100%; margin-top:10px;" onclick="assignTask()">단일 실행</button>
+        <button class="btn-run" style="width:100%; margin-top:10px; background:transparent; color:var(--text-dim)" onclick="closeDrawer()">취소</button>
+    </div>
+
+    <!-- Modals (API Key, Results) -->
+    <div id="overlay-panel" class="overlay-panel">
+        <div style="padding:10px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; background:#161b22;">
+            <span id="panel-title">결과 보고서</span>
+            <button onclick="closePanel()" style="background:transparent; border:1px solid var(--border-color); color:white; padding:4px 10px; cursor:pointer;">닫기</button>
+        </div>
+        <div id="panel-content" class="panel-body"></div>
+    </div>
+
+    <div id="key-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; justify-content:center; align-items:center;">
+        <div style="background:var(--sidebar-bg); padding:25px; border-radius:12px; width:400px; border:1px solid var(--border-color)">
+            <h3 id="key-title">API 키 등록</h3>
+            <input type="password" id="api-key-input" style="width:100%; padding:10px; background:#010409; border:1px solid var(--border-color); color:white; margin:15px 0;">
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="document.getElementById('key-modal').style.display='none'" style="background:transparent; border:none; color:var(--text-dim); cursor:pointer;">취소</button>
+                <button onclick="saveApiKey()" style="background:var(--accent-blue); color:white; border:none; padding:8px 20px; border-radius:4px; cursor:pointer;">적용</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        let currentDir = "";
+        let selectedAgent = null; let selectedFiles = new Set(); let connections = []; let appState = { nodes: {}, connections: [] };
+        let currentTargetProvider = "";
+
         const agents = [
-            { id: "planner", name: "Planner", role: "기획자", dept: "plan", x: 50, y: 50 },
-            { id: "spec", name: "Spec Writer", role: "명세서", dept: "plan", x: 250, y: 50 },
-            { id: "arch", name: "Architect", role: "설계자", dept: "plan", x: 450, y: 50 },
-            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", x: 650, y: 50 },
-            
-            { id: "exec", name: "Executor", role: "개발자", dept: "dev", x: 50, y: 200 },
-            { id: "deep", name: "Deep Worker", role: "심층작업", dept: "dev", x: 250, y: 200 },
-            { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", x: 450, y: 200 },
-            { id: "anno", name: "Annotator", role: "태그관리", dept: "dev", x: 650, y: 200 },
-            
-            { id: "test", name: "Tester", role: "테스터", dept: "qa", x: 50, y: 350 },
-            { id: "val", name: "Validator", role: "품질검증", dept: "qa", x: 250, y: 350 },
-            { id: "fend", name: "Frontend", role: "UI전문가", dept: "qa", x: 450, y: 350 },
-            { id: "uxv", name: "UX Validator", role: "시각검증", dept: "qa", x: 650, y: 350 },
-            
-            { id: "perf", name: "Perf Eng", role: "성능분석", dept: "ops", x: 50, y: 500 },
-            { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", x: 250, y: 500 },
-            { id: "sec", name: "Security", role: "보안감사", dept: "ops", x: 450, y: 500 },
-            { id: "devops", name: "DevOps", role: "배포자", dept: "ops", x: 650, y: 500 }
+            { id: "planner", name: "Planner", role: "기획자", x: 50, y: 50 },
+            { id: "spec", name: "Spec Writer", role: "명세서", x: 250, y: 50 },
+            { id: "arch", name: "Architect", role: "설계자", x: 450, y: 50 },
+            { id: "expl", name: "Explorer", role: "탐험가", x: 650, y: 50 },
+            { id: "exec", name: "Executor", role: "개발자", x: 50, y: 220 },
+            { id: "deep", name: "Deep Worker", role: "심층작업", x: 250, y: 220 },
+            { id: "dbug", name: "Debugger", role: "해결사", x: 450, y: 220 },
+            { id: "anno", name: "Annotator", role: "태그관리", x: 650, y: 220 },
+            { id: "test", name: "Tester", role: "테스터", x: 50, y: 390 },
+            { id: "val", name: "Validator", role: "품질검증", x: 250, y: 390 },
+            { id: "fend", name: "Frontend", role: "UI전문가", x: 450, y: 390 },
+            { id: "uxv", name: "UX Validator", role: "시각검증", x: 650, y: 390 },
+            { id: "perf", name: "Perf Eng", role: "성능분석", x: 50, y: 560 },
+            { id: "rev", name: "Reviewer", role: "리뷰어", x: 250, y: 560 },
+            { id: "sec", name: "Security", role: "보안감사", x: 450, y: 560 },
+            { id: "devops", name: "DevOps", role: "배포자", x: 650, y: 560 }
         ];
 
-        async function changeWorkspace(path) {
-            const res = await fetch('/api/workspace/change', { method: 'POST', body: JSON.stringify({ path }) });
-            const data = await res.json();
-            currentDir = data.currentDir;
-            document.getElementById('current-path').innerText = currentDir;
-            loadWorkspaceList();
-            loadFileList();
+        function getIcon(f) {
+            const ext = f.split('.').pop().toLowerCase();
+            const dict = { py:'🐍', go:'🐹', md:'📝', json:'📦', yaml:'⚙️', sh:'🐚', txt:'📄' };
+            return dict[ext] || '📄';
         }
 
-        async function loadWorkspaceList() {
-            const res = await fetch('/api/workspace/list');
-            const data = await res.json();
-            const list = document.getElementById('folder-list');
-            list.innerHTML = '<div class="folder-item" onclick="changeWorkspace(\''+data.parent+'\')">⬆️ UP..</div>';
-            data.folders.forEach(f => {
-                const item = document.createElement('div');
-                item.className = 'folder-item';
-                item.innerHTML = '📁 ' + f;
-                item.onclick = () => changeWorkspace(currentDir + '/' + f);
-                list.appendChild(item);
-            });
-        }
-
-        async function loadFileList() {
+        async function loadFiles() {
             const res = await fetch('/api/files/list');
             const files = await res.json();
             const list = document.getElementById('file-list');
             list.innerHTML = '';
             files.forEach(f => {
                 const item = document.createElement('div');
-                item.className = 'folder-item';
-                item.innerHTML = '📄 ' + f;
+                item.className = 'file-item';
+                item.innerHTML = '<input type="checkbox" class="file-checkbox"> <span class="file-name">' + getIcon(f) + ' ' + f + '</span>';
+                item.querySelector('input').onchange = (e) => { if(e.target.checked) selectedFiles.add(f); else selectedFiles.delete(f); document.getElementById('sel-count').innerText = selectedFiles.size + '개 선택'; };
+                item.querySelector('.file-name').onclick = async () => { const r = await fetch('/api/files/read?path='+encodeURIComponent(f)); showPanel(f, await r.text()); };
                 list.appendChild(item);
             });
         }
 
-        function initEditor() {
+        function initNodes() {
             const container = document.getElementById('nodes-container');
             agents.forEach(a => {
                 const node = document.createElement('div');
                 node.className = 'node'; node.id = 'node-' + a.id;
                 node.style.left = a.x + 'px'; node.style.top = a.y + 'px';
-                node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>';
-                node.onmousedown = startDrag;
+                node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>' +
+                               '<div class="port port-in"></div><div class="port port-out" onmousedown="startConnecting(event, \''+a.id+'\')"></div>';
+                node.onmousedown = (e) => { if(e.target.classList.contains('port')) return; startDragging(e, node); };
+                node.onclick = () => openDrawer(a);
                 container.appendChild(node);
             });
-            changeWorkspace('.');
         }
 
-        function startDrag(e) {
-            const node = e.currentTarget;
-            let offsetBox = document.getElementById('canvas-area').getBoundingClientRect();
+        function startDragging(e, node) {
             let shiftX = e.clientX - node.getBoundingClientRect().left;
             let shiftY = e.clientY - node.getBoundingClientRect().top;
-            function moveAt(pageX, pageY) {
-                node.style.left = (pageX - offsetBox.left - shiftX + document.getElementById('canvas-area').scrollLeft) + 'px';
-                node.style.top = (pageY - offsetBox.top - shiftY + document.getElementById('canvas-area').scrollTop) + 'px';
+            function move(e) {
+                node.style.left = (e.clientX - shiftX) + 'px';
+                node.style.top = (e.clientY - shiftY) + 'px';
+                drawConnections();
             }
-            function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
-            document.addEventListener('mousemove', onMouseMove);
-            document.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); document.onmouseup = null; };
+            document.onmousemove = move;
+            document.onmouseup = () => { document.onmousemove = null; saveWorkflow(); };
         }
 
-        initEditor();
+        function startConnecting(e, fromId) {
+            e.stopPropagation();
+            addLog("System", "연결할 노드를 선택하세요...");
+            // Simplification: In a real app, this would be a drag-to-connect line.
+            // For now, we'll wait for the next node click to connect.
+            window.connectingFrom = fromId;
+        }
+
+        function drawConnections() {
+            const svg = document.getElementById('flow-svg');
+            svg.innerHTML = '';
+            connections.forEach(conn => {
+                const f = document.getElementById('node-' + conn.from);
+                const t = document.getElementById('node-' + conn.to);
+                if(f && t) {
+                    const fR = f.getBoundingClientRect(); const tR = t.getBoundingClientRect();
+                    const cR = document.getElementById('canvas-area').getBoundingClientRect();
+                    const x1 = fR.right - cR.left; const y1 = fR.top + fR.height/2 - cR.top;
+                    const x2 = tR.left - cR.left; const y2 = tR.top + tR.height/2 - cR.top;
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", `M ${x1} ${y1} C ${x1+50} ${y1}, ${x2-50} ${y2}, ${x2} ${y2}`);
+                    path.setAttribute("class", "flow-line");
+                    svg.appendChild(path);
+                }
+            });
+        }
+
+        async function updateHealth() {
+            const res = await fetch('/api/providers/health');
+            const data = await res.json();
+            Object.keys(data).forEach(id => {
+                const dot = document.getElementById('dot-' + id);
+                if(dot) dot.className = 'dot ' + (data[id] ? 'online' : 'offline');
+            });
+        }
+
+        function openKeyModal(p) { currentTargetProvider = p; document.getElementById('key-title').innerText = p.toUpperCase() + ' 키 등록'; document.getElementById('key-modal').style.display = 'flex'; }
+        async function saveApiKey() {
+            const key = document.getElementById('api-key-input').value;
+            await fetch('/api/providers/keys', { method: 'POST', body: JSON.stringify({ provider: currentTargetProvider, key }) });
+            document.getElementById('key-modal').style.display = 'none'; updateHealth();
+        }
+
+        function openDrawer(a) { 
+            if(window.connectingFrom) {
+                if(window.connectingFrom !== a.id) {
+                    connections.push({from: window.connectingFrom, to: a.id});
+                    drawConnections();
+                    addLog("System", "노드 연결됨: " + window.connectingFrom + " -> " + a.id);
+                }
+                window.connectingFrom = null;
+                return;
+            }
+            selectedAgent = a; 
+            document.getElementById('drawer-title').innerText = a.name;
+            document.getElementById('drawer-desc').innerText = a.role + " 전문가";
+            document.getElementById('sidebar-right').style.display = 'flex'; 
+        }
+        function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
+        function showPanel(t, c) { document.getElementById('panel-title').innerText = t; document.getElementById('panel-content').innerText = c; document.getElementById('overlay-panel').style.display = 'flex'; }
+        function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
+        function addLog(agent, msg) { const div = document.createElement('div'); div.innerHTML = '<strong>['+agent+']</strong> ' + msg; document.getElementById('terminal').appendChild(div); document.getElementById('terminal').scrollTop = 9999; }
+
+        async function saveWorkflow() {
+            const state = { 
+                nodes: agents.map(a => ({ id: a.id, x: document.getElementById('node-'+a.id).style.left, y: document.getElementById('node-'+a.id).style.top })),
+                connections: connections
+            };
+            await fetch('/api/workflow/state', { method: 'POST', body: JSON.stringify(state) });
+        }
+
+        async function loadWorkflow() {
+            const res = await fetch('/api/workflow/state');
+            const saved = await res.json();
+            if(saved.nodes) {
+                saved.nodes.forEach(n => {
+                    const el = document.getElementById('node-' + n.id);
+                    if(el) { el.style.left = n.x; el.style.top = n.y; }
+                });
+                connections = saved.connections || [];
+                drawConnections();
+            }
+        }
+
+        async function changeWorkspace(path) {
+            await fetch('/api/workspace/change', { method: 'POST', body: JSON.stringify({ path }) });
+            loadFiles(); updateHealth();
+        }
+
+        function init() {
+            initNodes(); loadFiles(); updateHealth();
+            setInterval(updateHealth, 5000);
+            setTimeout(loadWorkflow, 500);
+            fetch('/api/status').then(r => r.json()).then(d => document.title = "Studio - " + d.project);
+        }
+        init();
     </script>
 </body>
 </html>
