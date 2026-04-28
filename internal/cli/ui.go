@@ -27,22 +27,18 @@ func newUICmd() *cobra.Command {
 			cfg, err := config.Load(".")
 			if err != nil { return err }
 
-			fmt.Printf("🐙 Autopus Studio v3.3 (Final Fix) 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v3.4 시작 중... http://%s\n", addr)
 
-			// API: AI 헬스체크 (빨간색/초록색 확실히 구분)
+			// API: AI 헬스체크
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				health := make(map[string]string)
-				claudeKey := os.Getenv("ANTHROPIC_API_KEY") + os.Getenv("CLAUDE_API_KEY")
-				if claudeKey != "" { health["claude"] = "online" } else { health["claude"] = "offline" }
-				
-				geminiKey := os.Getenv("GEMINI_API_KEY")
-				if geminiKey != "" { health["gemini"] = "online" } else { health["gemini"] = "offline" }
-				
-				health["codex"] = "online" // Local binary
+				health := make(map[string]bool)
+				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
+				health["gemini"] = os.Getenv("GEMINI_API_KEY") != ""
+				health["codex"] = true
 				json.NewEncoder(w).Encode(health)
 			})
 
-			// API: 연쇄 워크플로우 (바통 터치 포함)
+			// API: 연쇄 워크플로우
 			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -54,12 +50,11 @@ func newUICmd() *cobra.Command {
 				}
 
 				orchCfg := orchestra.OrchestraConfig{
-					Prompt: fmt.Sprintf("역할: %s\n요청: %s\n코드를 분석하여 한국어로 답변하세요.\n%s", req.AgentID, req.Prompt, ctxFiles.String()),
+					Prompt: fmt.Sprintf("역할: %s\n요청: %s\n내용: %s", req.AgentID, req.Prompt, ctxFiles.String()),
 					Strategy: orchestra.StrategyFastest,
-					Providers: []orchestra.ProviderConfig{}, // Config에서 로드된 것 사용
+					Providers: []orchestra.ProviderConfig{},
 					TimeoutSeconds: 180, SubprocessMode: true,
 				}
-				// 실제 설정된 프로바이더 주입
 				for name, p := range cfg.Orchestra.Providers {
 					orchCfg.Providers = append(orchCfg.Providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
 				}
@@ -69,20 +64,19 @@ func newUICmd() *cobra.Command {
 					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
 					return
 				}
-
 				json.NewEncoder(w).Encode(map[string]interface{}{
-					"status": "success", "output": result.Merged, "nextAgent": getNextAgentMap(req.AgentID),
+					"status": "success", "output": result.Merged, "nextAgent": getNextAgentMapFinal(req.AgentID),
 				})
 			})
 
-			// API: 기타 설정
+			// API: 기타 보조 기능
 			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 				json.NewEncoder(w).Encode(map[string]string{"project": cfg.ProjectName})
 			})
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") { files = append(files, path) }
+					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") { files = append(files, path) }
 					return nil
 				})
 				json.NewEncoder(w).Encode(files)
@@ -112,8 +106,13 @@ func newUICmd() *cobra.Command {
 	return cmd
 }
 
-func getNextAgentMap(id string) string {
-	m := map[string]string{"planner":"spec", "spec":"arch", "arch":"expl", "expl":"exec", "exec":"deep", "deep":"dbug", "dbug":"test", "test":"val", "val":"rev", "rev":"sec", "sec":"devops"}
+func getNextAgentMapFinal(id string) string {
+	m := map[string]string{
+		"planner": "spec", "spec": "arch", "arch": "expl", "expl": "exec",
+		"exec": "deep", "deep": "dbug", "dbug": "anno", "anno": "test",
+		"test": "val", "val": "fend", "fend": "uxv", "uxv": "perf",
+		"perf": "rev", "rev": "sec", "sec": "devops",
+	}
 	return m[id]
 }
 
