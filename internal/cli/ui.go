@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/content"
 )
 
@@ -24,7 +23,7 @@ func newUICmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
 			
-			fmt.Printf("🐙 Autopus Studio v4.2 정식판 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v4.2 PRO 시작 중... http://%s\n", addr)
 
 			// API: 워크플로우 상태 관리
 			http.HandleFunc("/api/workflow/state", func(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +42,7 @@ func newUICmd() *cobra.Command {
 				}
 			})
 
-			// API: 작업 디렉토리 변경 (강력한 경로 보장)
+			// API: 작업 디렉토리 강제 전환
 			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Path string `json:"path"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -52,34 +51,27 @@ func newUICmd() *cobra.Command {
 					drive := strings.ToLower(target[:1])
 					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
 				}
-				// 절대 경로로 변환하여 이동
-				absPath, _ := filepath.Abs(target)
-				if err := os.Chdir(absPath); err != nil {
+				if err := os.Chdir(target); err != nil {
 					http.Error(w, err.Error(), 500); return
 				}
-				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": absPath})
+				dir, _ := os.Getwd()
+				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
 			})
 
-			// API: 폴더 목록 가져오기 (탐색기 전용)
+			// API: 폴더 목록
 			http.HandleFunc("/api/workspace/list", func(w http.ResponseWriter, r *http.Request) {
 				dir, _ := os.Getwd()
 				entries, _ := os.ReadDir(".")
 				var folders []string
-				for _, e := range entries {
-					if e.IsDir() && !strings.HasPrefix(e.Name(), ".") { folders = append(folders, e.Name()) }
-				}
-				json.NewEncoder(w).Encode(map[string]interface{}{
-					"current": dir, "folders": folders, "parent": filepath.Dir(dir),
-				})
+				for _, e := range entries { if e.IsDir() && !strings.HasPrefix(e.Name(), ".") { folders = append(folders, e.Name()) } }
+				json.NewEncoder(w).Encode(map[string]interface{}{"current": dir, "folders": folders, "parent": filepath.Dir(dir)})
 			})
 
-			// API: 파일 목록 및 내용
+			// API: 파일 목록
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") {
-						files = append(files, path)
-					}
+					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") { files = append(files, path) }
 					return nil
 				})
 				json.NewEncoder(w).Encode(files)
