@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/content"
-	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
@@ -24,9 +23,7 @@ func newUICmd() *cobra.Command {
 		Short: "Autopus 시각적 대시보드 실행",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
-			cfg, err := config.Load(".")
-			if err != nil { return err }
-
+			
 			fmt.Printf("🐙 Autopus Studio v4.1 PRO 가동 중... http://%s\n", addr)
 
 			// API: 워크플로우 상태 관리
@@ -46,7 +43,7 @@ func newUICmd() *cobra.Command {
 				}
 			})
 
-			// API: 작업 디렉토리 강제 전환 (C:, E: 지원)
+			// API: 작업 디렉토리 강제 전환
 			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Path string `json:"path"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -55,9 +52,7 @@ func newUICmd() *cobra.Command {
 					drive := strings.ToLower(target[:1])
 					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
 				}
-				if err := os.Chdir(target); err != nil {
-					http.Error(w, err.Error(), 500); return
-				}
+				os.Chdir(target)
 				dir, _ := os.Getwd()
 				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
 			})
@@ -87,6 +82,11 @@ func newUICmd() *cobra.Command {
 
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
+			})
+
+			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+				cfg, _ := config.Load(".")
+				json.NewEncoder(w).Encode(map[string]string{"project": cfg.ProjectName})
 			})
 
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
