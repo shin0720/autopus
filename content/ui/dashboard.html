@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Studio (v4.2 Final Stable)</title>
+    <title>Autopus Virtual Studio (v4.3 Fix)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -16,26 +16,37 @@
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
+        /* Layout Structure */
         .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; overflow: hidden; }
-        .main-container { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .sidebar-right { width: 400px; min-width: 400px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; z-index: 100; overflow-y: auto; }
         
+        /* Sidebar Left (File Explorer - 고정) */
         .drive-bar { padding: 10px; display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); background: #21262d; }
         .btn-drive { flex: 1; padding: 6px; font-size: 11px; background: #30363d; border: 1px solid var(--border-color); color: white; border-radius: 4px; cursor: pointer; }
-        
-        .folder-list, .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
+        .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
         .item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .item:hover { background: #1f242c; color: var(--accent-blue); }
+        .item:hover { background: #1f242c; }
 
+        /* Top Bar */
         .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
         .logo { font-weight: 900; color: var(--accent-blue); font-size: 18px; }
+        .provider-status { display: flex; gap: 15px; align-items: center; }
+        .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; color: var(--text-main); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; transition: background 0.3s; }
+        .dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .dot.offline { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
 
+        /* Canvas & SVG */
         .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
         #flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         
         .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 150px; padding: 12px; cursor: move; z-index: 20; }
         .node:hover { border-color: var(--accent-blue); }
-        .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
-        
+        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; pointer-events: none; }
+        .node-role { font-size: 10px; color: var(--text-dim); pointer-events: none; }
+
+        /* Connection Ports */
         .port { width: 12px; height: 12px; background: var(--accent-blue); border: 2px solid var(--sidebar-bg); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); cursor: crosshair; z-index: 30; }
         .port-in { left: -7px; }
         .port-out { right: -7px; }
@@ -43,39 +54,55 @@
         .flow-line { fill: none; stroke: var(--accent-blue); stroke-width: 2.5; stroke-dasharray: 6; stroke-linecap: round; }
         .temp-line { fill: none; stroke: var(--text-dim); stroke-width: 2; stroke-dasharray: 4; opacity: 0.6; }
 
-        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        /* Right Panel: Work Drawer */
+        textarea { flex: 1; width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 20px; margin: 15px 0; resize: none; font-size: 15px; box-sizing: border-box; line-height: 1.5; }
+        .btn-run { background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .terminal { height: 140px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
     </style>
 </head>
 <body>
+    <!-- Sidebar Left: File Explorer (고정) -->
     <div class="sidebar-left">
         <div class="drive-bar">
             <button class="btn-drive" onclick="changeWorkspace('/mnt/c')">C:</button>
             <button class="btn-drive" onclick="changeWorkspace('/mnt/e')">E:</button>
             <button class="btn-drive" onclick="changeWorkspace('/mnt/c/Users/SAMSUNG/Desktop')">Desktop</button>
         </div>
-        <div id="dir-name" style="padding:10px; font-size:11px; font-weight:bold; color:var(--accent-green); background:#0d1117; overflow:hidden; text-overflow:ellipsis;">/mnt/c</div>
+        <div id="dir-name" style="padding:10px; font-size:11px; font-weight:bold; color:var(--accent-green); background:#0d1117;">PROJECT ROOT</div>
         <div class="folder-list" id="folder-list"></div>
-        <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text-dim); border-top:1px solid var(--border-color)">PROJECT FILES</div>
         <div class="file-list" id="file-list"></div>
     </div>
 
+    <!-- Main Container -->
     <div class="main-container">
         <div class="top-bar">
-            <div class="logo">🐙 STUDIO PRO v4.2</div>
-            <div style="display:flex; gap:10px;">
-                <button onclick="saveWorkflow()" style="background:#238636; color:white; border:none; padding:6px 15px; border-radius:4px; font-size:11px; cursor:pointer;">💾 WORKFLOW SAVE</button>
-                <button onclick="clearConnections()" style="background:var(--accent-red); color:white; border:none; padding:6px 15px; border-radius:4px; font-size:11px; cursor:pointer;">🧹 CLEAR LINES</button>
+            <div class="logo">🐙 AUTOPUS STUDIO v4.3</div>
+            <div class="provider-status">
+                <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
+                <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
+                <div class="status-item"><div id="dot-codex" class="dot online"></div> Codex</div>
+                <button onclick="saveState()" style="background:#238636; color:white; border:none; border-radius:4px; padding:4px 12px; font-size:11px; cursor:pointer;">💾 저장</button>
+                <button onclick="clearConnections()" style="background:var(--accent-red); color:white; border:none; padding:4px 12px; border-radius:4px; font-size:11px; cursor:pointer;">🧹 선 삭제</button>
             </div>
         </div>
 
         <div class="canvas-area" id="canvas-area">
-            <svg id="flow-svg"></svg>
+            <svg id="flow-svg"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-blue)" /></marker></defs></svg>
             <div id="nodes-container"></div>
         </div>
 
-        <div id="terminal" class="terminal"><div>[System] 안정화된 v4.2 엔진 로드 완료. 드라이브를 선택하세요.</div></div>
+        <div class="terminal" id="terminal"><div>[System] 스튜디오 초기화 완료. 노드를 클릭하여 업무를 지시하세요.</div></div>
+    </div>
+
+    <!-- Sidebar Right: Work Panel -->
+    <div class="sidebar-right" id="sidebar-right">
+        <h3 id="drawer-title" style="color:var(--accent-blue); margin:0;">에이전트 업무</h3>
+        <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin-top:5px;"></p>
+        <textarea id="prompt-input" placeholder="지시사항을 자세히 입력하세요..."></textarea>
+        <button class="btn-run" style="width:100%; background:var(--accent-orange)" onclick="runWorkflow()">⛓️ 연쇄 워크플로우 시작</button>
+        <button class="btn-run" style="width:100%; margin-top:10px;" onclick="assignTask()">단일 실행</button>
+        <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
     </div>
 
     <script>
@@ -103,29 +130,25 @@
             const res = await fetch('/api/workspace/change', { method: 'POST', body: JSON.stringify({ path }) });
             const data = await res.json();
             document.getElementById('dir-name').innerText = data.currentDir;
-            loadWorkspaceList(); loadFiles();
+            loadWorkspaceList(); loadFileList();
         }
 
         async function loadWorkspaceList() {
-            const res = await fetch('/api/workspace/list');
-            const data = await res.json();
-            const list = document.getElementById('folder-list');
-            list.innerHTML = '<div class="item" onclick="changeWorkspace(\''+data.parent+'\')">⬆️ 상위 폴더로</div>';
+            const res = await fetch('/api/workspace/list'); const data = await res.json();
+            const list = document.getElementById('folder-list'); list.innerHTML = '<div class="item" onclick="changeWorkspace(\'..\')">⬆️ 상위 폴더로</div>';
             data.folders.forEach(f => {
-                const div = document.createElement('div'); div.className = 'item'; div.innerHTML = '📁 ' + f;
-                div.onclick = () => changeWorkspace(f); // Rel path
-                list.appendChild(div);
+                const d = document.createElement('div'); d.className = 'item'; d.innerHTML = '📁 ' + f;
+                d.onclick = () => changeWorkspace(f); list.appendChild(d);
             });
         }
 
-        async function loadFiles() {
-            const res = await fetch('/api/files/list');
-            const files = await res.json();
+        async function loadFileList() {
+            const res = await fetch('/api/files/list'); const files = await res.json();
             const list = document.getElementById('file-list'); list.innerHTML = '';
             files.forEach(f => {
-                const div = document.createElement('div'); div.className = 'item';
-                div.innerHTML = '<input type="checkbox" class="file-checkbox"> 📄 ' + f;
-                list.appendChild(div);
+                const d = document.createElement('div'); d.className = 'item';
+                d.innerHTML = '<input type="checkbox" class="file-checkbox"> 📄 ' + f;
+                list.appendChild(d);
             });
         }
 
@@ -137,19 +160,22 @@
                 el.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>' +
                              '<div class="port port-in" onmouseup="endConnection(event, \''+a.id+'\')"></div>' +
                              '<div class="port port-out" onmousedown="startConnection(event, \''+a.id+'\')"></div>';
-                el.onmousedown = (e) => { if(!e.target.classList.contains('port')) startDragging(e, el); };
+                el.onmousedown = (e) => { if(e.target.classList.contains('port')) return; startDragging(e, el); };
+                el.onclick = (e) => { if(!e.target.classList.contains('port')) openDrawer(a); };
                 container.appendChild(el);
             });
         }
 
         function startDragging(e, el) {
+            const cR = document.getElementById('canvas-area').getBoundingClientRect();
             let shiftX = e.clientX - el.getBoundingClientRect().left;
             let shiftY = e.clientY - el.getBoundingClientRect().top;
             document.onmousemove = (ev) => {
-                el.style.left = (ev.clientX - shiftX) + 'px'; el.style.top = (ev.clientY - shiftY) + 'px';
+                el.style.left = (ev.clientX - cR.left - shiftX) + 'px';
+                el.style.top = (ev.clientY - cR.top - shiftY) + 'px';
                 drawConnections();
             };
-            document.onmouseup = () => { document.onmousemove = null; saveWorkflow(); };
+            document.onmouseup = () => { document.onmousemove = null; saveState(); };
         }
 
         function startConnection(e, fromId) {
@@ -161,15 +187,13 @@
         function endConnection(e, toId) {
             if(isConnecting && tempLineFrom !== toId) {
                 connections.push({ from: tempLineFrom, to: toId });
-                drawConnections(); saveWorkflow();
+                drawConnections(); saveState();
             }
         }
 
         function drawConnections() {
             const svg = document.getElementById('flow-svg');
-            // SVG 내부를 비우되 marker defs는 남김
-            const defs = svg.querySelector('defs')?.outerHTML || '';
-            svg.innerHTML = defs;
+            const defs = svg.querySelector('defs').outerHTML; svg.innerHTML = defs;
             const cR = document.getElementById('canvas-area').getBoundingClientRect();
             connections.forEach(conn => {
                 const f = document.getElementById('node-' + conn.from); const t = document.getElementById('node-' + conn.to);
@@ -177,9 +201,10 @@
                     const fR = f.getBoundingClientRect(); const tR = t.getBoundingClientRect();
                     const x1 = fR.right - cR.left; const y1 = fR.top + fR.height/2 - cR.top;
                     const x2 = tR.left - cR.left; const y2 = tR.top + tR.height/2 - cR.top;
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    path.setAttribute("d", `M ${x1} ${y1} C ${x1+50} ${y1}, ${x2-50} ${y2}, ${x2} ${y2}`);
-                    path.setAttribute("class", "flow-line"); svg.appendChild(path);
+                    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    p.setAttribute("d", `M ${x1} ${y1} C ${x1+40} ${y1}, ${x2-40} ${y2}, ${x2} ${y2}`);
+                    p.setAttribute("class", "flow-line"); p.setAttribute("marker-end", "url(#arrow)");
+                    svg.appendChild(p);
                 }
             });
         }
@@ -194,8 +219,25 @@
             line.setAttribute("class", "temp-line"); svg.appendChild(line);
         }
 
-        function clearConnections() { connections = []; drawConnections(); saveWorkflow(); }
-        async function saveWorkflow() {
+        function clearConnections() { connections = []; drawConnections(); saveState(); }
+        
+        async function updateHealth() {
+            const res = await fetch('/api/providers/health'); const data = await res.json();
+            Object.keys(data).forEach(id => {
+                const d = document.getElementById('dot-' + id);
+                if(d) d.className = 'dot ' + (data[id] ? 'online' : 'offline');
+            });
+        }
+
+        function openDrawer(a) { 
+            selectedAgent = a;
+            document.getElementById('drawer-title').innerText = a.name + " 전문가";
+            document.getElementById('drawer-desc').innerText = a.role + " 담당";
+            document.getElementById('sidebar-right').style.display = 'flex';
+        }
+        function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
+
+        async function saveState() {
             const state = { 
                 nodes: agents.map(a => ({ id: a.id, x: document.getElementById('node-'+a.id).style.left, y: document.getElementById('node-'+a.id).style.top })),
                 connections: connections 
@@ -203,7 +245,7 @@
             await fetch('/api/workflow/state', { method: 'POST', body: JSON.stringify(state) });
         }
 
-        async function loadWorkflow() {
+        async function loadState() {
             const res = await fetch('/api/workflow/state'); const data = await res.json();
             if(data.nodes) {
                 data.nodes.forEach(n => { const el = document.getElementById('node-'+n.id); if(el){ el.style.left = n.x; el.style.top = n.y; } });
@@ -211,9 +253,7 @@
             }
         }
 
-        function init() {
-            initNodes(); changeWorkspace('.'); setTimeout(loadWorkflow, 500);
-        }
+        function init() { initNodes(); changeWorkspace('.'); updateHealth(); setInterval(updateHealth, 5000); setTimeout(loadState, 500); }
         init();
     </script>
 </body>
