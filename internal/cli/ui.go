@@ -27,98 +27,71 @@ func newUICmd() *cobra.Command {
 			cfg, err := config.Load(".")
 			if err != nil { return err }
 
-			fmt.Printf("🐙 Autopus Studio v4.0 (Pro) 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v4.1 PRO 가동 중... http://%s\n", addr)
 
-			// API: 워크플로우 상태 저장/로드
+			// API: 워크플로우 상태 관리
 			http.HandleFunc("/api/workflow/state", func(w http.ResponseWriter, r *http.Request) {
 				path := ".autopus/workflows/state.json"
-				os.MkdirAll(filepath.Dir(path), 0755)
 				if r.Method == http.MethodGet {
 					data, _ := os.ReadFile(path)
 					if len(data) == 0 { data = []byte("{}") }
-					w.Header().Set("Content-Type", "application/json")
-					w.Write(data)
-				} else if r.Method == http.MethodPost {
+					w.Header().Set("Content-Type", "application/json"); w.Write(data)
+				} else {
 					var state interface{}
 					json.NewDecoder(r.Body).Decode(&state)
 					data, _ := json.MarshalIndent(state, "", "  ")
+					os.MkdirAll(filepath.Dir(path), 0755)
 					os.WriteFile(path, data, 0644)
 					w.WriteHeader(http.StatusOK)
 				}
 			})
 
-			// API: AI 헬스체크
-			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				health := map[string]bool{
-					"claude": os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "",
-					"gemini": os.Getenv("GEMINI_API_KEY") != "",
-					"codex":  true,
-				}
-				json.NewEncoder(w).Encode(health)
-			})
-
-			// API: 업무 실행
-			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				var ctxFiles strings.Builder
-				for _, p := range req.Context {
-					data, _ := os.ReadFile(p)
-					ctxFiles.WriteString(fmt.Sprintf("\n[File: %s]\n%s\n", p, string(data)))
-				}
-				var providers []orchestra.ProviderConfig
-				for name, p := range cfg.Orchestra.Providers {
-					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
-				}
-				orchCfg := orchestra.OrchestraConfig{
-					Prompt: fmt.Sprintf("역할: %s\n요청: %s\n코드:\n%s", req.AgentID, req.Prompt, ctxFiles.String()),
-					Strategy: orchestra.StrategyFastest, Providers: providers, TimeoutSeconds: 180, SubprocessMode: true,
-				}
-				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
-				if err != nil { json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()}); return }
-				json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "output": result.Merged})
-			})
-
-			// API: 파일 및 경로 관리
+			// API: 작업 디렉토리 강제 전환 (C:, E: 지원)
 			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Path string `json:"path"` }
 				json.NewDecoder(r.Body).Decode(&req)
 				target := req.Path
-				if strings.Contains(target, ":") { target = "/mnt/" + strings.ToLower(target[:1]) + strings.ReplaceAll(target[2:], "\\", "/") }
-				os.Chdir(target)
+				if strings.Contains(target, ":") { 
+					drive := strings.ToLower(target[:1])
+					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
+				}
+				if err := os.Chdir(target); err != nil {
+					http.Error(w, err.Error(), 500); return
+				}
 				dir, _ := os.Getwd()
 				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
 			})
-			http.HandleFunc("/api/workspace/list", func(w http.ResponseWriter, r *http.Request) {
-				dir, _ := os.Getwd()
-				entries, _ := os.ReadDir(".")
-				var folders []string
-				for _, e := range entries { if e.IsDir() && !strings.HasPrefix(e.Name(), ".") { folders = append(folders, e.Name()) } }
-				json.NewEncoder(w).Encode(map[string]interface{}{"current": dir, "folders": folders, "parent": filepath.Dir(dir)})
-			})
+
+			// API: 파일 목록
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
+				dir, _ := os.Getwd()
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") { files = append(files, path) }
+					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") {
+						files = append(files, path)
+					}
 					return nil
 				})
-				json.NewEncoder(w).Encode(files)
+				json.NewEncoder(w).Encode(map[string]interface{}{"dir": dir, "files": files})
 			})
+
+			// API: AI 헬스체크
+			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
+				h := map[string]bool{
+					"claude": os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "",
+					"gemini": os.Getenv("GEMINI_API_KEY") != "",
+					"codex": true,
+				}
+				json.NewEncoder(w).Encode(h)
+			})
+
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
-			})
-			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				if req.Provider == "claude" { os.Setenv("CLAUDE_API_KEY", req.Key); os.Setenv("ANTHROPIC_API_KEY", req.Key) }
-				if req.Provider == "gemini" { os.Setenv("GEMINI_API_KEY", req.Key) }
-				w.WriteHeader(http.StatusOK)
 			})
 
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				data, _ := content.FS.ReadFile("ui/dashboard.html")
-				w.Write(data)
+				data, _ := content.FS.ReadFile("ui/dashboard.html"); w.Write(data)
 			})
 
 			go openBrowser("http://" + addr)
