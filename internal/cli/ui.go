@@ -24,7 +24,7 @@ func newUICmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
 			
-			fmt.Printf("🐙 Autopus Studio v4.1 PRO 가동 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v4.2 정식판 시작 중... http://%s\n", addr)
 
 			// API: 워크플로우 상태 관리
 			http.HandleFunc("/api/workflow/state", func(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +43,7 @@ func newUICmd() *cobra.Command {
 				}
 			})
 
-			// API: 작업 디렉토리 강제 전환
+			// API: 작업 디렉토리 변경 (강력한 경로 보장)
 			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Path string `json:"path"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -52,14 +52,29 @@ func newUICmd() *cobra.Command {
 					drive := strings.ToLower(target[:1])
 					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
 				}
-				os.Chdir(target)
-				dir, _ := os.Getwd()
-				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
+				// 절대 경로로 변환하여 이동
+				absPath, _ := filepath.Abs(target)
+				if err := os.Chdir(absPath); err != nil {
+					http.Error(w, err.Error(), 500); return
+				}
+				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": absPath})
 			})
 
-			// API: 파일 목록
-			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
+			// API: 폴더 목록 가져오기 (탐색기 전용)
+			http.HandleFunc("/api/workspace/list", func(w http.ResponseWriter, r *http.Request) {
 				dir, _ := os.Getwd()
+				entries, _ := os.ReadDir(".")
+				var folders []string
+				for _, e := range entries {
+					if e.IsDir() && !strings.HasPrefix(e.Name(), ".") { folders = append(folders, e.Name()) }
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"current": dir, "folders": folders, "parent": filepath.Dir(dir),
+				})
+			})
+
+			// API: 파일 목록 및 내용
+			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") {
@@ -67,26 +82,16 @@ func newUICmd() *cobra.Command {
 					}
 					return nil
 				})
-				json.NewEncoder(w).Encode(map[string]interface{}{"dir": dir, "files": files})
-			})
-
-			// API: AI 헬스체크
-			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				h := map[string]bool{
-					"claude": os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "",
-					"gemini": os.Getenv("GEMINI_API_KEY") != "",
-					"codex": true,
-				}
-				json.NewEncoder(w).Encode(h)
+				json.NewEncoder(w).Encode(files)
 			})
 
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
 			})
 
-			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-				cfg, _ := config.Load(".")
-				json.NewEncoder(w).Encode(map[string]string{"project": cfg.ProjectName})
+			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
+				h := map[string]bool{"claude": os.Getenv("CLAUDE_API_KEY")!="", "gemini": os.Getenv("GEMINI_API_KEY")!="", "codex": true}
+				json.NewEncoder(w).Encode(h)
 			})
 
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

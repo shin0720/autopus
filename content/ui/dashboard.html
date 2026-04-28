@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Studio (v4.1 PRO Editor)</title>
+    <title>Autopus Studio (v4.2 Final Stable)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -16,45 +16,31 @@
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Sidebar Layout */
-        .sidebar-left { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; }
+        .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; overflow: hidden; }
         .main-container { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         
         .drive-bar { padding: 10px; display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); background: #21262d; }
-        .btn-drive { flex: 1; padding: 5px; font-size: 11px; background: #30363d; border: 1px solid var(--border-color); color: white; border-radius: 4px; cursor: pointer; }
-        .btn-drive:hover { border-color: var(--accent-blue); }
+        .btn-drive { flex: 1; padding: 6px; font-size: 11px; background: #30363d; border: 1px solid var(--border-color); color: white; border-radius: 4px; cursor: pointer; }
+        
+        .folder-list, .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
+        .item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item:hover { background: #1f242c; color: var(--accent-blue); }
 
-        .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
-        .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .file-item:hover { background: #1f242c; }
-        .file-checkbox { width: 14px; height: 14px; cursor: pointer; }
-
-        /* Top Bar */
         .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
         .logo { font-weight: 900; color: var(--accent-blue); font-size: 18px; }
-        .provider-status { display: flex; gap: 15px; }
-        .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; }
-        .dot.online { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
-        .dot.offline { background: var(--accent-red); box-shadow: 0 0 5px var(--accent-red); }
 
-        /* Workflow Canvas */
-        .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; cursor: grab; }
-        .canvas-area:active { cursor: grabbing; }
+        .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
         #flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         
-        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 12px; cursor: move; z-index: 20; }
+        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 150px; padding: 12px; cursor: move; z-index: 20; }
         .node:hover { border-color: var(--accent-blue); }
-        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; pointer-events: none; }
-        .node-role { font-size: 10px; color: var(--text-dim); pointer-events: none; }
-
-        /* Connection Ports */
+        .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
+        
         .port { width: 12px; height: 12px; background: var(--accent-blue); border: 2px solid var(--sidebar-bg); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); cursor: crosshair; z-index: 30; }
-        .port:hover { transform: translateY(-50%) scale(1.3); background: white; }
         .port-in { left: -7px; }
         .port-out { right: -7px; }
 
-        .flow-line { fill: none; stroke: #58a6ff; stroke-width: 2.5; stroke-dasharray: 6; stroke-linecap: round; }
+        .flow-line { fill: none; stroke: var(--accent-blue); stroke-width: 2.5; stroke-dasharray: 6; stroke-linecap: round; }
         .temp-line { fill: none; stroke: var(--text-dim); stroke-width: 2; stroke-dasharray: 4; opacity: 0.6; }
 
         .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
@@ -69,18 +55,18 @@
             <button class="btn-drive" onclick="changeWorkspace('/mnt/e')">E:</button>
             <button class="btn-drive" onclick="changeWorkspace('/mnt/c/Users/SAMSUNG/Desktop')">Desktop</button>
         </div>
-        <div id="dir-name" style="padding:10px; font-size:11px; font-weight:bold; color:var(--accent-green); background:#0d1117;">PROJECT ROOT</div>
+        <div id="dir-name" style="padding:10px; font-size:11px; font-weight:bold; color:var(--accent-green); background:#0d1117; overflow:hidden; text-overflow:ellipsis;">/mnt/c</div>
+        <div class="folder-list" id="folder-list"></div>
+        <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text-dim); border-top:1px solid var(--border-color)">PROJECT FILES</div>
         <div class="file-list" id="file-list"></div>
     </div>
 
     <div class="main-container">
         <div class="top-bar">
-            <div class="logo">🐙 AUTOPUS STUDIO PRO</div>
-            <div class="provider-status">
-                <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
-                <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
-                <div class="status-item"><div id="dot-codex" class="dot online"></div> Codex</div>
-                <button onclick="saveState()" style="background:#238636; color:white; border:none; border-radius:4px; padding:4px 12px; font-size:11px; cursor:pointer;">💾 저장</button>
+            <div class="logo">🐙 STUDIO PRO v4.2</div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="saveWorkflow()" style="background:#238636; color:white; border:none; padding:6px 15px; border-radius:4px; font-size:11px; cursor:pointer;">💾 WORKFLOW SAVE</button>
+                <button onclick="clearConnections()" style="background:var(--accent-red); color:white; border:none; padding:6px 15px; border-radius:4px; font-size:11px; cursor:pointer;">🧹 CLEAR LINES</button>
             </div>
         </div>
 
@@ -89,27 +75,11 @@
             <div id="nodes-container"></div>
         </div>
 
-        <div id="terminal" class="terminal"><div>[System] 드래그로 노드 사이를 연결하세요.</div></div>
-    </div>
-
-    <!-- API Key Modal -->
-    <div id="key-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; justify-content:center; align-items:center;">
-        <div style="background:var(--sidebar-bg); padding:25px; border-radius:12px; width:400px; border:1px solid var(--border-color)">
-            <h3 id="key-title">API 키 등록</h3>
-            <input type="password" id="api-key-input" style="width:100%; padding:10px; background:#010409; border:1px solid var(--border-color); color:white; margin:15px 0;">
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button onclick="document.getElementById('key-modal').style.display='none'" style="background:transparent; border:none; color:var(--text-dim); cursor:pointer;">취소</button>
-                <button onclick="saveApiKey()" style="background:var(--accent-blue); color:white; border:none; padding:8px 20px; border-radius:4px; cursor:pointer;">적용</button>
-            </div>
-        </div>
+        <div id="terminal" class="terminal"><div>[System] 안정화된 v4.2 엔진 로드 완료. 드라이브를 선택하세요.</div></div>
     </div>
 
     <script>
-        let connections = [];
-        let selectedFiles = new Set();
-        let isConnecting = false;
-        let tempLineFrom = null;
-
+        let connections = []; let selectedFiles = new Set(); let isConnecting = false; let tempLineFrom = null;
         const agents = [
             { id: "planner", name: "Planner", role: "기획자", x: 100, y: 50 },
             { id: "spec", name: "Spec Writer", role: "명세서", x: 300, y: 50 },
@@ -133,33 +103,41 @@
             const res = await fetch('/api/workspace/change', { method: 'POST', body: JSON.stringify({ path }) });
             const data = await res.json();
             document.getElementById('dir-name').innerText = data.currentDir;
-            loadFiles(); updateHealth();
+            loadWorkspaceList(); loadFiles();
+        }
+
+        async function loadWorkspaceList() {
+            const res = await fetch('/api/workspace/list');
+            const data = await res.json();
+            const list = document.getElementById('folder-list');
+            list.innerHTML = '<div class="item" onclick="changeWorkspace(\''+data.parent+'\')">⬆️ 상위 폴더로</div>';
+            data.folders.forEach(f => {
+                const div = document.createElement('div'); div.className = 'item'; div.innerHTML = '📁 ' + f;
+                div.onclick = () => changeWorkspace(f); // Rel path
+                list.appendChild(div);
+            });
         }
 
         async function loadFiles() {
             const res = await fetch('/api/files/list');
-            const data = await res.json();
-            const list = document.getElementById('file-list');
-            list.innerHTML = '';
-            data.files.forEach(f => {
-                const item = document.createElement('div');
-                item.className = 'file-item';
-                item.innerHTML = '<input type="checkbox" class="file-checkbox"> <span class="file-name">' + f + '</span>';
-                item.querySelector('input').onchange = (e) => { if(e.target.checked) selectedFiles.add(f); else selectedFiles.delete(f); document.getElementById('sel-count').innerText = selectedFiles.size; };
-                list.appendChild(item);
+            const files = await res.json();
+            const list = document.getElementById('file-list'); list.innerHTML = '';
+            files.forEach(f => {
+                const div = document.createElement('div'); div.className = 'item';
+                div.innerHTML = '<input type="checkbox" class="file-checkbox"> 📄 ' + f;
+                list.appendChild(div);
             });
         }
 
         function initNodes() {
-            const container = document.getElementById('nodes-container');
+            const container = document.getElementById('nodes-container'); container.innerHTML = '';
             agents.forEach(a => {
-                const el = document.createElement('div');
-                el.className = 'node'; el.id = 'node-' + a.id;
+                const el = document.createElement('div'); el.className = 'node'; el.id = 'node-' + a.id;
                 el.style.left = a.x + 'px'; el.style.top = a.y + 'px';
                 el.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>' +
                              '<div class="port port-in" onmouseup="endConnection(event, \''+a.id+'\')"></div>' +
                              '<div class="port port-out" onmousedown="startConnection(event, \''+a.id+'\')"></div>';
-                el.onmousedown = (e) => { if(e.target.classList.contains('port')) return; startDragging(e, el); };
+                el.onmousedown = (e) => { if(!e.target.classList.contains('port')) startDragging(e, el); };
                 container.appendChild(el);
             });
         }
@@ -167,72 +145,57 @@
         function startDragging(e, el) {
             let shiftX = e.clientX - el.getBoundingClientRect().left;
             let shiftY = e.clientY - el.getBoundingClientRect().top;
-            document.onmousemove = (e) => {
-                el.style.left = (e.clientX - shiftX) + 'px';
-                el.style.top = (e.clientY - shiftY) + 'px';
+            document.onmousemove = (ev) => {
+                el.style.left = (ev.clientX - shiftX) + 'px'; el.style.top = (ev.clientY - shiftY) + 'px';
                 drawConnections();
             };
-            document.onmouseup = () => { document.onmousemove = null; saveState(); };
+            document.onmouseup = () => { document.onmousemove = null; saveWorkflow(); };
         }
 
         function startConnection(e, fromId) {
-            e.stopPropagation();
-            isConnecting = true;
-            tempLineFrom = fromId;
-            document.onmousemove = (ev) => { drawTempLine(ev); };
+            e.stopPropagation(); isConnecting = true; tempLineFrom = fromId;
+            document.onmousemove = drawTempLine;
             document.onmouseup = () => { isConnecting = false; document.onmousemove = null; document.getElementById('flow-svg').querySelector('.temp-line')?.remove(); };
         }
 
         function endConnection(e, toId) {
             if(isConnecting && tempLineFrom !== toId) {
                 connections.push({ from: tempLineFrom, to: toId });
-                drawConnections();
-                saveState();
+                drawConnections(); saveWorkflow();
             }
         }
 
         function drawConnections() {
             const svg = document.getElementById('flow-svg');
-            svg.innerHTML = svg.innerHTML.split('</defs>')[0] + '</defs>';
+            // SVG 내부를 비우되 marker defs는 남김
+            const defs = svg.querySelector('defs')?.outerHTML || '';
+            svg.innerHTML = defs;
             const cR = document.getElementById('canvas-area').getBoundingClientRect();
             connections.forEach(conn => {
-                const fNode = document.getElementById('node-' + conn.from);
-                const tNode = document.getElementById('node-' + conn.to);
-                if(fNode && tNode) {
-                    const fR = fNode.getBoundingClientRect(); const tR = tNode.getBoundingClientRect();
+                const f = document.getElementById('node-' + conn.from); const t = document.getElementById('node-' + conn.to);
+                if(f && t) {
+                    const fR = f.getBoundingClientRect(); const tR = t.getBoundingClientRect();
                     const x1 = fR.right - cR.left; const y1 = fR.top + fR.height/2 - cR.top;
                     const x2 = tR.left - cR.left; const y2 = tR.top + tR.height/2 - cR.top;
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", `M ${x1} ${y1} C ${x1+50} ${y1}, ${x2-50} ${y2}, ${x2} ${y2}`);
-                    path.setAttribute("class", "flow-line");
-                    svg.appendChild(path);
+                    path.setAttribute("class", "flow-line"); svg.appendChild(path);
                 }
             });
         }
 
         function drawTempLine(e) {
-            const svg = document.getElementById('flow-svg');
-            svg.querySelector('.temp-line')?.remove();
+            const svg = document.getElementById('flow-svg'); svg.querySelector('.temp-line')?.remove();
             const from = document.getElementById('node-' + tempLineFrom).getBoundingClientRect();
             const cR = document.getElementById('canvas-area').getBoundingClientRect();
             const x1 = from.right - cR.left; const y1 = from.top + from.height/2 - cR.top;
-            const x2 = e.clientX - cR.left; const y2 = e.clientY - cR.top;
             const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            line.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
-            line.setAttribute("class", "temp-line");
-            svg.appendChild(line);
+            line.setAttribute("d", `M ${x1} ${y1} L ${e.clientX - cR.left} ${e.clientY - cR.top}`);
+            line.setAttribute("class", "temp-line"); svg.appendChild(line);
         }
 
-        async function updateHealth() {
-            const res = await fetch('/api/providers/health');
-            const data = await res.json();
-            Object.keys(data).forEach(id => {
-                const d = document.getElementById('dot-' + id);
-                if(d) d.className = 'dot ' + (data[id] ? 'online' : 'offline');
-            });
-        }
-
-        async function saveState() {
+        function clearConnections() { connections = []; drawConnections(); saveWorkflow(); }
+        async function saveWorkflow() {
             const state = { 
                 nodes: agents.map(a => ({ id: a.id, x: document.getElementById('node-'+a.id).style.left, y: document.getElementById('node-'+a.id).style.top })),
                 connections: connections 
@@ -240,25 +203,18 @@
             await fetch('/api/workflow/state', { method: 'POST', body: JSON.stringify(state) });
         }
 
-        async function loadState() {
-            const res = await fetch('/api/workflow/state');
-            const data = await res.json();
+        async function loadWorkflow() {
+            const res = await fetch('/api/workflow/state'); const data = await res.json();
             if(data.nodes) {
                 data.nodes.forEach(n => { const el = document.getElementById('node-'+n.id); if(el){ el.style.left = n.x; el.style.top = n.y; } });
-                connections = data.connections || [];
-                drawConnections();
+                connections = data.connections || []; drawConnections();
             }
         }
 
-        function openKeyModal(p) { window.targetProvider = p; document.getElementById('key-modal').style.display='flex'; }
-        async function saveApiKey() {
-            const key = document.getElementById('api-key-input').value;
-            await fetch('/api/providers/keys', { method: 'POST', body: JSON.stringify({ provider: window.targetProvider, key }) });
-            document.getElementById('key-modal').style.display='none'; updateHealth();
+        function init() {
+            initNodes(); changeWorkspace('.'); setTimeout(loadWorkflow, 500);
         }
-
-        initNodes(); loadFiles(); updateHealth(); loadState();
-        setInterval(updateHealth, 5000);
+        init();
     </script>
 </body>
 </html>
