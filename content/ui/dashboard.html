@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Studio (v4.8 Recovery)</title>
+    <title>Autopus Studio (v4.9 Full Squad)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -10,15 +10,16 @@
             --border-color: #30363d;
             --accent-blue: #58a6ff;
             --accent-green: #3fb950;
+            --accent-orange: #d29922;
             --accent-red: #f85149;
             --text-main: #c9d1d9;
             --text-dim: #8b949e;
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-        .main-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        .sidebar-right { width: 400px; min-width: 400px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
+        .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; z-index: 100; }
+        .main-container { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .sidebar-right { width: 420px; min-width: 420px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; overflow-y: auto; z-index: 100; }
         
         .drive-bar { padding: 10px; display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); background: #21262d; }
         .btn-drive { flex: 1; padding: 6px; font-size: 11px; background: #30363d; border: 1px solid var(--border-color); color: white; border-radius: 4px; cursor: pointer; }
@@ -36,9 +37,10 @@
 
         .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
         #flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 12px; cursor: move; z-index: 20; }
+        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 155px; padding: 12px; cursor: move; z-index: 20; }
         .node:hover { border-color: var(--accent-blue); }
         .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
+        .node.completed { border-color: var(--accent-green); border-width: 2px; }
         
         .port { width: 12px; height: 12px; background: var(--accent-blue); border: 2px solid var(--sidebar-bg); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); cursor: crosshair; }
         .port-in { left: -7px; }
@@ -70,15 +72,15 @@
         <div class="list-container" id="file-list"></div>
     </div>
 
-    <div class="main-area">
+    <div class="main-container">
         <div class="top-bar">
-            <div class="logo">🐙 STUDIO v4.8</div>
+            <div class="logo">🐙 STUDIO v4.9 FINAL</div>
             <div class="provider-status">
                 <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
                 <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
                 <div class="status-item"><div id="dot-codex" class="dot online"></div> Codex</div>
                 <button onclick="saveState()" style="background:#238636; color:white; border:none; padding:4px 12px; border-radius:4px; font-size:11px; cursor:pointer;">💾 저장</button>
-                <button onclick="clearConnections()" style="background:var(--accent-red); color:white; border:none; padding:4px 12px; border-radius:4px; font-size:11px; cursor:pointer;">🧹 선 삭제</button>
+                <button onclick="clearConnections()" style="background:var(--accent-red); color:white; border:none; padding:4px 12px; border-radius:4px; font-size:11px; cursor:pointer;">🧹 선 전체삭제</button>
             </div>
         </div>
         <div class="canvas-area" id="canvas-area">
@@ -95,14 +97,14 @@
                 </div>
             </div>
         </div>
-        <div id="terminal" class="terminal"><div>[System] 스튜디오 초기화 완료. 드라이브를 선택하여 프로젝트를 여세요.</div></div>
+        <div id="terminal" class="terminal"><div>[System] 16인 완전체 팀 소환 완료. 정식판 v4.9 가동.</div></div>
     </div>
 
     <div class="sidebar-right" id="sidebar-right">
         <h3 id="drawer-title" style="color:var(--accent-blue); margin:0;">에이전트 업무</h3>
         <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin-top:5px;"></p>
         <textarea id="prompt-input" placeholder="지시사항을 상세히 입력하세요..."></textarea>
-        <button class="btn-run" style="width:100%;" onclick="assignTask()">실전 분석 시작 (AI Execute)</button>
+        <button class="btn-run" style="width:100%;" onclick="assignTask()">실전 분석 시작</button>
         <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
     </div>
 
@@ -122,19 +124,22 @@
         let lastOutput = ""; let nextId = "";
 
         const agents = [
-            { id: "planner", name: "Planner", role: "기획자", x: 100, y: 50 },
-            { id: "spec", name: "Spec Writer", role: "명세서", x: 300, y: 50 },
-            { id: "arch", name: "Architect", role: "설계자", x: 500, y: 50 },
-            { id: "expl", name: "Explorer", role: "탐험가", x: 700, y: 50 },
-            { id: "exec", name: "Executor", role: "개발자", x: 100, y: 220 },
-            { id: "deep", name: "Deep Worker", role: "심층작업", x: 300, y: 220 },
-            { id: "dbug", name: "Debugger", role: "해결사", x: 500, y: 220 },
-            { id: "test", name: "Tester", role: "테스터", x: 100, y: 390 },
-            { id: "val", name: "Validator", role: "품질검증", x: 300, y: 390 },
-            { id: "perf", name: "Perf Eng", role: "성능분석", x: 500, y: 390 },
-            { id: "rev", name: "Reviewer", role: "리뷰어", x: 100, y: 560 },
-            { id: "sec", name: "Security", role: "보안감사", x: 300, y: 560 },
-            { id: "devops", name: "DevOps", role: "배포자", x: 500, y: 560 }
+            { id: "planner", name: "Planner", role: "기획자", x: 40, y: 30 },
+            { id: "spec", name: "Spec Writer", role: "명세서", x: 210, y: 30 },
+            { id: "arch", name: "Architect", role: "설계자", x: 380, y: 30 },
+            { id: "expl", name: "Explorer", role: "탐험가", x: 550, y: 30 },
+            { id: "exec", name: "Executor", role: "개발자", x: 40, y: 170 },
+            { id: "deep", name: "Deep Worker", role: "심층작업", x: 210, y: 170 },
+            { id: "dbug", name: "Debugger", role: "해결사", x: 380, y: 170 },
+            { id: "anno", name: "Annotator", role: "태그관리", x: 550, y: 170 },
+            { id: "test", name: "Tester", role: "테스터", x: 40, y: 310 },
+            { id: "val", name: "Validator", role: "품질검증", x: 210, y: 310 },
+            { id: "fend", name: "Frontend", role: "UI전문가", x: 380, y: 310 },
+            { id: "uxv", name: "UX Validator", role: "시각검증", x: 550, y: 310 },
+            { id: "perf", name: "Perf Eng", role: "성능분석", x: 40, y: 450 },
+            { id: "rev", name: "Reviewer", role: "리뷰어", x: 210, y: 450 },
+            { id: "sec", name: "Security", role: "보안감사", x: 380, y: 450 },
+            { id: "devops", name: "DevOps", role: "배포자", x: 550, y: 450 }
         ];
 
         async function changeWorkspace(path) {
@@ -312,4 +317,3 @@
     </script>
 </body>
 </html>
-`
