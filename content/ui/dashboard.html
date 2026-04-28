@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Virtual Studio (v3.8 Workflow Editor)</title>
+    <title>Autopus Studio (v3.9 Structured Data)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -16,35 +16,34 @@
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; }
-        .main-container { flex: 1; display: flex; flex-direction: column; position: relative; }
+        /* Sidebar */
+        .sidebar-left { width: 260px; min-width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; z-index: 100; }
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .sidebar-right { width: 420px; min-width: 420px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; overflow-y: auto; z-index: 100; }
         
-        /* Drive Explorer */
         .drive-selector { padding: 10px; display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); }
-        .btn-drive { flex: 1; padding: 5px; font-size: 10px; background: #21262d; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer; }
-        .btn-drive:hover { border-color: var(--accent-blue); }
+        .btn-sm { flex: 1; padding: 4px; font-size: 10px; background: #21262d; border: 1px solid var(--border-color); color: white; border-radius: 4px; cursor: pointer; }
+        
         .folder-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
-        .folder-item { padding: 4px 8px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px; }
+        .folder-item { padding: 6px 8px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .folder-item:hover { background: #1f242c; color: var(--accent-blue); }
 
-        .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
-        .logo { font-weight: 900; color: var(--accent-blue); font-size: 18px; }
+        /* Top Bar */
+        .top-bar { height: 50px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
+        .logo { font-weight: 900; color: var(--accent-blue); font-size: 16px; }
 
-        /* Workflow Editor */
-        .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
-        #flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        /* Canvas & Nodes */
+        .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: auto; }
+        #flow-svg { position: absolute; top: 0; left: 0; min-width: 2000px; min-height: 2000px; pointer-events: none; }
         
-        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 12px; cursor: move; transition: border-color 0.2s; z-index: 20; }
+        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 150px; padding: 10px; cursor: move; z-index: 20; }
         .node:hover { border-color: var(--accent-blue); }
-        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
-        .node-role { font-size: 10px; color: var(--text-dim); }
+        .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
+        .node.completed { border-color: var(--accent-green); border-width: 2px; }
+        .node-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+        .node-role { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
 
-        /* Connection Points */
-        .port { width: 10px; height: 10px; background: var(--accent-blue); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); cursor: crosshair; }
-        .port-in { left: -6px; }
-        .port-out { right: -6px; }
-
-        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 10px; overflow-y: auto; font-family: monospace; font-size: 11px; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
@@ -52,63 +51,69 @@
 <body>
     <div class="sidebar-left">
         <div class="drive-selector">
-            <button class="btn-drive" onclick="changeWorkspace('/mnt/c')">C:</button>
-            <button class="btn-drive" onclick="changeWorkspace('/mnt/e')">E:</button>
-            <button class="btn-drive" onclick="changeWorkspace('/mnt/c/Users/SAMSUNG/Desktop')">Desktop</button>
+            <button class="btn-sm" onclick="changeWorkspace('/mnt/c')">C:</button>
+            <button class="btn-sm" onclick="changeWorkspace('/mnt/e')">E:</button>
+            <button class="btn-sm" onclick="changeWorkspace('/mnt/c/Users/SAMSUNG/Desktop')">Desktop</button>
         </div>
-        <div class="sidebar-header">📂 폴더 찾아보기</div>
+        <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text-dim)">FOLDER EXPLORER</div>
         <div class="folder-list" id="folder-list"></div>
-        <div class="sidebar-header" style="border-top: 1px solid var(--border-color)">📄 현재 프로젝트 파일</div>
+        <div style="padding:10px; font-size:11px; font-weight:bold; color:var(--text-dim); border-top: 1px solid var(--border-color)">PROJECT FILES</div>
         <div class="folder-list" id="file-list"></div>
     </div>
 
     <div class="main-container">
         <div class="top-bar">
-            <div class="logo">🐙 STUDIO v3.8 EDITOR</div>
-            <div id="current-path" style="font-size:11px; color:var(--text-dim)">-</div>
-            <button class="btn-drive" style="flex:none; padding:5px 15px;" onclick="saveWorkflow()">💾 워크플로우 저장</button>
+            <div class="logo">🐙 AUTOPUS STUDIO v3.9</div>
+            <div id="current-path" style="font-size:11px; color:var(--accent-green)">-</div>
+            <button class="btn-sm" style="flex:none; padding:5px 15px;" onclick="saveCurrentState()">💾 WORKFLOW SAVE</button>
         </div>
 
         <div class="canvas-area" id="canvas-area">
             <svg id="flow-svg"></svg>
-            <!-- Nodes will be draggable and connectable -->
             <div id="nodes-container"></div>
         </div>
 
-        <div class="terminal" id="terminal"><div>[System] 워크플로우 에디터 로드 완료. 드라이브를 선택하여 프로젝트를 여세요.</div></div>
+        <div class="terminal" id="terminal"><div>[System] 16인 가상 스튜디오 에디터 가동 중...</div></div>
     </div>
 
     <script>
-        let nodes = [];
-        let connections = [];
         let currentDir = "";
-
-        const agentTypes = [
-            { id: "planner", name: "Planner", role: "기획자", x: 100, y: 100 },
-            { id: "spec", name: "Spec Writer", role: "명세서", x: 300, y: 100 },
-            { id: "arch", name: "Architect", role: "아키텍트", x: 500, y: 100 },
-            { id: "exec", name: "Executor", role: "개발자", x: 700, y: 100 }
+        const agents = [
+            { id: "planner", name: "Planner", role: "기획자", dept: "plan", x: 50, y: 50 },
+            { id: "spec", name: "Spec Writer", role: "명세서", dept: "plan", x: 250, y: 50 },
+            { id: "arch", name: "Architect", role: "설계자", dept: "plan", x: 450, y: 50 },
+            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", x: 650, y: 50 },
+            
+            { id: "exec", name: "Executor", role: "개발자", dept: "dev", x: 50, y: 200 },
+            { id: "deep", name: "Deep Worker", role: "심층작업", dept: "dev", x: 250, y: 200 },
+            { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", x: 450, y: 200 },
+            { id: "anno", name: "Annotator", role: "태그관리", dept: "dev", x: 650, y: 200 },
+            
+            { id: "test", name: "Tester", role: "테스터", dept: "qa", x: 50, y: 350 },
+            { id: "val", name: "Validator", role: "품질검증", dept: "qa", x: 250, y: 350 },
+            { id: "fend", name: "Frontend", role: "UI전문가", dept: "qa", x: 450, y: 350 },
+            { id: "uxv", name: "UX Validator", role: "시각검증", dept: "qa", x: 650, y: 350 },
+            
+            { id: "perf", name: "Perf Eng", role: "성능분석", dept: "ops", x: 50, y: 500 },
+            { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", x: 250, y: 500 },
+            { id: "sec", name: "Security", role: "보안감사", dept: "ops", x: 450, y: 500 },
+            { id: "devops", name: "DevOps", role: "배포자", dept: "ops", x: 650, y: 500 }
         ];
 
         async function changeWorkspace(path) {
-            const res = await fetch('/api/workspace/change', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ path })
-            });
+            const res = await fetch('/api/workspace/change', { method: 'POST', body: JSON.stringify({ path }) });
             const data = await res.json();
             currentDir = data.currentDir;
             document.getElementById('current-path').innerText = currentDir;
             loadWorkspaceList();
             loadFileList();
-            addLog("System", "📁 경로 변경: " + currentDir);
         }
 
         async function loadWorkspaceList() {
             const res = await fetch('/api/workspace/list');
             const data = await res.json();
             const list = document.getElementById('folder-list');
-            list.innerHTML = '<div class="folder-item" onclick="changeWorkspace(\''+data.parent+'\')">⬆️ 상위 폴더로</div>';
+            list.innerHTML = '<div class="folder-item" onclick="changeWorkspace(\''+data.parent+'\')">⬆️ UP..</div>';
             data.folders.forEach(f => {
                 const item = document.createElement('div');
                 item.className = 'folder-item';
@@ -131,29 +136,17 @@
             });
         }
 
-        function addLog(agent, msg) {
-            const div = document.createElement('div');
-            div.innerHTML = '<span style="color:var(--accent-orange)">['+agent+']</span> ' + msg;
-            document.getElementById('terminal').appendChild(div);
-            document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
-        }
-
         function initEditor() {
             const container = document.getElementById('nodes-container');
-            agentTypes.forEach(a => {
+            agents.forEach(a => {
                 const node = document.createElement('div');
-                node.className = 'node';
-                node.id = 'node-' + a.id;
-                node.style.left = a.x + 'px';
-                node.style.top = a.y + 'px';
-                node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>' +
-                               '<div class="port port-in"></div><div class="port port-out"></div>';
-                
-                // Draggable logic
+                node.className = 'node'; node.id = 'node-' + a.id;
+                node.style.left = a.x + 'px'; node.style.top = a.y + 'px';
+                node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>';
                 node.onmousedown = startDrag;
                 container.appendChild(node);
             });
-            changeWorkspace('.'); // 초기 위치
+            changeWorkspace('.');
         }
 
         function startDrag(e) {
@@ -161,20 +154,13 @@
             let offsetBox = document.getElementById('canvas-area').getBoundingClientRect();
             let shiftX = e.clientX - node.getBoundingClientRect().left;
             let shiftY = e.clientY - node.getBoundingClientRect().top;
-
             function moveAt(pageX, pageY) {
-                node.style.left = (pageX - offsetBox.left - shiftX) + 'px';
-                node.style.top = (pageY - offsetBox.top - shiftY) + 'px';
-                updateConnections();
+                node.style.left = (pageX - offsetBox.left - shiftX + document.getElementById('canvas-area').scrollLeft) + 'px';
+                node.style.top = (pageY - offsetBox.top - shiftY + document.getElementById('canvas-area').scrollTop) + 'px';
             }
-
             function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
             document.addEventListener('mousemove', onMouseMove);
-            node.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); node.onmouseup = null; };
-        }
-
-        function updateConnections() {
-            // SVG 선 다시 그리기 로직 (v3.5 로직 확장)
+            document.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); document.onmouseup = null; };
         }
 
         initEditor();
