@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Virtual Studio (v3.2 Approval Mode)</title>
+    <title>Autopus Virtual Studio (Final v3.3)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -17,36 +17,41 @@
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
+        /* Layout */
         .sidebar-left { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 50; }
         .main-area { flex: 1; display: flex; flex-direction: column; position: relative; }
         .sidebar-right { width: 450px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; z-index: 50; }
         
+        /* Top Bar */
         .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
         .provider-status { display: flex; gap: 15px; }
         .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-        .dot { width: 7px; height: 7px; border-radius: 50%; background: #484f58; }
-        .dot.online { background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; }
+        .dot.online { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .dot.offline { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
 
-        .file-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
-        .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .file-item:hover { background: #1f242c; }
-
-        .canvas { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; }
+        /* Canvas & Nodes */
+        .canvas { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
         .lane-container { display: flex; width: 100%; height: 100%; position: absolute; pointer-events: none; }
         .lane { flex: 1; border-right: 1px dashed #30363d; display: flex; flex-direction: column; align-items: center; padding-top: 40px; }
-        .lane-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 20px; }
-
-        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 170px; padding: 12px; margin-bottom: 15px; pointer-events: auto; cursor: pointer; transition: 0.2s; }
+        .lane-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 20px; background: #1f242c; padding: 3px 10px; border-radius: 10px; }
+        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 170px; padding: 12px; margin-bottom: 15px; pointer-events: auto; cursor: pointer; transition: 0.2s; position: relative; }
         .node:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
         .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
         .node.completed { border-color: var(--accent-green); border-width: 2px; }
+        .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
         
+        /* Terminal */
+        .terminal { height: 160px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; line-height: 1.5; }
+        .log-entry { margin-bottom: 4px; border-left: 2px solid var(--accent-blue); padding-left: 10px; }
+
+        /* Popups */
         .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 100; display: none; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
         .panel-header { padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; background: #161b22; border-radius: 12px 12px 0 0; }
         .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #d1d5db; }
-        .panel-footer { padding: 15px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 15px; background: #161b22; border-radius: 0 0 12px 12px; }
+        .panel-footer { padding: 15px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 15px; background: #161b22; }
 
-        textarea { flex: 1; width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 20px; margin: 15px 0; resize: none; font-size: 15px; line-height: 1.6; box-sizing: border-box; }
+        textarea { flex: 1; width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 20px; margin: 15px 0; resize: none; font-size: 15px; }
         .btn-run { background: var(--accent-blue); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-approve { background: var(--accent-green); }
         .btn-reject { background: var(--accent-red); }
@@ -56,23 +61,17 @@
 </head>
 <body>
     <div class="sidebar-left">
-        <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:bold; display:flex; justify-content:space-between;">
-            📁 탐색기 <span id="sel-count" style="color:var(--accent-blue); font-size:10px;">0</span>
-        </div>
+        <div style="padding:15px; border-bottom:1px solid var(--border-color); font-weight:bold;">📁 파일 탐색기</div>
         <div class="file-list" id="file-list"></div>
     </div>
 
     <div class="main-area">
         <div class="top-bar">
-            <div>
-                <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS STUDIO v3.2</div>
-                <div id="save-path" style="font-size:9px; color:var(--text-dim)">저장: .autopus/workflows/state.json</div>
-            </div>
+            <div style="font-weight:900; color:var(--accent-blue)">🐙 AUTOPUS STUDIO v3.3</div>
             <div class="provider-status">
                 <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
                 <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
                 <div class="status-item"><div id="dot-codex" class="dot online"></div> Codex</div>
-                <button class="btn-run" style="padding:4px 10px; font-size:10px; background:var(--sidebar-bg); border:1px solid var(--border-color)" onclick="saveCurrentState()">💾 저장</button>
             </div>
             <div id="proj-name" style="font-size:12px; color:var(--accent-green)">로딩 중...</div>
         </div>
@@ -84,58 +83,51 @@
                 <div class="lane" id="lane-qa"><div class="lane-title">검증 & QA</div></div>
                 <div class="lane" id="lane-ops"><div class="lane-title">리뷰 & 배포</div></div>
             </div>
-            <!-- Approval Panel -->
             <div class="overlay-panel" id="overlay-panel">
                 <div class="panel-header">
-                    <span id="panel-title" style="font-weight:bold; color:var(--accent-blue)">AI 결과 검토</span>
+                    <span id="panel-title" style="font-weight:bold; color:var(--accent-blue)">AI 결과 검토 (승인 대기)</span>
                     <button class="btn-run" style="padding:4px 12px; background:transparent; border:1px solid var(--border-color)" onclick="closePanel()">닫기</button>
                 </div>
                 <div class="panel-body" id="panel-content"></div>
-                <div class="panel-footer" id="approval-footer" style="display:none;">
-                    <button class="btn-run btn-reject" onclick="handleReject()">❌ 반려 (재지시)</button>
-                    <button class="btn-run btn-approve" onclick="handleApprove()">✅ 승인 (다음 단계 진행)</button>
+                <div class="panel-footer" id="approval-footer">
+                    <button class="btn-run btn-reject" onclick="handleReject()">❌ 반려 (재작업)</button>
+                    <button class="btn-run btn-approve" onclick="handleApprove()">✅ 승인 (다음 단계)</button>
                 </div>
             </div>
         </div>
-        <div id="terminal" style="height:150px; background:#010409; border-top:1px solid #30363d; padding:15px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
+        <div class="terminal" id="terminal"><div>[System] 스튜디오 초기화 완료.</div></div>
     </div>
 
     <div class="sidebar-right" id="sidebar-right">
         <h3 id="drawer-title" style="color:var(--accent-blue); margin:0;">업무 할당</h3>
         <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin:5px 0 20px 0;"></p>
-        <button class="btn-run" style="background:var(--accent-orange); width:100%; margin-bottom:10px;" id="workflow-btn" onclick="startChainedWorkflow()">⛓️ 연쇄 협업 시작</button>
-        <textarea id="prompt-input" placeholder="상세 지시사항을 입력하세요..."></textarea>
+        <button class="btn-run" style="background:var(--accent-orange); width:100%; margin-bottom:10px;" onclick="startWorkflow()">⛓️ 연쇄 협업 시작</button>
+        <textarea id="prompt-input" placeholder="지시사항을 입력하세요..."></textarea>
         <button class="btn-run" style="width:100%;" onclick="assignTask()">단일 실행</button>
         <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
     </div>
 
     <script>
-        let selectedAgent = null; let selectedFiles = new Set(); let appState = { nodes: {}, logs: [] };
-        let workflowQueue = []; // 연쇄 작업을 위한 큐
-
+        let selectedAgent = null; let selectedFiles = new Set(); let appState = { nextAgent: null, lastOutput: "" };
         const agents = [
             { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "분석 및 태스크 분해" },
             { id: "spec", name: "Spec Writer", role: "명세 작성자", dept: "plan", desc: "SPEC.md 작성" },
             { id: "arch", name: "Architect", role: "아키텍트", dept: "plan", desc: "구조 설계" },
             { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", desc: "코드 분석" },
             { id: "exec", name: "Executor", role: "실행자", dept: "dev", desc: "코드 구현" },
-            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "장기 태스크" },
+            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "복잡 태스크" },
             { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", desc: "버그 수정" },
-            { id: "anno", name: "Annotator", role: "태그 관리자", dept: "dev", desc: "@AX 주석 관리" },
             { id: "test", name: "Tester", role: "테스터", dept: "qa", desc: "테스트 작성" },
             { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "품질 검증" },
-            { id: "fend", name: "Frontend Spec", role: "UI 전문가", dept: "qa", desc: "E2E 테스트" },
-            { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 회귀" },
             { id: "perf", name: "Perf Engineer", role: "성능 전문가", dept: "qa", desc: "성능 분석" },
             { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", desc: "코드 리뷰" },
-            { id: "sec", name: "Security Audit", role: "보안 감사", dept: "ops", desc: "보안 점검" },
             { id: "devops", name: "DevOps", role: "운영자", dept: "ops", desc: "배포 자동화" }
         ];
 
         function getIcon(f) {
             const ext = f.split('.').pop().toLowerCase();
-            const dict = { py:'🐍', go:'🐹', md:'📝', json:'📦', yaml:'⚙️', sh:'🐚' };
-            return dict[ext] || '📄';
+            const dict = { py:'🐍', go:'🐹', md:'📝', json:'📦', yaml:'⚙️', sh:'🐚', bat:'🐚' };
+            return (dict[ext] || '📄') + ' ';
         }
 
         async function loadFiles() {
@@ -146,102 +138,85 @@
             files.forEach(f => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'file-checkbox';
-                cb.onchange = () => { if(cb.checked) selectedFiles.add(f); else selectedFiles.delete(f); document.getElementById('sel-count').innerText = selectedFiles.size; };
-                const span = document.createElement('span'); span.innerHTML = getIcon(f) + ' ' + f;
-                span.onclick = async () => { const r = await fetch('/api/files/read?path=' + encodeURIComponent(f)); showPanel(f, await r.text(), false); };
-                item.appendChild(cb); item.appendChild(span);
+                item.innerHTML = '<input type="checkbox" class="file-checkbox" onchange="toggleFile(event, \''+f+'\')"> <span>'+getIcon(f)+f+'</span>';
+                item.onclick = async (e) => { if(e.target.tagName !== 'INPUT') { const r = await fetch('/api/files/read?path='+encodeURIComponent(f)); showPanel(f, await r.text(), false); } };
                 list.appendChild(item);
             });
         }
+        function toggleFile(e, f) { if(e.target.checked) selectedFiles.add(f); else selectedFiles.delete(f); }
 
-        function showPanel(t, c, isApproval) {
-            document.getElementById('panel-title').innerText = t;
-            document.getElementById('panel-content').innerText = c;
-            document.getElementById('overlay-panel').style.display = 'flex';
-            document.getElementById('approval-footer').style.display = isApproval ? 'flex' : 'none';
+        async function updateHealth() {
+            try {
+                const res = await fetch('/api/providers/health');
+                const data = await res.json();
+                Object.keys(data).forEach(id => {
+                    const d = document.getElementById('dot-' + id);
+                    if(d) d.className = 'dot ' + (data[id] === 'online' ? 'online' : 'offline');
+                });
+            } catch(e) {}
         }
-        function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
 
-        async function startChainedWorkflow() {
+        function addLog(agent, msg) {
+            const term = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = '<strong>[' + agent + ']</strong> ' + msg;
+            term.appendChild(div); term.scrollTop = term.scrollHeight;
+        }
+
+        async function assignTask() {
             const prompt = document.getElementById('prompt-input').value; if(!prompt) return;
-            workflowQueue = [selectedAgent.id]; // 시작 에이전트 큐에 삽입
-            addLog("System", "⛓️ 승인 모드 워크플로우를 시작합니다.");
-            runNextInQueue(prompt);
-        }
-
-        async function runNextInQueue(inputPrompt) {
-            if(workflowQueue.length === 0) return;
-            const currentId = workflowQueue.shift();
-            const agent = agents.find(a => a.id === currentId);
-            closeDrawer();
+            const agent = selectedAgent; closeDrawer();
+            document.getElementById('node-' + agent.id).classList.add('active');
+            addLog(agent.name, "작업을 시작합니다...");
             
-            document.getElementById('node-' + currentId).classList.add('active');
-            addLog(agent.name, "분석 중...");
-
             const res = await fetch('/api/workflow/run', {
-                method: 'POST', body: JSON.stringify({ agentId: currentId, prompt: inputPrompt, context: Array.from(selectedFiles) })
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agentId: agent.id, prompt, context: Array.from(selectedFiles) })
             });
             const data = await res.json();
-            
-            document.getElementById('node-' + currentId).classList.remove('active');
+            document.getElementById('node-' + agent.id).classList.remove('active');
             if(data.status === 'success') {
-                document.getElementById('node-' + currentId).classList.add('completed');
-                appState.lastOutput = data.output;
-                appState.nextAgentId = data.nextAgent;
-                showPanel(agent.name + "의 결과 검토 (승인 필요)", data.output, true);
+                addLog(agent.name, "작업 완료. 결과를 확인하세요.");
+                showPanel(agent.name + " 결과 보고서", data.output, true);
+                appState.nextAgent = data.nextAgent; appState.lastOutput = data.output;
+            } else {
+                addLog("System", "❌ 에러 발생: " + data.message);
             }
         }
 
         function handleApprove() {
             closePanel();
-            addLog("System", "✅ 사용자가 결과를 승인했습니다. 다음 단계로 진행합니다.");
-            if(appState.nextAgentId) {
-                workflowQueue.push(appState.nextAgentId);
-                runNextInQueue(appState.lastOutput);
+            if(appState.nextAgent) {
+                addLog("System", "✅ 승인 완료. 다음 에이전트("+appState.nextAgent.toUpperCase()+")에게 업무를 인계합니다.");
+                selectedAgent = agents.find(a => a.id === appState.nextAgent);
+                runAutomaticStep(appState.nextAgent, appState.lastOutput);
             } else {
-                addLog("System", "🏁 모든 과정이 완료되었습니다.");
+                addLog("System", "🏁 모든 단계가 완료되었습니다.");
             }
         }
 
-        function handleReject() {
-            closePanel();
-            addLog("System", "❌ 결과가 반려되었습니다. 재지시가 필요합니다.");
-            document.getElementById('sidebar-right').style.display = 'flex';
-        }
-
-        function addLog(agent, msg) {
-            const div = document.createElement('div');
-            div.innerHTML = '<span style="color:var(--accent-orange)">[' + agent + ']</span> ' + msg;
-            document.getElementById('terminal').appendChild(div);
-            document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
-        }
-
-        function openKeyModal(p) { targetProvider = p; document.getElementById('key-modal').style.display = 'flex'; }
-        async function saveApiKey() {
-            const key = document.getElementById('api-key-input').value;
-            await fetch('/api/providers/keys', { method: 'POST', body: JSON.stringify({ provider: targetProvider, key }) });
-            document.getElementById('key-modal').style.display = 'none'; updateHealth();
-        }
-        async function updateHealth() {
-            const res = await fetch('/api/providers/health');
-            const data = await res.json();
-            Object.keys(data).forEach(id => { const d = document.getElementById('dot-' + id); if(d) d.className = 'dot ' + (data[id] ? 'online' : 'offline'); });
-        }
-        function openDrawer(a) { selectedAgent = a; document.getElementById('drawer-title').innerText = a.name; document.getElementById('drawer-desc').innerText = a.desc; document.getElementById('sidebar-right').style.display = 'flex'; }
-        function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
-
-        async function assignTask() {
-            const prompt = document.getElementById('prompt-input').value;
-            const agent = selectedAgent; closeDrawer();
-            document.getElementById('node-' + agent.id).classList.add('active');
+        async function runAutomaticStep(id, prompt) {
+            const node = document.getElementById('node-' + id);
+            node.classList.add('active');
+            addLog(id.toUpperCase(), "이전 단계의 결과를 바탕으로 분석 중...");
             const res = await fetch('/api/workflow/run', {
-                method: 'POST', body: JSON.stringify({ agentId: agent.id, prompt, context: Array.from(selectedFiles) })
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agentId: id, prompt, context: Array.from(selectedFiles) })
             });
             const data = await res.json();
-            document.getElementById('node-' + agent.id).classList.remove('active');
-            showPanel(agent.name + "의 분석 결과", data.output, false);
+            node.classList.remove('active'); node.classList.add('completed');
+            showPanel(id.toUpperCase() + " 결과 보고서", data.output, true);
+            appState.nextAgent = data.nextAgent; appState.lastOutput = data.output;
         }
+
+        function handleReject() { closePanel(); addLog("System", "❌ 반려되었습니다. 재지시를 위해 창을 엽니다."); document.getElementById('sidebar-right').style.display = 'flex'; }
+        function showPanel(t, c, isApprove) { document.getElementById('panel-title').innerText = t; document.getElementById('panel-content').innerText = c; document.getElementById('overlay-panel').style.display = 'flex'; document.getElementById('approval-footer').style.display = isApprove ? 'flex' : 'none'; }
+        function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
+        function openDrawer(a) { selectedAgent = a; document.getElementById('drawer-title').innerText = a.name; document.getElementById('drawer-desc').innerText = a.desc; document.getElementById('sidebar-right').style.display = 'flex'; }
+        function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
 
         function init() {
             agents.forEach(a => {
