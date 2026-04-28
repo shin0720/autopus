@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Autopus Studio (v3.7 Auto-Fix Loop)</title>
+    <title>Autopus Virtual Studio (v3.8 Workflow Editor)</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -11,293 +11,173 @@
             --accent-blue: #58a6ff;
             --accent-green: #3fb950;
             --accent-orange: #d29922;
-            --accent-red: #f85149;
             --text-main: #c9d1d9;
             --text-dim: #8b949e;
         }
         body { background: var(--bg-color); color: var(--text-main); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .sidebar-left { width: 260px; min-width: 260px; max-width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; z-index: 100; }
-        .main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .sidebar-right { width: 420px; min-width: 420px; background: var(--sidebar-bg); border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; overflow-y: auto; z-index: 100; }
+        .sidebar-left { width: 280px; min-width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; }
+        .main-container { flex: 1; display: flex; flex-direction: column; position: relative; }
         
-        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 13px; }
-        .file-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px; font-size: 12px; }
-        .file-item { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .file-item:hover { background: #1f242c; }
-        .file-checkbox { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
-        .file-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Drive Explorer */
+        .drive-selector { padding: 10px; display: flex; gap: 5px; border-bottom: 1px solid var(--border-color); }
+        .btn-drive { flex: 1; padding: 5px; font-size: 10px; background: #21262d; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer; }
+        .btn-drive:hover { border-color: var(--accent-blue); }
+        .folder-list { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; }
+        .folder-item { padding: 4px 8px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px; }
+        .folder-item:hover { background: #1f242c; color: var(--accent-blue); }
 
         .top-bar { height: 55px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }
         .logo { font-weight: 900; color: var(--accent-blue); font-size: 18px; }
-        .provider-status { display: flex; gap: 15px; }
-        .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #484f58; }
-        .dot.online { background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
-        .dot.offline { background: var(--accent-red); box-shadow: 0 0 5px var(--accent-red); }
 
+        /* Workflow Editor */
         .canvas-area { flex: 1; position: relative; background-image: radial-gradient(#30363d 1px, transparent 1px); background-size: 40px 40px; overflow: hidden; }
         #flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        .lane-container { display: flex; width: 100%; height: 100%; position: absolute; pointer-events: none; }
-        .lane { flex: 1; border-right: 1px dashed #30363d; display: flex; flex-direction: column; align-items: center; padding-top: 30px; z-index: 10; pointer-events: auto; }
-        .lane-title { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 20px; background: #1f242c; padding: 4px 12px; border-radius: 10px; border: 1px solid var(--border-color); }
-
-        .node { background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 12px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; position: relative; z-index: 20; }
-        .node:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
-        .node.active { border-color: var(--accent-orange); animation: pulse 1.5s infinite; }
-        .node.completed { border-color: var(--accent-green); border-width: 2px; }
-        .node.failed { border-color: var(--accent-red); border-width: 2px; animation: shake 0.5s; }
+        
+        .node { position: absolute; background: #21262d; border: 1px solid var(--border-color); border-radius: 8px; width: 160px; padding: 12px; cursor: move; transition: border-color 0.2s; z-index: 20; }
+        .node:hover { border-color: var(--accent-blue); }
         .node-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
         .node-role { font-size: 10px; color: var(--text-dim); }
-        
-        .fix-badge { position: absolute; top: -10px; right: -10px; background: var(--accent-orange); color: black; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 10px; display: none; }
 
-        .flow-line { fill: none; stroke: var(--border-color); stroke-width: 2; stroke-dasharray: 5; transition: stroke 0.3s; }
-        .flow-line.active { stroke: var(--accent-blue); stroke-width: 3; animation: flowDash 20s linear infinite; }
-        .flow-line.error { stroke: var(--accent-red); stroke-width: 3; animation: flowDashReverse 10s linear infinite; }
-        @keyframes flowDash { to { stroke-dashoffset: -500; } }
-        @keyframes flowDashReverse { to { stroke-dashoffset: 500; } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        /* Connection Points */
+        .port { width: 10px; height: 10px; background: var(--accent-blue); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); cursor: crosshair; }
+        .port-in { left: -6px; }
+        .port-out { right: -6px; }
 
-        .terminal { height: 160px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
-        .overlay-panel { position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: #0d1117; border: 1px solid var(--border-color); border-radius: 12px; z-index: 200; display: none; flex-direction: column; box-shadow: 0 10px 50px rgba(0,0,0,0.7); }
-        .panel-header { padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; background: #161b22; border-radius: 12px 12px 0 0; }
-        .panel-body { flex: 1; padding: 25px; overflow: auto; white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
-        .panel-footer { padding: 15px; background: #161b22; display: flex; justify-content: center; gap: 15px; border-radius: 0 0 12px 12px; }
-
-        textarea { flex: 1; width: 100%; background: #010409; border: 1px solid var(--border-color); border-radius: 8px; color: white; padding: 20px; margin: 15px 0; resize: none; font-size: 15px; box-sizing: border-box; }
-        .btn { background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .terminal { height: 150px; background: #010409; border-top: 1px solid var(--border-color); padding: 15px; overflow-y: auto; font-family: monospace; font-size: 12px; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="sidebar-left">
-        <div class="sidebar-header">📁 탐색기 <span id="sel-count" style="color:var(--accent-blue)">0</span></div>
-        <div class="file-list" id="file-list"></div>
+        <div class="drive-selector">
+            <button class="btn-drive" onclick="changeWorkspace('/mnt/c')">C:</button>
+            <button class="btn-drive" onclick="changeWorkspace('/mnt/e')">E:</button>
+            <button class="btn-drive" onclick="changeWorkspace('/mnt/c/Users/SAMSUNG/Desktop')">Desktop</button>
+        </div>
+        <div class="sidebar-header">📂 폴더 찾아보기</div>
+        <div class="folder-list" id="folder-list"></div>
+        <div class="sidebar-header" style="border-top: 1px solid var(--border-color)">📄 현재 프로젝트 파일</div>
+        <div class="folder-list" id="file-list"></div>
     </div>
 
     <div class="main-container">
         <div class="top-bar">
-            <div class="logo">🐙 STUDIO v3.7 <span id="fix-indicator" style="font-size:9px; color:var(--accent-orange); margin-left:10px; display:none;">● AUTO-FIXING</span></div>
-            <div class="provider-status">
-                <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
-                <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
-                <div class="status-item"><div id="dot-codex" class="dot online"></div> Codex</div>
-            </div>
-            <div id="proj-name" style="font-size:12px; color:var(--accent-green)">-</div>
+            <div class="logo">🐙 STUDIO v3.8 EDITOR</div>
+            <div id="current-path" style="font-size:11px; color:var(--text-dim)">-</div>
+            <button class="btn-drive" style="flex:none; padding:5px 15px;" onclick="saveWorkflow()">💾 워크플로우 저장</button>
         </div>
 
         <div class="canvas-area" id="canvas-area">
-            <svg id="flow-svg"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--border-color)" /></marker></defs></svg>
-            <div class="lane-container">
-                <div class="lane" id="lane-plan"><div class="lane-title">기획 & 설계</div></div>
-                <div class="lane" id="lane-dev"><div class="lane-title">개발 & 구현</div></div>
-                <div class="lane" id="lane-qa"><div class="lane-title">검증 & QA</div></div>
-                <div class="lane" id="lane-ops"><div class="lane-title">리뷰 & 배포</div></div>
-            </div>
-
-            <div class="overlay-panel" id="overlay-panel">
-                <div class="panel-header">
-                    <span id="panel-title" style="font-weight:bold; color:var(--accent-blue)">결과 검토</span>
-                    <button class="btn" style="padding:4px 12px; background:transparent; border:1px solid var(--border-color)" onclick="closePanel()">닫기</button>
-                </div>
-                <div class="panel-body" id="panel-content"></div>
-                <div class="panel-footer" id="approval-footer">
-                    <button class="btn" style="background:var(--accent-red)" onclick="handleReject()">❌ 반려</button>
-                    <button class="btn" style="background:var(--accent-green)" onclick="handleApprove()">✅ 승인 (Next)</button>
-                </div>
-            </div>
+            <svg id="flow-svg"></svg>
+            <!-- Nodes will be draggable and connectable -->
+            <div id="nodes-container"></div>
         </div>
 
-        <div class="terminal" id="terminal"><div>[System] 자동 복구 루프 시스템 v3.7 활성화.</div></div>
-    </div>
-
-    <div class="sidebar-right" id="sidebar-right">
-        <h3 id="drawer-title" style="margin:0; color:var(--accent-blue)">에이전트 업무</h3>
-        <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin-top:5px;"></p>
-        <button class="btn" style="background:var(--accent-orange); width:100%; margin-top:20px;" onclick="startWorkflow()">⛓️ 연쇄 협업 시작</button>
-        <textarea id="prompt-input" placeholder="지시사항을 입력하세요..."></textarea>
-        <button class="btn" style="width:100%;" onclick="assignTask()">단일 실행</button>
-        <button class="btn" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
-    </div>
-
-    <div class="modal-overlay" id="key-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
-        <div style="background:var(--sidebar-bg); padding:25px; border-radius:12px; width:400px; border:1px solid var(--border-color);">
-            <h3>API 키 등록</h3>
-            <input type="password" id="api-key-input" placeholder="키를 입력하세요...">
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn" style="background:transparent; color:var(--text-dim);" onclick="document.getElementById('key-modal').style.display='none'">취소</button>
-                <button class="btn" onclick="saveApiKey()">적용</button>
-            </div>
-        </div>
+        <div class="terminal" id="terminal"><div>[System] 워크플로우 에디터 로드 완료. 드라이브를 선택하여 프로젝트를 여세요.</div></div>
     </div>
 
     <script>
-        let selectedAgent = null; let selectedFiles = new Set(); let appState = { nextAgent: null, lastOutput: "", fixAttempts: 0 };
-        const agents = [
-            { id: "planner", name: "Planner", role: "기획자", dept: "plan", desc: "분석 및 태스크 분해" },
-            { id: "spec", name: "Spec Writer", role: "명세 작성자", dept: "plan", desc: "SPEC.md 작성" },
-            { id: "arch", name: "Architect", role: "아키텍트", dept: "plan", desc: "구조 설계" },
-            { id: "expl", name: "Explorer", role: "탐험가", dept: "plan", desc: "코드 분석" },
-            { id: "exec", name: "Executor", role: "실행자", dept: "dev", desc: "코드 구현" },
-            { id: "deep", name: "Deep Worker", role: "심층 작업자", dept: "dev", desc: "장기 태스크" },
-            { id: "dbug", name: "Debugger", role: "해결사", dept: "dev", desc: "버그 수정" },
-            { id: "anno", name: "Annotator", role: "태그 관리자", dept: "dev", desc: "@AX 주석" },
-            { id: "test", name: "Tester", role: "테스터", dept: "qa", desc: "테스트 작성" },
-            { id: "val", name: "Validator", role: "검증자", dept: "qa", desc: "품질 검증" },
-            { id: "fend", name: "Frontend", role: "UI 전문가", dept: "qa", desc: "E2E 테스트" },
-            { id: "uxv", name: "UX Validator", role: "UX 검증자", dept: "qa", desc: "비주얼 검사" },
-            { id: "perf", name: "Perf Eng", role: "성능 전문가", dept: "qa", desc: "성능 분석" },
-            { id: "rev", name: "Reviewer", role: "리뷰어", dept: "ops", desc: "코드 리뷰" },
-            { id: "sec", name: "Security", role: "보안 감사", dept: "ops", desc: "보안 점검" },
-            { id: "devops", name: "DevOps", role: "운영자", dept: "ops", desc: "배포 자동화" }
+        let nodes = [];
+        let connections = [];
+        let currentDir = "";
+
+        const agentTypes = [
+            { id: "planner", name: "Planner", role: "기획자", x: 100, y: 100 },
+            { id: "spec", name: "Spec Writer", role: "명세서", x: 300, y: 100 },
+            { id: "arch", name: "Architect", role: "아키텍트", x: 500, y: 100 },
+            { id: "exec", name: "Executor", role: "개발자", x: 700, y: 100 }
         ];
 
-        const workflowChain = ["planner", "spec", "arch", "expl", "exec", "deep", "dbug", "anno", "test", "val", "fend", "uxv", "perf", "rev", "sec", "devops"];
-
-        function getIcon(f) {
-            const ext = f.split('.').pop().toLowerCase();
-            const dict = { py:'🐍', go:'🐹', md:'📝', json:'📦', yaml:'⚙️', sh:'🐚', bat:'🐚', txt:'📄' };
-            return (dict[ext] || '📄') + ' ';
+        async function changeWorkspace(path) {
+            const res = await fetch('/api/workspace/change', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ path })
+            });
+            const data = await res.json();
+            currentDir = data.currentDir;
+            document.getElementById('current-path').innerText = currentDir;
+            loadWorkspaceList();
+            loadFileList();
+            addLog("System", "📁 경로 변경: " + currentDir);
         }
 
-        async function loadFiles() {
+        async function loadWorkspaceList() {
+            const res = await fetch('/api/workspace/list');
+            const data = await res.json();
+            const list = document.getElementById('folder-list');
+            list.innerHTML = '<div class="folder-item" onclick="changeWorkspace(\''+data.parent+'\')">⬆️ 상위 폴더로</div>';
+            data.folders.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'folder-item';
+                item.innerHTML = '📁 ' + f;
+                item.onclick = () => changeWorkspace(currentDir + '/' + f);
+                list.appendChild(item);
+            });
+        }
+
+        async function loadFileList() {
             const res = await fetch('/api/files/list');
             const files = await res.json();
             const list = document.getElementById('file-list');
             list.innerHTML = '';
             files.forEach(f => {
                 const item = document.createElement('div');
-                item.className = 'file-item';
-                item.innerHTML = '<input type="checkbox" class="file-checkbox" onchange="toggleFile(event, \''+f+'\')"> <span class="file-name">'+getIcon(f)+f+'</span>';
-                item.onclick = (e) => { if(e.target.tagName !== 'INPUT') openFile(f); };
+                item.className = 'folder-item';
+                item.innerHTML = '📄 ' + f;
                 list.appendChild(item);
-            });
-        }
-        function toggleFile(e, f) { if(e.target.checked) selectedFiles.add(f); else selectedFiles.delete(f); document.getElementById('sel-count').innerText = selectedFiles.size; }
-        async function openFile(f) { const r = await fetch('/api/files/read?path='+encodeURIComponent(f)); showPanel(f, await r.text(), false); }
-
-        function drawLines() {
-            const svg = document.getElementById('flow-svg');
-            svg.innerHTML = svg.innerHTML.split('</defs>')[0] + '</defs>';
-            for(let i=0; i<workflowChain.length-1; i++) {
-                const from = document.getElementById('node-' + workflowChain[i]);
-                const to = document.getElementById('node-' + workflowChain[i+1]);
-                if(from && to) {
-                    const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    const fRect = from.getBoundingClientRect(); const tRect = to.getBoundingClientRect();
-                    const cRect = document.getElementById('canvas-area').getBoundingClientRect();
-                    const x1 = fRect.right - cRect.left; const y1 = fRect.top + fRect.height/2 - cRect.top;
-                    const x2 = tRect.left - cRect.left; const y2 = tRect.top + tRect.height/2 - cRect.top;
-                    const cp1x = x1 + (x2-x1)/2;
-                    line.setAttribute("d", `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp1x} ${y2}, ${x2} ${y2}`);
-                    line.setAttribute("class", "flow-line"); line.setAttribute("id", "line-" + workflowChain[i]);
-                    line.setAttribute("marker-end", "url(#arrow)");
-                    svg.appendChild(line);
-                }
-            }
-        }
-
-        async function updateHealth() {
-            const res = await fetch('/api/providers/health');
-            const data = await res.json();
-            Object.keys(data).forEach(id => {
-                const d = document.getElementById('dot-' + id);
-                if(d) d.className = 'dot ' + (data[id] ? 'online' : 'offline');
             });
         }
 
         function addLog(agent, msg) {
-            const term = document.getElementById('terminal');
             const div = document.createElement('div');
             div.innerHTML = '<span style="color:var(--accent-orange)">['+agent+']</span> ' + msg;
-            term.appendChild(div); term.scrollTop = term.scrollHeight;
+            document.getElementById('terminal').appendChild(div);
+            document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
         }
 
-        async function assignTask() {
-            const prompt = document.getElementById('prompt-input').value; if(!prompt) return;
-            const agent = selectedAgent; closeDrawer();
-            document.getElementById('node-' + agent.id).classList.add('active');
-            addLog(agent.name, "분석 시작...");
-            const res = await fetch('/api/workflow/run', { method: 'POST', body: JSON.stringify({ agentId: agent.id, prompt, context: Array.from(selectedFiles) }) });
-            const data = await res.json();
-            document.getElementById('node-' + agent.id).classList.remove('active');
-            
-            if(data.status === 'fix_required') {
-                handleAutoFix(agent.id, data.output);
-            } else {
-                showPanel(agent.name + " 결과 보고서", data.output, true);
-                appState.nextAgent = data.nextAgent; appState.lastOutput = data.output;
-            }
-        }
-
-        async function handleAutoFix(failedId, errorMsg) {
-            addLog("System", "⚠️ " + failedId.toUpperCase() + " 단계에서 에러 감지. Debugger를 호출합니다.");
-            document.getElementById('node-' + failedId).classList.add('failed');
-            document.getElementById('fix-indicator').style.display = 'inline';
-            
-            // 시각적 루프 효과 (Red Line)
-            const line = document.getElementById('line-dbug'); // 실제로는 Validator -> Debugger 선이 필요함
-            
-            await new Promise(r => setTimeout(r, 2000));
-            startStep('dbug', "다음 에러를 수정하세요: " + errorMsg);
-        }
-
-        async function startWorkflow() {
-            appState.fixAttempts = 0;
-            startStep(selectedAgent.id, document.getElementById('prompt-input').value);
-            closeDrawer();
-        }
-
-        async function startStep(id, prompt) {
-            const node = document.getElementById('node-' + id);
-            node.classList.add('active');
-            const line = document.getElementById('line-' + id);
-            if(line) line.classList.add('active');
-            
-            const res = await fetch('/api/workflow/run', { method: 'POST', body: JSON.stringify({ agentId: id, prompt, context: Array.from(selectedFiles) }) });
-            const data = await res.json();
-            
-            node.classList.remove('active');
-            if(line) line.classList.remove('active');
-
-            if(data.status === 'fix_required') {
-                handleAutoFix(id, data.output);
-            } else {
-                node.classList.add('completed');
-                showPanel(id.toUpperCase() + " 완료 (승인 대기)", data.output, true);
-                appState.nextAgent = data.nextAgent; appState.lastOutput = data.output;
-            }
-        }
-
-        function handleApprove() { closePanel(); if(appState.nextAgent) startStep(appState.nextAgent, appState.lastOutput); else addLog("System", "🏁 모든 단계 완료."); }
-        function handleReject() { closePanel(); document.getElementById('sidebar-right').style.display = 'flex'; }
-        function showPanel(t, c, isApp) { document.getElementById('panel-title').innerText = t; document.getElementById('panel-content').innerText = c; document.getElementById('overlay-panel').style.display = 'flex'; document.getElementById('approval-footer').style.display = isApp ? 'flex' : 'none'; }
-        function closePanel() { document.getElementById('overlay-panel').style.display = 'none'; }
-        function openDrawer(a) { selectedAgent = a; document.getElementById('drawer-title').innerText = a.name; document.getElementById('drawer-desc').innerText = a.desc; document.getElementById('sidebar-right').style.display = 'flex'; }
-        function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
-        function openKeyModal(p) { targetProvider = p; document.getElementById('key-modal-title').innerText = p.toUpperCase() + ' API 키 등록'; document.getElementById('key-modal').style.display = 'flex'; }
-        async function saveApiKey() { const key = document.getElementById('api-key-input').value; await fetch('/api/providers/keys', { method: 'POST', body: JSON.stringify({ provider: targetProvider, key }) }); document.getElementById('key-modal').style.display = 'none'; updateHealth(); }
-
-        function init() {
-            agents.forEach(a => {
-                const lane = document.getElementById('lane-' + a.dept);
+        function initEditor() {
+            const container = document.getElementById('nodes-container');
+            agentTypes.forEach(a => {
                 const node = document.createElement('div');
-                node.className = 'node'; node.id = 'node-' + a.id;
-                node.onclick = () => openDrawer(a);
-                node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>';
-                lane.appendChild(node);
+                node.className = 'node';
+                node.id = 'node-' + a.id;
+                node.style.left = a.x + 'px';
+                node.style.top = a.y + 'px';
+                node.innerHTML = '<div class="node-name">' + a.name + '</div><div class="node-role">' + a.role + '</div>' +
+                               '<div class="port port-in"></div><div class="port port-out"></div>';
+                
+                // Draggable logic
+                node.onmousedown = startDrag;
+                container.appendChild(node);
             });
-            loadFiles(); updateHealth(); 
-            setInterval(updateHealth, 5000);
-            fetch('/api/status').then(r => r.json()).then(d => {
-                document.getElementById('proj-name').innerText = "PROJECT: " + d.project.toUpperCase();
-                setTimeout(drawLines, 500);
-            });
-            window.onresize = drawLines;
+            changeWorkspace('.'); // 초기 위치
         }
-        init();
+
+        function startDrag(e) {
+            const node = e.currentTarget;
+            let offsetBox = document.getElementById('canvas-area').getBoundingClientRect();
+            let shiftX = e.clientX - node.getBoundingClientRect().left;
+            let shiftY = e.clientY - node.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                node.style.left = (pageX - offsetBox.left - shiftX) + 'px';
+                node.style.top = (pageY - offsetBox.top - shiftY) + 'px';
+                updateConnections();
+            }
+
+            function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+            document.addEventListener('mousemove', onMouseMove);
+            node.onmouseup = () => { document.removeEventListener('mousemove', onMouseMove); node.onmouseup = null; };
+        }
+
+        function updateConnections() {
+            // SVG 선 다시 그리기 로직 (v3.5 로직 확장)
+        }
+
+        initEditor();
     </script>
 </body>
 </html>
