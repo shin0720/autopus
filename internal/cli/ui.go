@@ -16,6 +16,8 @@ import (
 	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
 
+const stateFilePath = ".autopus/workflows/state.json"
+
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
 func newUICmd() *cobra.Command {
 	var port int
@@ -28,7 +30,25 @@ func newUICmd() *cobra.Command {
 			cfg, err := config.Load(".")
 			if err != nil { return err }
 
-			fmt.Printf("🐙 Autopus Studio (v3.0 Final) 시작 중... http://%s\n", addr)
+			// 폴더 생성
+			os.MkdirAll(filepath.Dir(stateFilePath), 0755)
+
+			fmt.Printf("🐙 Autopus Studio (v3.1) 시작 중... http://%s\n", addr)
+
+			// API: 워크플로우 상태 불러오기
+			http.HandleFunc("/api/workflow/state", func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet {
+					data, _ := os.ReadFile(stateFilePath)
+					w.Header().Set("Content-Type", "application/json")
+					if len(data) == 0 { w.Write([]byte("{}")) } else { w.Write(data) }
+				} else if r.Method == http.MethodPost {
+					var state interface{}
+					json.NewDecoder(r.Body).Decode(&state)
+					data, _ := json.MarshalIndent(state, "", "  ")
+					os.WriteFile(stateFilePath, data, 0644)
+					w.WriteHeader(http.StatusOK)
+				}
+			})
 
 			// API: AI 상태 체크
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +59,7 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(health)
 			})
 
-			// API: 연쇄 워크플로우 실행 (실전 분석)
+			// API: 연쇄 워크플로우 실행
 			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -55,8 +75,7 @@ func newUICmd() *cobra.Command {
 					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
 				}
 
-				finalPrompt := fmt.Sprintf("당신은 %s 전문가입니다. 프로젝트 코드를 분석하여 사용자의 요청에 전문적으로 답변하세요. 반드시 한국어로 답변하세요.\n\n[요청]\n%s\n\n[참조코드]%s", 
-					req.AgentID, req.Prompt, ctxFiles.String())
+				finalPrompt := fmt.Sprintf("당신은 %s 전문가입니다. 다음 요청에 대해 프로젝트 상황을 고려하여 한국어로 답변하세요.\n\n요청: %s\n\n참조코드: %s", req.AgentID, req.Prompt, ctxFiles.String())
 
 				orchCfg := orchestra.OrchestraConfig{
 					Prompt: finalPrompt, Strategy: orchestra.StrategyFastest,
@@ -65,14 +84,12 @@ func newUICmd() *cobra.Command {
 
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
 				if err != nil {
-					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "에러: " + err.Error()})
+					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
 					return
 				}
 
 				json.NewEncoder(w).Encode(map[string]interface{}{
-					"status": "success",
-					"output": result.Merged,
-					"nextAgent": getNextAgentFull(req.AgentID),
+					"status": "success", "output": result.Merged, "nextAgent": getNextAgentFull(req.AgentID),
 				})
 			})
 
@@ -82,10 +99,10 @@ func newUICmd() *cobra.Command {
 				json.NewDecoder(r.Body).Decode(&req)
 				if req.Provider == "claude" { os.Setenv("ANTHROPIC_API_KEY", req.Key); os.Setenv("CLAUDE_API_KEY", req.Key) }
 				if req.Provider == "gemini" { os.Setenv("GEMINI_API_KEY", req.Key) }
-				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+				w.WriteHeader(http.StatusOK)
 			})
 
-			// API: 파일 탐색
+			// API: 파일 목록 및 내용
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
 				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
