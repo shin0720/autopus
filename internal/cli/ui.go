@@ -30,25 +30,9 @@ func newUICmd() *cobra.Command {
 			cfg, err := config.Load(".")
 			if err != nil { return err }
 
-			fmt.Printf("🐙 Autopus Studio v3.6 (Watch Mode) 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v3.7 (Auto-Fix) 시작 중... http://%s\n", addr)
 
-			// API: 파일 변경 감지 트리거
-			http.HandleFunc("/api/watch/changes", func(w http.ResponseWriter, r *http.Request) {
-				changedFiles := []string{}
-				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err != nil || info.IsDir() || strings.HasPrefix(path, ".") || strings.Contains(path, "node_modules") { return nil }
-					
-					lastMod, ok := lastFileModTimes[path]
-					if ok && info.ModTime().After(lastMod) {
-						changedFiles = append(changedFiles, path)
-					}
-					lastFileModTimes[path] = info.ModTime()
-					return nil
-				})
-				json.NewEncoder(w).Encode(changedFiles)
-			})
-
-			// API: 연쇄 워크플로우
+			// API: 연쇄 워크플로우 (에러 발생 시 Fallback 정보 포함)
 			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
 				json.NewDecoder(r.Body).Decode(&req)
@@ -59,49 +43,69 @@ func newUICmd() *cobra.Command {
 					ctxFiles.WriteString(fmt.Sprintf("\n[File: %s]\n%s\n", p, string(data)))
 				}
 
-				orchCfg := orchestra.OrchestraConfig{
-					Prompt: fmt.Sprintf("역할: %s\n요청: %s\n내용: %s", req.AgentID, req.Prompt, ctxFiles.String()),
-					Strategy: orchestra.StrategyFastest,
-					Providers: []orchestra.ProviderConfig{},
-					TimeoutSeconds: 180, SubprocessMode: true,
-				}
+				// 실제 에이전트 구동
+				var providers []orchestra.ProviderConfig
 				for name, p := range cfg.Orchestra.Providers {
-					orchCfg.Providers = append(orchCfg.Providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
+					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
+				}
+
+				orchCfg := orchestra.OrchestraConfig{
+					Prompt: fmt.Sprintf("역할: %s\n요청: %s\n분석 코드:\n%s", req.AgentID, req.Prompt, ctxFiles.String()),
+					Strategy: orchestra.StrategyFastest,
+					Providers: providers, TimeoutSeconds: 180, SubprocessMode: true,
 				}
 
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
-				if err != nil {
-					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
-					return
+				
+				// 에러 발생 혹은 검증 실패 시 (시뮬레이션 포함)
+				isFailure := err != nil || strings.Contains(strings.ToLower(result.Merged), "error") || strings.Contains(strings.ToLower(result.Merged), "fail")
+
+				resp := map[string]interface{}{
+					"status": "success",
+					"output": result.Merged,
+					"nextAgent": getNextAgentMapFinal(req.AgentID),
 				}
-				json.NewEncoder(w).Encode(map[string]interface{}{
-					"status": "success", "output": result.Merged, "nextAgent": getNextAgentMapFinal(req.AgentID),
+
+				// 특정 노드(Validator, Tester)에서 에러 시 Debugger로 루프 유도
+				if isFailure && (req.AgentID == "val" || req.AgentID == "test") {
+					resp["status"] = "fix_required"
+					resp["nextAgent"] = "dbug" // 에러 발생 시 해결사로 강제 이동
+					resp["message"] = "에러가 감지되었습니다. 해결사(Debugger)가 자동 수정을 시작합니다."
+				}
+
+				json.NewEncoder(w).Encode(resp)
+			})
+
+			// API: 파일 감지 및 나머지 기능 (v3.6 유지)
+			http.HandleFunc("/api/watch/changes", func(w http.ResponseWriter, r *http.Request) {
+				changed := []string{}
+				filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
+					if err == nil && !info.IsDir() && !strings.HasPrefix(p, ".") && !strings.Contains(p, "node_modules") {
+						if last, ok := lastFileModTimes[p]; ok && info.ModTime().After(last) { changed = append(changed, p) }
+						lastFileModTimes[p] = info.ModTime()
+					}
+					return nil
 				})
+				json.NewEncoder(w).Encode(changed)
 			})
 
-			// API: AI 헬스체크
-			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				health := make(map[string]bool)
-				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
-				health["gemini"] = os.Getenv("GEMINI_API_KEY") != ""
-				health["codex"] = true
-				json.NewEncoder(w).Encode(health)
-			})
-
-			// API: 기타 보조 기능
 			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 				json.NewEncoder(w).Encode(map[string]string{"project": cfg.ProjectName})
 			})
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
-				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") { files = append(files, path) }
+				filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
+					if err == nil && !info.IsDir() && !strings.HasPrefix(p, ".") && !strings.Contains(p, "node_modules") { files = append(files, p) }
 					return nil
 				})
 				json.NewEncoder(w).Encode(files)
 			})
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
+			})
+			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
+				h := map[string]bool{"claude": os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "", "gemini": os.Getenv("GEMINI_API_KEY") != "", "codex": true}
+				json.NewEncoder(w).Encode(h)
 			})
 			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
 				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
@@ -110,7 +114,6 @@ func newUICmd() *cobra.Command {
 				if req.Provider == "gemini" { os.Setenv("GEMINI_API_KEY", req.Key) }
 				w.WriteHeader(http.StatusOK)
 			})
-
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				data, _ := content.FS.ReadFile("ui/dashboard.html")
