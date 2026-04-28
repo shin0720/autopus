@@ -9,12 +9,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/content"
 	"github.com/shin0720/auto-adk/pkg/orchestra"
 )
+
+var lastFileModTimes = make(map[string]time.Time)
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
 func newUICmd() *cobra.Command {
@@ -27,15 +30,22 @@ func newUICmd() *cobra.Command {
 			cfg, err := config.Load(".")
 			if err != nil { return err }
 
-			fmt.Printf("🐙 Autopus Studio v3.4 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v3.6 (Watch Mode) 시작 중... http://%s\n", addr)
 
-			// API: AI 헬스체크
-			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				health := make(map[string]bool)
-				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
-				health["gemini"] = os.Getenv("GEMINI_API_KEY") != ""
-				health["codex"] = true
-				json.NewEncoder(w).Encode(health)
+			// API: 파일 변경 감지 트리거
+			http.HandleFunc("/api/watch/changes", func(w http.ResponseWriter, r *http.Request) {
+				changedFiles := []string{}
+				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+					if err != nil || info.IsDir() || strings.HasPrefix(path, ".") || strings.Contains(path, "node_modules") { return nil }
+					
+					lastMod, ok := lastFileModTimes[path]
+					if ok && info.ModTime().After(lastMod) {
+						changedFiles = append(changedFiles, path)
+					}
+					lastFileModTimes[path] = info.ModTime()
+					return nil
+				})
+				json.NewEncoder(w).Encode(changedFiles)
 			})
 
 			// API: 연쇄 워크플로우
@@ -67,6 +77,15 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(map[string]interface{}{
 					"status": "success", "output": result.Merged, "nextAgent": getNextAgentMapFinal(req.AgentID),
 				})
+			})
+
+			// API: AI 헬스체크
+			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
+				health := make(map[string]bool)
+				health["claude"] = os.Getenv("ANTHROPIC_API_KEY") != "" || os.Getenv("CLAUDE_API_KEY") != ""
+				health["gemini"] = os.Getenv("GEMINI_API_KEY") != ""
+				health["codex"] = true
+				json.NewEncoder(w).Encode(health)
 			})
 
 			// API: 기타 보조 기능
