@@ -24,22 +24,23 @@ func newUICmd() *cobra.Command {
 		Short: "Autopus 시각적 대시보드 실행",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
-			
-			fmt.Printf("🐙 Autopus Studio v4.7 가동 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v4.8 시작 중... http://%s\n", addr)
 
-			// API: 워크플로우 상태 관리
-			http.HandleFunc("/api/workflow/state", func(w http.ResponseWriter, r *http.Request) {
-				path := ".autopus/workflows/state.json"
-				if r.Method == http.MethodGet {
-					data, _ := os.ReadFile(path)
-					if len(data) == 0 { data = []byte("{}") }
-					w.Header().Set("Content-Type", "application/json"); w.Write(data)
-				} else {
-					var state interface{}
-					json.NewDecoder(r.Body).Decode(&state)
-					data, _ := json.MarshalIndent(state, "", "  ")
-					os.MkdirAll(filepath.Dir(path), 0755); os.WriteFile(path, data, 0644); w.WriteHeader(http.StatusOK)
+			// API: 작업 디렉토리 강제 전환 (C:, E: 완벽 지원)
+			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { Path string `json:"path"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				target := req.Path
+				if strings.Contains(target, ":") { 
+					drive := strings.ToLower(target[:1])
+					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
 				}
+				absPath, _ := filepath.Abs(target)
+				if err := os.Chdir(absPath); err != nil {
+					http.Error(w, err.Error(), 500); return
+				}
+				dir, _ := os.Getwd()
+				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
 			})
 
 			// API: 실전 AI 업무 수행
@@ -47,9 +48,12 @@ func newUICmd() *cobra.Command {
 				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
 				json.NewDecoder(r.Body).Decode(&req)
 
-				fmt.Printf("⛓️ [%s] 전문가 가동 시작\n", req.AgentID)
+				cfg, err := config.Load(".")
+				if err != nil {
+					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "Config load failed: " + err.Error()})
+					return
+				}
 
-				cfg, _ := config.Load(".")
 				var ctxFiles strings.Builder
 				for _, p := range req.Context {
 					data, _ := os.ReadFile(p)
@@ -61,11 +65,9 @@ func newUICmd() *cobra.Command {
 					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
 				}
 
-				finalPrompt := fmt.Sprintf("당신은 %s 전문가입니다. 코드를 분석하여 한국어로 상세히 답변하세요.\n\n[지시]\n%s\n\n[참조코드]%s", req.AgentID, req.Prompt, ctxFiles.String())
-				
 				orchCfg := orchestra.OrchestraConfig{
-					Prompt: finalPrompt, Strategy: orchestra.StrategyFastest,
-					Providers: providers, TimeoutSeconds: 180, SubprocessMode: true,
+					Prompt: fmt.Sprintf("역할: %s\n지시: %s\n코드: %s", req.AgentID, req.Prompt, ctxFiles.String()),
+					Strategy: orchestra.StrategyFastest, Providers: providers, TimeoutSeconds: 180, SubprocessMode: true,
 				}
 
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
@@ -77,19 +79,18 @@ func newUICmd() *cobra.Command {
 				json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "output": result.Merged})
 			})
 
-			// API: 기타 로직 유지
-			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { Path string `json:"path"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				target := req.Path
-				if strings.Contains(target, ":") { target = "/mnt/" + strings.ToLower(target[:1]) + strings.ReplaceAll(target[2:], "\\", "/") }
-				os.Chdir(target); dir, _ := os.Getwd()
-				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
+			// API: 폴더/파일 목록
+			http.HandleFunc("/api/workspace/list", func(w http.ResponseWriter, r *http.Request) {
+				dir, _ := os.Getwd()
+				entries, _ := os.ReadDir(".")
+				var folders []string
+				for _, e := range entries { if e.IsDir() && !strings.HasPrefix(e.Name(), ".") { folders = append(folders, e.Name()) } }
+				json.NewEncoder(w).Encode(map[string]interface{}{"current": dir, "folders": folders, "parent": filepath.Dir(dir)})
 			})
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
-				filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(path, ".") && !strings.Contains(path, "node_modules") { files = append(files, path) }
+				filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
+					if err == nil && !info.IsDir() && !strings.HasPrefix(p, ".") && !strings.Contains(p, "node_modules") { files = append(files, p) }
 					return nil
 				})
 				json.NewEncoder(w).Encode(files)
@@ -97,13 +98,18 @@ func newUICmd() *cobra.Command {
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
 				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
 			})
+
+			// API: 헬스체크 및 키 등록
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				h := map[string]bool{"claude": os.Getenv("CLAUDE_API_KEY")!="", "gemini": os.Getenv("GEMINI_API_KEY")!="", "codex": true}
+				h := map[string]bool{"claude": os.Getenv("CLAUDE_API_KEY")!="" || os.Getenv("ANTHROPIC_API_KEY")!="", "gemini": os.Getenv("GEMINI_API_KEY")!="", "codex": true}
 				json.NewEncoder(w).Encode(h)
 			})
-			http.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-				cfg, _ := config.Load(".")
-				json.NewEncoder(w).Encode(map[string]string{"project": cfg.ProjectName})
+			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
+				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
+				json.NewDecoder(r.Body).Decode(&req)
+				if req.Provider == "claude" { os.Setenv("CLAUDE_API_KEY", req.Key); os.Setenv("ANTHROPIC_API_KEY", req.Key) }
+				if req.Provider == "gemini" { os.Setenv("GEMINI_API_KEY", req.Key) }
+				w.WriteHeader(http.StatusOK)
 			})
 
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -128,5 +134,5 @@ func openBrowser(url string) {
 		if err != nil { err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start() }
 	case "darwin": err = exec.Command("open", url).Start()
 	}
-	if err != nil { fmt.Printf("실행 실패: %v\n", err) }
+	if err != nil { fmt.Printf("브라우저 열기 실패: %v\n", err) }
 }
