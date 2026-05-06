@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -63,22 +64,71 @@ func runCommand(projectDir string, pack journey.Pack, artifactDir string) comman
 }
 
 func allowedEnv(projectDir string, allowlist []string) []string {
-	cacheDir := filepath.Join(projectDir, ".autopus", "qa", "cache", "go")
-	_ = os.MkdirAll(cacheDir, 0o755)
+	absProjectDir, err := filepath.Abs(projectDir)
+	if err == nil {
+		projectDir = absProjectDir
+	}
+	cacheRoot := filepath.Join(projectDir, ".autopus", "qa", "cache")
+	goPath := filepath.Join(cacheRoot, "gopath")
+	goCache := filepath.Join(cacheRoot, "go-build")
+	_ = os.MkdirAll(goCache, 0o755)
+	_ = os.MkdirAll(filepath.Join(goPath, "pkg", "mod"), 0o755)
+	home := projectDir
+	if envNameAllowed(allowlist, "HOME") {
+		if value := os.Getenv("HOME"); value != "" {
+			home = value
+		}
+	}
 	env := []string{
-		"HOME=" + projectDir,
-		"GOCACHE=" + cacheDir,
+		"HOME=" + home,
+		"GOCACHE=" + goCache,
+		"GOMODCACHE=" + filepath.Join(goPath, "pkg", "mod"),
+		"GOPATH=" + goPath,
 		"TMPDIR=" + os.TempDir(),
 	}
 	if path := os.Getenv("PATH"); path != "" {
 		env = append(env, "PATH="+path)
 	}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		env = appendDefaultEnv(env, "CARGO_HOME", filepath.Join(home, ".cargo"))
+		env = appendDefaultEnv(env, "RUSTUP_HOME", filepath.Join(home, ".rustup"))
+		env = appendDefaultEnv(env, "PLAYWRIGHT_BROWSERS_PATH", defaultPlaywrightBrowsersPath(home))
+	}
 	for _, name := range allowlist {
+		if name == "HOME" {
+			continue
+		}
 		if value, ok := os.LookupEnv(name); ok {
 			env = append(env, name+"="+value)
 		}
 	}
 	return env
+}
+
+func envNameAllowed(allowlist []string, target string) bool {
+	for _, name := range allowlist {
+		if name == target {
+			return true
+		}
+	}
+	return false
+}
+
+func appendDefaultEnv(env []string, name, fallback string) []string {
+	if value := os.Getenv(name); value != "" {
+		return append(env, name+"="+value)
+	}
+	return append(env, name+"="+fallback)
+}
+
+func defaultPlaywrightBrowsersPath(home string) string {
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(home, "Library", "Caches", "ms-playwright")
+	}
+	if runtime.GOOS == "windows" {
+		return filepath.Join(home, "AppData", "Local", "ms-playwright")
+	}
+	return filepath.Join(home, ".cache", "ms-playwright")
 }
 
 func finishCommandResult(result commandResult, artifactDir string, stdout, stderr []byte) commandResult {

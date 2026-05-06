@@ -1,6 +1,8 @@
 package run
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -22,8 +24,21 @@ func TestHelperBranches(t *testing.T) {
 	assert.Equal(t, []string{"echo", "ok"}, commandArgs(journeyPack("custom-command", "echo ok")))
 	assert.Nil(t, commandArgs(journeyPack("playwright", "")))
 	t.Setenv("QAMESH_ALLOWED", "yes")
-	env := allowedEnv(t.TempDir(), []string{"QAMESH_ALLOWED", "QAMESH_MISSING"})
+	projectDir := t.TempDir()
+	env := allowedEnv(projectDir, []string{"QAMESH_ALLOWED", "QAMESH_MISSING"})
 	assert.Contains(t, env, "QAMESH_ALLOWED=yes")
+	assert.Contains(t, env, "HOME="+projectDir)
+	t.Setenv("HOME", "/tmp/qamesh-real-home")
+	assert.Contains(t, allowedEnv(projectDir, []string{"HOME"}), "HOME=/tmp/qamesh-real-home")
+	assert.Contains(t, env, "GOPATH="+filepath.Join(projectDir, ".autopus", "qa", "cache", "gopath"))
+	assert.Contains(t, env, "GOMODCACHE="+filepath.Join(projectDir, ".autopus", "qa", "cache", "gopath", "pkg", "mod"))
+	assert.Contains(t, env, "GOCACHE="+filepath.Join(projectDir, ".autopus", "qa", "cache", "go-build"))
+	assert.Contains(t, strings.Join(env, "\n"), "CARGO_HOME=")
+	assert.Contains(t, strings.Join(env, "\n"), "RUSTUP_HOME=")
+	assert.Contains(t, strings.Join(env, "\n"), "PLAYWRIGHT_BROWSERS_PATH=")
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Contains(t, allowedEnv(".", nil), "HOME="+wd)
 	assert.NotContains(t, strings.Join(allowedEnv(t.TempDir(), nil), "\n"), "OPENAI_API_KEY=")
 	assert.Equal(t, "blocked", aggregateStatus(Result{AdapterResults: []AdapterResult{{Status: "blocked"}}}))
 	assert.Equal(t, "warning", aggregateStatus(Result{SetupGaps: []SetupGap{{Adapter: "playwright", Reason: "missing"}}}))
