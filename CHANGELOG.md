@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **FTS5 Decision/Quality Index (SPEC-AUTO-MEM-001)** (2026-05-06): `auto mem` now provides a local, rebuildable quality recall projection over human-managed project docs, SPEC docs, learning JSONL entries, and redacted QAMESH summaries.
+  - `pkg/memindex/**` — SQLite FTS5 projection schema, source scanner, deterministic source hashes, redaction/source-root admission guards, QAMESH and learning importers, top-k search, stale/corrupt fail-closed handling, status output, and bounded prompt context rendering
+  - `pkg/memindex/driver` — `modernc.org/sqlite` backed FTS5 startup probe before projection writes
+  - `internal/cli/mem.go` and `internal/cli/root.go` — public `auto mem rebuild|search|context|status` command namespace with JSON envelopes
+  - `internal/cli/init.go` — generated gitignore patterns now include `.autopus/runtime/` so projection files stay runtime-only
+  - `pkg/worker/a2a/heartbeat.go` — escalated the stale `@AX:TODO` heartbeat branch-test note to `@AX:WARN @AX:CYCLE:3` during sync lifecycle management
+
 ## [v0.44.0] — 2026-05-05
 
 ### Added

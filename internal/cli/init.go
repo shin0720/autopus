@@ -30,6 +30,7 @@ var gitignorePatterns = []string{
 	".agents/plugins/",
 	".autopus/",
 	".autopus/design/imports/",
+	".autopus/runtime/",
 	".mcp.json",
 }
 

@@ -98,6 +98,9 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newConfigCmd())
 	root.AddCommand(newConnectCmd())
 	root.AddCommand(newLearnCmd())
+	// @AX:ANCHOR [AUTO] @AX:SPEC: SPEC-AUTO-MEM-001: registers the public `auto mem` namespace for memory projection workflows.
+	// @AX:REASON: External CLI users and integration tests depend on rebuild/search/context/status subcommands staying reachable.
+	root.AddCommand(newMemCmd())
 
 	return root
 }
