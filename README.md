@@ -406,7 +406,7 @@ Workers don't run forever. Each executor gets a tool-call budget — preventing 
 
 ### 📦 Context Compression
 
-As pipelines progress through phases, earlier context gets compressed automatically — keeping agent prompts focused and within token limits without losing critical information.
+As pipelines progress through phases, earlier context gets compacted automatically into a fixed schema: Goal, Constraints, Progress, Decisions, Relevant Files, Next Steps, and Critical Context. Tool calls and results are pruned as pairs, unsafe provider payload bodies are omitted, and every applied compaction emits metadata with summary ids, source refs, reason codes, and budget/blocker state.
 
 ### 🔄 Pipeline That Never Dies
 

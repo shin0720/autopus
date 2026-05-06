@@ -33,6 +33,7 @@ type PhaseResult struct {
 	ToolCalls  int // number of tool calls made during this phase
 }
 
+// @AX:NOTE: [AUTO] hardcoded phase order defines the worker phase-split default; keep aligned with prompts and server phase plans
 var defaultPipelinePhases = []Phase{
 	PhasePlanner,
 	PhaseExecutor,
@@ -129,6 +130,8 @@ func (pe *PipelineExecutor) Execute(ctx context.Context, taskID, prompt string) 
 	return pe.ExecuteWithPlan(ctx, taskID, prompt, "", nil)
 }
 
+// @AX:ANCHOR: [AUTO] public phase-split execution contract called by Execute, worker loop, and integration tests (fan-in >= 3)
+// @AX:REASON: Signature and phase/blocker semantics coordinate subprocess execution, routing, compression, and budget accounting.
 // ExecuteWithPlan runs the pipeline with an optional server-selected model and
 // explicit phase plan. When phases is empty, the default sequence is used.
 func (pe *PipelineExecutor) ExecuteWithPlan(ctx context.Context, taskID, prompt, model string, phases []Phase) (adapter.TaskResult, error) {
@@ -170,7 +173,11 @@ func (pe *PipelineExecutor) ExecuteWithPlan(ctx context.Context, taskID, prompt,
 		results = append(results, result)
 		totalCost += result.CostUSD
 		totalDuration += result.DurationMS
-		prevOutput = pe.nextPhaseInput(phase, result.Output)
+		nextOutput, err := pe.nextPhaseInput(phase, result.Output)
+		if err != nil {
+			return adapter.TaskResult{}, err
+		}
+		prevOutput = nextOutput
 
 		log.Printf("[pipeline] phase %s completed: cost=$%.4f duration=%dms", phase, result.CostUSD, result.DurationMS)
 	}
@@ -201,11 +208,31 @@ func (pe *PipelineExecutor) completePhase(phase Phase, toolCalls int) {
 		phase, toolCalls, pe.allocator.TotalRemaining())
 }
 
-func (pe *PipelineExecutor) nextPhaseInput(phase Phase, output string) string {
+// @AX:NOTE: [AUTO] @AX:SPEC: SPEC-CONTEXT-COMPRESS-001: compaction blockers fail closed before building the next phase prompt
+func (pe *PipelineExecutor) nextPhaseInput(phase Phase, output string) (string, error) {
 	if pe.compressor == nil {
-		return output
+		return output, nil
 	}
-	return pe.compressor.Compress(string(phase), output, pe.provider.Name())
+	if detailed, ok := pe.compressor.(interface {
+		CompressDetailed(string, string, string) compress.CompactionResult
+	}); ok {
+		result := detailed.CompressDetailed(string(phase), output, pe.provider.Name())
+		if result.Blocker != "" {
+			return "", fmt.Errorf("phase %s compaction blocker: %s", phase, result.Blocker)
+		}
+		if result.Event.CompactionApplied {
+			log.Printf("[pipeline] compaction event phase=%s summary_id=%s input=%d output=%d pruned_pairs=%d reasons=%s",
+				phase,
+				result.Event.SummaryID,
+				result.Event.InputEstimate,
+				result.Event.OutputEstimate,
+				result.Event.PrunedPairCount,
+				strings.Join(result.Event.ReasonCodes, ","),
+			)
+		}
+		return result.Output, nil
+	}
+	return pe.compressor.Compress(string(phase), output, pe.provider.Name()), nil
 }
 
 // IsContextOverflow checks whether a stream event indicates a context window overflow.

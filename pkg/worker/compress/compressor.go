@@ -1,7 +1,9 @@
 package compress
 
 import (
+	"fmt"
 	"log"
+	"strings"
 )
 
 // ContextCompressor compresses phase output before passing to the next phase.
@@ -31,26 +33,55 @@ func NewDefaultCompressor(keepRecentTools int) *DefaultCompressor {
 // If so, it prunes tool blocks and generates a structured summary.
 // If not, it returns the output unchanged (REQ-COMP-005).
 func (c *DefaultCompressor) Compress(phaseName, output, provider string) string {
+	return c.CompressDetailed(phaseName, output, provider).Output
+}
+
+// @AX:ANCHOR: [AUTO] @AX:SPEC: SPEC-CONTEXT-COMPRESS-001: public compaction contract for phase handoff metadata
+// @AX:REASON: Pipeline, worker, and orchestra callers use this method to receive output, event metadata, and fail-closed blocker state together.
+// CompressDetailed returns compressed output plus compaction event metadata.
+func (c *DefaultCompressor) CompressDetailed(phaseName, output, provider string) CompactionResult {
 	if !ShouldCompress(output, provider) {
-		return output
+		return CompactionResult{
+			Output: output,
+			Event:  newCompactionEvent(phaseName, provider, output, false),
+		}
 	}
 
 	log.Printf("[compress] phase %s exceeds threshold for %s, compressing", phaseName, provider)
 
 	// Step 1: Prune old tool results (REQ-COMP-003).
-	pruned, report := PruneAndReport(output, c.KeepRecentTools)
+	prune := PruneToolResultsDetailed(output, c.KeepRecentTools)
+	report := pruneReport(output, prune.Text)
 	if report != "" {
 		log.Printf("[compress] %s", report)
 	}
 
 	// Step 2: Generate structured summary (REQ-COMP-001).
 	budget := SummaryBudget(provider)
-	summary := Summarize(phaseName, pruned, budget)
+	summary := Summarize(phaseName, prune.Text, budget)
+	event := buildCompactionEvent(phaseName, provider, output, summary, prune)
 
 	log.Printf("[compress] compressed %d → %d tokens",
 		EstimateTokens(output), EstimateTokens(summary))
 
-	return summary
+	result := CompactionResult{Output: summary, Event: event}
+	if strings.Contains(summary, "context-budget") {
+		result.Blocker = "context-budget"
+	}
+	return result
+}
+
+func pruneReport(original, pruned string) string {
+	if pruned == original {
+		return ""
+	}
+	origResults, origCalls := CountToolBlocks(original)
+	newResults, newCalls := CountToolBlocks(pruned)
+	return strings.TrimSpace(fmt.Sprintf(
+		"pruned tool blocks: results %d→%d, calls %d→%d | %s",
+		origResults, newResults, origCalls, newCalls,
+		PruneSummary(original, pruned),
+	))
 }
 
 // NopCompressor is a no-op compressor that always returns the original output.

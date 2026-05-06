@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Structured Context Compression (SPEC-CONTEXT-COMPRESS-001)** (2026-05-06): phase handoff compression now preserves long-running agent context as a replayable compaction contract instead of a lossy short summary.
+  - `pkg/worker/compress/{summarizer,compressor,events,pruner,tool_pairs,tool_payload}.go` — seven-section summaries (`Goal`, `Constraints`, `Progress`, `Decisions`, `Relevant Files`, `Next Steps`, `Critical Context`), summary continuity metadata, redacted-derived index eligibility, pair-aware tool call/result pruning, safe provider-payload omission, source-ref extraction, and fail-closed context-budget blockers
+  - `pkg/pipeline/{engine,events}.go` and `pkg/worker/pipeline.go` — compaction events are recorded before the next phase/model handoff, and context-budget blockers abort instead of silently dropping constraints or decisions
+  - `pkg/orchestra/context_compaction.go` — orchestra-side context summarization now reuses the structured compressor contract
+  - Acceptance coverage now exercises schema preservation, tool-pair integrity across XML/fenced/JSON-style traces, repeated compaction continuity, redaction of secrets/local paths/provider payloads, event source-ref safety, and pipeline/worker blocker handling
+
 - **FTS5 Decision/Quality Index (SPEC-AUTO-MEM-001)** (2026-05-06): `auto mem` now provides a local, rebuildable quality recall projection over human-managed project docs, SPEC docs, learning JSONL entries, and redacted QAMESH summaries.
   - `pkg/memindex/**` — SQLite FTS5 projection schema, source scanner, deterministic source hashes, redaction/source-root admission guards, QAMESH and learning importers, top-k search, stale/corrupt fail-closed handling, status output, and bounded prompt context rendering
   - `pkg/memindex/driver` — `modernc.org/sqlite` backed FTS5 startup probe before projection writes

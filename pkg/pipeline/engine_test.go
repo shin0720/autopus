@@ -2,12 +2,14 @@ package pipeline_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insajin/autopus-adk/pkg/pipeline"
+	"github.com/insajin/autopus-adk/pkg/worker/compress"
 )
 
 // TestSubprocessEngine_Run_ExecutesAllPhases verifies that SubprocessEngine
@@ -127,4 +129,84 @@ func TestSubprocessEngine_Run_DryRun(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, 0, recorder.CallCount)
+}
+
+func TestSubprocessEngine_Run_CompactsPreviousPhaseOutput(t *testing.T) {
+	oldWindow, hadWindow := compress.ModelWindows["tiny-pipeline"]
+	compress.ModelWindows["tiny-pipeline"] = 10
+	defer func() {
+		if hadWindow {
+			compress.ModelWindows["tiny-pipeline"] = oldWindow
+			return
+		}
+		delete(compress.ModelWindows, "tiny-pipeline")
+	}()
+
+	largePlanOutput := "## Goal\nCompress phase output for SPEC-CONTEXT-COMPRESS-001.\n\n" +
+		strings.Repeat("raw detailed trace ", 20)
+	recorder := &FakeBackend{
+		Responses: []string{
+			largePlanOutput,
+			"test scaffold output",
+			"implement output",
+			"validate output",
+			"review output",
+		},
+	}
+	cfg := pipeline.EngineConfig{
+		SpecID:   "SPEC-CONTEXT-COMPRESS-001",
+		Platform: "tiny-pipeline",
+		Strategy: pipeline.StrategySequential,
+		Backend:  recorder,
+	}
+	engine := pipeline.NewSubprocessEngine(cfg)
+
+	result, err := engine.Run(context.Background())
+
+	require.NoError(t, err)
+	require.NotEmpty(t, result.CompactionEvents)
+	assert.Equal(t, pipeline.PhasePlan, result.PhaseResults[0].PhaseID)
+	require.NotNil(t, result.PhaseResults[0].CompactionEvent)
+	assert.Equal(t, "plan", result.PhaseResults[0].CompactionEvent.Phase)
+	require.GreaterOrEqual(t, len(recorder.ReceivedPrompts), 2)
+	assert.Contains(t, recorder.ReceivedPrompts[1], "## Phase Summary: plan")
+	assert.NotContains(t, recorder.ReceivedPrompts[1], strings.Repeat("raw detailed trace ", 20))
+}
+
+type blockingCompressor struct{}
+
+func (blockingCompressor) Compress(_, output, _ string) string {
+	return output
+}
+
+func (blockingCompressor) CompressDetailed(phaseName, output, provider string) compress.CompactionResult {
+	return compress.CompactionResult{
+		Output:  output,
+		Blocker: "context-budget",
+		Event: compress.CompactionEvent{
+			Phase:             phaseName,
+			Provider:          provider,
+			CompactionApplied: true,
+			ReasonCodes:       []string{compress.ReasonContextBudgetBlocker},
+		},
+	}
+}
+
+func TestSubprocessEngine_Run_FailsClosedOnCompactionBlocker(t *testing.T) {
+	recorder := &FakeBackend{Responses: []string{"raw output"}}
+	cfg := pipeline.EngineConfig{
+		SpecID:     "SPEC-CONTEXT-COMPRESS-001",
+		Platform:   "codex",
+		Strategy:   pipeline.StrategySequential,
+		Backend:    recorder,
+		Compressor: blockingCompressor{},
+	}
+	engine := pipeline.NewSubprocessEngine(cfg)
+
+	result, err := engine.Run(context.Background())
+
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "context-budget")
+	assert.Equal(t, 1, recorder.CallCount, "must stop before the next model call")
 }

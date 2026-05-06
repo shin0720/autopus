@@ -6,28 +6,48 @@ import (
 	"strings"
 )
 
+// @AX:NOTE: [AUTO] @AX:SPEC: SPEC-CONTEXT-COMPRESS-001: tool block regexes are provider trace wire-format heuristics
 // toolResultPattern matches tool call result blocks in LLM output.
 // Supports common formats: <tool_result>...</tool_result>, ```tool_result...```,
 // and JSON-style {"type":"tool_result",...}.
 var toolResultPattern = regexp.MustCompile(
 	`(?s)(<tool_result>.*?</tool_result>|` +
 		"```tool_result\\b.*?```" +
-		`|\\{"type"\\s*:\\s*"tool_result"[^}]*\\})`,
+		`)`,
 )
 
 // toolCallPattern matches tool call blocks.
 var toolCallPattern = regexp.MustCompile(
 	`(?s)(<tool_call>.*?</tool_call>|` +
 		"```tool_call\\b.*?```" +
-		`|\\{"type"\\s*:\\s*"tool_call"[^}]*\\})`,
+		`)`,
 )
 
 // PruneToolResults replaces old tool call/result blocks with placeholders.
-// It keeps the most recent keepRecent blocks intact and replaces older ones.
+// When both calls and results are present, it preserves or prunes complete pairs
+// together so the output never contains orphaned tool blocks.
 func PruneToolResults(text string, keepRecent int) string {
-	text = pruneBlocks(text, toolResultPattern, "[tool_result pruned]", keepRecent)
-	text = pruneBlocks(text, toolCallPattern, "[tool_call pruned]", keepRecent)
-	return text
+	return PruneToolResultsDetailed(text, keepRecent).Text
+}
+
+// @AX:ANCHOR: [AUTO] @AX:SPEC: SPEC-CONTEXT-COMPRESS-001: pair-aware pruning contract for complete tool call/result preservation
+// @AX:REASON: Compressor and reporting helpers depend on this path to preserve recent pairs, replace incomplete pairs, and emit reason codes consistently.
+func PruneToolResultsDetailed(text string, keepRecent int) pruneDetails {
+	if keepRecent < 0 {
+		keepRecent = 0
+	}
+	blocks := findToolBlocks(text)
+	hasCalls, hasResults := hasToolKinds(blocks)
+	if hasCalls || hasResults {
+		return pruneToolPairs(text, blocks, keepRecent)
+	}
+	pruned := pruneBlocks(text, toolResultPattern, "[tool_result pruned]", keepRecent)
+	pruned = pruneBlocks(pruned, toolCallPattern, "[tool_call pruned]", keepRecent)
+	details := pruneDetails{Text: pruned}
+	if pruned != text {
+		details.ReasonCodes = append(details.ReasonCodes, ReasonToolPairPruned)
+	}
+	return details
 }
 
 // pruneBlocks replaces all but the last keepRecent matches of pattern
@@ -63,14 +83,21 @@ func PruneSummary(original, pruned string) string {
 
 // CountToolBlocks returns the number of tool_result and tool_call blocks.
 func CountToolBlocks(text string) (results int, calls int) {
-	results = len(toolResultPattern.FindAllStringIndex(text, -1))
-	calls = len(toolCallPattern.FindAllStringIndex(text, -1))
+	for _, block := range findToolBlocks(text) {
+		switch block.kind {
+		case "result":
+			results++
+		case "call":
+			calls++
+		}
+	}
 	return
 }
 
 // PruneAndReport prunes tool blocks and returns the pruned text plus a report line.
 func PruneAndReport(text string, keepRecent int) (string, string) {
-	pruned := PruneToolResults(text, keepRecent)
+	details := PruneToolResultsDetailed(text, keepRecent)
+	pruned := details.Text
 	if pruned == text {
 		return text, ""
 	}

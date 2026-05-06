@@ -3,10 +3,13 @@ package orchestra
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/insajin/autopus-adk/pkg/worker/compress"
 )
 
 func setupTestProject(t *testing.T) string {
@@ -158,6 +161,28 @@ func TestTruncateToTokens(t *testing.T) {
 		assert.Less(t, len(result), 100)
 		assert.Contains(t, result, "truncated")
 	})
+}
+
+func TestContextSummarizer_CompressContextUsesStructuredSchema(t *testing.T) {
+	oldWindow, hadWindow := compress.ModelWindows["tiny-orchestra"]
+	compress.ModelWindows["tiny-orchestra"] = 10
+	defer func() {
+		if hadWindow {
+			compress.ModelWindows["tiny-orchestra"] = oldWindow
+			return
+		}
+		delete(compress.ModelWindows, "tiny-orchestra")
+	}()
+
+	cs := NewContextSummarizer(ContextSummarizerConfig{ProjectDir: t.TempDir()})
+	input := "## Goal\nReview SPEC-CONTEXT-COMPRESS-001.\n\n" + strings.Repeat("raw context ", 20)
+
+	result := cs.CompressContext("orchestra", input, "tiny-orchestra")
+
+	require.True(t, result.Event.CompactionApplied)
+	assert.Contains(t, result.Output, "### Constraints")
+	assert.Contains(t, result.Output, "### Critical Context")
+	assert.Equal(t, "orchestra", result.Event.Phase)
 }
 
 func TestExtractFirstParagraph(t *testing.T) {

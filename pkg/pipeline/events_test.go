@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEventType_Constants verifies all 7 event types are defined with correct values.
+// TestEventType_Constants verifies all 8 event types are defined with correct values.
 func TestEventType_Constants(t *testing.T) {
 	t.Parallel()
 
@@ -26,6 +26,7 @@ func TestEventType_Constants(t *testing.T) {
 		{"checkpoint", EventCheckpoint, "checkpoint"},
 		{"error", EventError, "error"},
 		{"blocker", EventBlocker, "blocker"},
+		{"compaction", EventCompaction, "compaction"},
 	}
 
 	for _, tt := range tests {
@@ -35,13 +36,13 @@ func TestEventType_Constants(t *testing.T) {
 		})
 	}
 
-	// Verify exactly 7 types are defined.
+	// Verify exactly 8 types are defined.
 	allTypes := []EventType{
 		EventPhaseStart, EventPhaseEnd,
 		EventAgentSpawn, EventAgentDone,
-		EventCheckpoint, EventError, EventBlocker,
+		EventCheckpoint, EventError, EventBlocker, EventCompaction,
 	}
-	assert.Len(t, allTypes, 7, "expected exactly 7 event types")
+	assert.Len(t, allTypes, 8, "expected exactly 8 event types")
 }
 
 // TestNewEvent verifies the constructor sets timestamp and fields correctly.
@@ -133,6 +134,7 @@ func TestNewEvent_DifferentTypes(t *testing.T) {
 	types := []EventType{
 		EventPhaseStart, EventPhaseEnd, EventAgentSpawn,
 		EventAgentDone, EventCheckpoint, EventError, EventBlocker,
+		EventCompaction,
 	}
 
 	for _, et := range types {

@@ -4,6 +4,8 @@ package pipeline
 import (
 	"context"
 	"fmt"
+
+	"github.com/insajin/autopus-adk/pkg/worker/compress"
 )
 
 // Strategy defines the execution order of pipeline phases.
@@ -46,20 +48,24 @@ type EngineConfig struct {
 	Backend    PhaseBackend
 	Checkpoint *Checkpoint
 	DryRun     bool
+	// Compressor compacts previous phase output before injecting it into the next prompt.
+	Compressor compress.ContextCompressor
 	// RunConfig holds runner-level configuration including the learn store.
 	RunConfig RunConfig
 }
 
 // PipelineResult holds the outcome of a pipeline run.
 type PipelineResult struct {
-	PhaseResults []PhaseResult
+	PhaseResults     []PhaseResult
+	CompactionEvents []compress.CompactionEvent
 }
 
 // PhaseResult holds the outcome of a single phase execution.
 type PhaseResult struct {
-	PhaseID PhaseID
-	Output  string
-	Verdict GateVerdict
+	PhaseID         PhaseID
+	Output          string
+	Verdict         GateVerdict
+	CompactionEvent *compress.CompactionEvent
 }
 
 // noopBackend is the default backend used when none is configured.
@@ -75,22 +81,27 @@ type SubprocessEngine struct {
 	cfg EngineConfig
 }
 
-// @AX:ANCHOR: [AUTO] public API contract — entry point called from CLI and tests (fan-in >= 3)
+// @AX:ANCHOR: [AUTO] @AX:REASON: public API contract — entry point called from CLI and tests (fan-in >= 3)
 // NewSubprocessEngine creates a SubprocessEngine with the given config.
 func NewSubprocessEngine(cfg EngineConfig) *SubprocessEngine {
 	if cfg.Backend == nil {
 		cfg.Backend = &noopBackend{}
 	}
+	if cfg.Compressor == nil {
+		// @AX:NOTE: [AUTO] @AX:SPEC: SPEC-CONTEXT-COMPRESS-001: keepRecent=2 is the default phase-transition compaction policy
+		cfg.Compressor = compress.NewDefaultCompressor(2)
+	}
 	return &SubprocessEngine{cfg: cfg}
 }
 
-// @AX:ANCHOR: [AUTO] architectural boundary — sole orchestration entry point for 5-phase pipeline
+// @AX:ANCHOR: [AUTO] @AX:REASON: architectural boundary — sole orchestration entry point for 5-phase pipeline
 // Run executes the full 5-phase pipeline.
 func (e *SubprocessEngine) Run(ctx context.Context) (*PipelineResult, error) {
 	phases := DefaultPhases()
 
 	results := make([]PhaseResult, len(phases))
 	var previousOutput string
+	var compactionEvents []compress.CompactionEvent
 
 	for i, phase := range phases {
 		phaseID := phase.ID
@@ -130,9 +141,18 @@ func (e *SubprocessEngine) Run(ctx context.Context) (*PipelineResult, error) {
 			Output:  resp.Output,
 		}
 		previousOutput = resp.Output
+		nextOutput, event, err := e.compactPhaseOutput(phaseID, resp.Output)
+		if err != nil {
+			return nil, err
+		}
+		if event != nil {
+			results[i].CompactionEvent = event
+			compactionEvents = append(compactionEvents, *event)
+			previousOutput = nextOutput
+		}
 	}
 
-	return &PipelineResult{PhaseResults: results}, nil
+	return &PipelineResult{PhaseResults: results, CompactionEvents: compactionEvents}, nil
 }
 
 // @AX:NOTE: [AUTO] magic constant in format string — SPEC/Phase labels are part of prompt contract
@@ -143,4 +163,28 @@ func buildPrompt(specID string, phaseID PhaseID, previousOutput string) string {
 		prompt += fmt.Sprintf("\n\nPrevious phase output:\n%s", previousOutput)
 	}
 	return prompt
+}
+
+// @AX:NOTE: [AUTO] @AX:SPEC: SPEC-CONTEXT-COMPRESS-001: compaction blockers abort before the next backend call to avoid lossy prompt handoff
+func (e *SubprocessEngine) compactPhaseOutput(phaseID PhaseID, output string) (string, *compress.CompactionEvent, error) {
+	if e.cfg.Compressor == nil {
+		return output, nil, nil
+	}
+	if detailed, ok := e.cfg.Compressor.(interface {
+		CompressDetailed(string, string, string) compress.CompactionResult
+	}); ok {
+		result := detailed.CompressDetailed(string(phaseID), output, e.cfg.Platform)
+		if result.Blocker != "" {
+			return "", &result.Event, fmt.Errorf("phase %s compaction blocker: %s", phaseID, result.Blocker)
+		}
+		if !result.Event.CompactionApplied {
+			return result.Output, nil, nil
+		}
+		return result.Output, &result.Event, nil
+	}
+	compressed := e.cfg.Compressor.Compress(string(phaseID), output, e.cfg.Platform)
+	if compressed == output {
+		return output, nil, nil
+	}
+	return compressed, nil, nil
 }

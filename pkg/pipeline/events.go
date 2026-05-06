@@ -4,6 +4,8 @@ package pipeline
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/insajin/autopus-adk/pkg/worker/compress"
 )
 
 // EventType identifies the kind of pipeline event.
@@ -25,15 +27,20 @@ const (
 	EventError EventType = "error"
 	// EventBlocker is emitted when a blocker is detected.
 	EventBlocker EventType = "blocker"
+	// EventCompaction is emitted when phase context is compressed.
+	EventCompaction EventType = "compaction"
 )
 
+// @AX:ANCHOR: [AUTO] public JSONL event schema for pipeline lifecycle and compaction telemetry
+// @AX:REASON: Pipeline logger, tests, and downstream readers depend on these JSON field names and embedded compaction metadata.
 // Event represents a single pipeline lifecycle event.
 type Event struct {
-	Type      EventType `json:"type"`
-	Timestamp time.Time `json:"timestamp"`
-	Phase     string    `json:"phase,omitempty"`
-	Agent     string    `json:"agent,omitempty"`
-	Message   string    `json:"message,omitempty"`
+	Type       EventType                 `json:"type"`
+	Timestamp  time.Time                 `json:"timestamp"`
+	Phase      string                    `json:"phase,omitempty"`
+	Agent      string                    `json:"agent,omitempty"`
+	Message    string                    `json:"message,omitempty"`
+	Compaction *compress.CompactionEvent `json:"compaction,omitempty"`
 }
 
 // NewEvent creates an Event with the given type and message, setting Timestamp to now.

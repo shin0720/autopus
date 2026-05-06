@@ -16,25 +16,28 @@ final`
 
 	pruned := PruneToolResults(text, 1)
 
-	if !strings.Contains(pruned, "result 3") {
-		t.Error("should keep the most recent tool_result")
-	}
 	if strings.Contains(pruned, "result 1") {
 		t.Error("should prune old tool_result 1")
 	}
 	if strings.Contains(pruned, "result 2") {
 		t.Error("should prune old tool_result 2")
 	}
-	if !strings.Contains(pruned, "[tool_result pruned]") {
-		t.Error("should contain placeholder")
+	if strings.Contains(pruned, "<tool_result>") {
+		t.Error("should not leave orphaned tool_result blocks")
+	}
+	if !strings.Contains(pruned, "[tool_pair incomplete:") {
+		t.Error("should contain incomplete-pair placeholders")
 	}
 }
 
 func TestPruneToolResults_NoopWhenBelowThreshold(t *testing.T) {
 	text := `<tool_result>only one</tool_result>`
 	pruned := PruneToolResults(text, 2)
-	if pruned != text {
-		t.Error("should not prune when blocks <= keepRecent")
+	if strings.Contains(pruned, "<tool_result>") {
+		t.Error("should replace orphaned result even when blocks <= keepRecent")
+	}
+	if !strings.Contains(pruned, "reason=missing_call") {
+		t.Fatalf("should include incomplete-pair reason:\n%s", pruned)
 	}
 }
 
@@ -45,11 +48,73 @@ func TestPruneToolResults_PrunesToolCalls(t *testing.T) {
 
 	pruned := PruneToolResults(text, 1)
 
-	if !strings.Contains(pruned, "call 3") {
-		t.Error("should keep the most recent tool_call")
-	}
 	if strings.Contains(pruned, "call 1") {
 		t.Error("should prune old tool_call 1")
+	}
+	if strings.Contains(pruned, "<tool_call>") {
+		t.Error("should not leave orphaned tool_call blocks")
+	}
+	if !strings.Contains(pruned, "[tool_pair incomplete:") {
+		t.Error("should replace incomplete calls with explicit placeholders")
+	}
+}
+
+func TestPruneToolResults_IncompletePairHasReason(t *testing.T) {
+	text := `<tool_call>{"pair_id":"pair-missing","ordinal":9,"command":"call only"}</tool_call>`
+
+	pruned := PruneToolResults(text, 1)
+
+	if strings.Contains(pruned, "<tool_call>") {
+		t.Fatalf("should not leave orphaned tool call:\n%s", pruned)
+	}
+	if !strings.Contains(pruned, "[tool_pair incomplete: pair=pair-missing ordinal=9 reason=missing_result]") {
+		t.Fatalf("missing incomplete-pair reason:\n%s", pruned)
+	}
+}
+
+func TestPruneToolResults_PairsExplicitCallIDWithFollowingResult(t *testing.T) {
+	text := `<tool_call>{"pair_id":"pair-explicit","command":"call"}</tool_call>
+<tool_result>{"body":"result without pair id"}</tool_result>`
+
+	pruned := PruneToolResults(text, 1)
+
+	if !strings.Contains(pruned, "pair-explicit") {
+		t.Fatalf("explicit call id should pair with following result:\n%s", pruned)
+	}
+	results, calls := CountToolBlocks(pruned)
+	if results != 1 || calls != 1 {
+		t.Fatalf("expected complete pair to be preserved, got calls=%d results=%d:\n%s", calls, results, pruned)
+	}
+}
+
+func TestPruneToolResults_JSONStyleToolBlocks(t *testing.T) {
+	text := strings.Join([]string{
+		`{"type":"tool_call","pair_id":"json-1","ordinal":1,"payload":{"command":"old"}}`,
+		`{"type":"tool_result","pair_id":"json-1","ordinal":1,"body":"old {\"nested\":true}"}`,
+		`{"type":"tool_call","pair_id":"json-2","ordinal":2,"payload":{"command":"recent"}}`,
+		`{"type":"tool_result","pair_id":"json-2","ordinal":2,"body":"recent {\"nested\":true}"}`,
+	}, "\n")
+
+	pruned := PruneToolResults(text, 1)
+
+	if strings.Contains(pruned, `"command":"old"`) || strings.Contains(pruned, "old {") {
+		t.Fatalf("old JSON pair should be pruned:\n%s", pruned)
+	}
+	if !strings.Contains(pruned, "[tool_pair pruned: pair=json-1 ordinal=1]") {
+		t.Fatalf("missing JSON pair placeholder:\n%s", pruned)
+	}
+	if !strings.Contains(pruned, "json-2") {
+		t.Fatalf("recent JSON pair should be preserved:\n%s", pruned)
+	}
+	if strings.Contains(pruned, "recent {") {
+		t.Fatalf("recent JSON pair should omit provider body:\n%s", pruned)
+	}
+	if !strings.Contains(pruned, "provider_payload_omitted") {
+		t.Fatalf("recent JSON pair should preserve only safe metadata:\n%s", pruned)
+	}
+	results, calls := CountToolBlocks(pruned)
+	if results != 1 || calls != 1 {
+		t.Fatalf("expected one complete JSON pair, got calls=%d results=%d:\n%s", calls, results, pruned)
 	}
 }
 
@@ -94,7 +159,7 @@ func TestPruneAndReport_WithPruning(t *testing.T) {
 <tool_result>r3</tool_result>`
 
 	result, report := PruneAndReport(text, 1)
-	if !strings.Contains(result, "[tool_result pruned]") {
+	if !strings.Contains(result, "[tool_pair incomplete:") {
 		t.Error("should contain placeholder")
 	}
 	if report == "" {

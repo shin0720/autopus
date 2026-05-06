@@ -186,3 +186,60 @@ func TestPipelineExecutor_NopCompressorPassthrough(t *testing.T) {
 		t.Error("NopCompressor should pass through unchanged")
 	}
 }
+
+func TestPipelineExecutor_NextPhaseInputUsesDetailedCompaction(t *testing.T) {
+	oldWindow, hadWindow := compress.ModelWindows["claude"]
+	compress.ModelWindows["claude"] = 10
+	defer func() {
+		if hadWindow {
+			compress.ModelWindows["claude"] = oldWindow
+			return
+		}
+		delete(compress.ModelWindows, "claude")
+	}()
+
+	pe := NewPipelineExecutor(adapter.NewClaudeAdapter(), "", "/tmp")
+	pe.SetCompressor(compress.NewDefaultCompressor(0))
+
+	output := "## Goal\nCompress before next phase.\n\n" + strings.Repeat("raw trace ", 20)
+	result, err := pe.nextPhaseInput(PhasePlanner, output)
+	if err != nil {
+		t.Fatalf("nextPhaseInput returned error: %v", err)
+	}
+
+	if !strings.Contains(result, "## Phase Summary: planner") {
+		t.Fatalf("next phase input should be a structured summary:\n%s", result)
+	}
+	if strings.Contains(result, strings.Repeat("raw trace ", 20)) {
+		t.Fatal("next phase input should not preserve the full raw trace")
+	}
+}
+
+type blockingCompressor struct{}
+
+func (blockingCompressor) Compress(_, output, _ string) string {
+	return output
+}
+
+func (blockingCompressor) CompressDetailed(phaseName, output, provider string) compress.CompactionResult {
+	return compress.CompactionResult{
+		Output:  output,
+		Blocker: "context-budget",
+		Event: compress.CompactionEvent{
+			Phase:             phaseName,
+			Provider:          provider,
+			CompactionApplied: true,
+			ReasonCodes:       []string{compress.ReasonContextBudgetBlocker},
+		},
+	}
+}
+
+func TestPipelineExecutor_NextPhaseInputFailsClosedOnCompactionBlocker(t *testing.T) {
+	pe := NewPipelineExecutor(adapter.NewClaudeAdapter(), "", "/tmp")
+	pe.SetCompressor(blockingCompressor{})
+
+	_, err := pe.nextPhaseInput(PhasePlanner, "raw output")
+	if err == nil || !strings.Contains(err.Error(), "context-budget") {
+		t.Fatalf("expected context-budget blocker error, got %v", err)
+	}
+}

@@ -26,7 +26,8 @@ Autopus-ADK (Agentic Development Kit) is a Go CLI tool that installs the Autopus
 | Version | `pkg/version` | Build metadata (ldflags injection) |
 | SigMap | `pkg/sigmap` | AST-based exported API signature extraction and rendering (Go + TypeScript) |
 | Constraint | `pkg/constraint` | Anti-pattern registry and violation scanning |
-| Pipeline | `pkg/pipeline` | Pipeline state persistence, checkpoint management |
+| Pipeline | `pkg/pipeline` | Pipeline state persistence, checkpoint management, phase handoff compaction events |
+| Worker Compression | `pkg/worker/compress` | Structured context compression for phase handoffs, tool pair pruning, redacted compaction metadata |
 | Telemetry | `pkg/telemetry` | Pipeline execution telemetry recording and reporting (JSONL) |
 | Cost | `pkg/cost` | Token-based cost estimation and pricing tables |
 | Issue | `pkg/issue` | Auto issue reporter: error context collection, sanitization, GitHub issue submission |
@@ -115,6 +116,7 @@ cmd/auto/main.go
 | Activator | `pkg/content/activator.go` | Skills auto-activation based on user query and context |
 | SigMap | `pkg/sigmap/extractor.go` | go/ast-based exported API inventory extraction |
 | Pipeline Checkpoint | `pkg/pipeline/checkpoint.go` | YAML-based pipeline state persistence with stale detection |
+| Structured Context Compression | `pkg/worker/compress` + `pkg/pipeline/events.go` | Seven-section phase summaries, pair-aware tool pruning, compaction metadata, and fail-closed budget blockers |
 | Multi-Language SigMap | `pkg/sigmap/iface.go` | Extractor interface for pluggable language support (Go + TypeScript) |
 | Test Runner Detection | `pkg/detect/testrunner.go` | Auto-detection of test frameworks (jest/vitest/pytest/cargo) |
 | Meta-Agent Builder | `internal/cli/agent_create.go` | Pattern-based agent/skill scaffold generation |
