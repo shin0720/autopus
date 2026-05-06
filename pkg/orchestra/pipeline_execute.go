@@ -76,12 +76,24 @@ func executeParallel(
 
 	var successes []ProviderResult
 	var failed []FailedProvider
+	var failedResults []result
 	for _, r := range results {
 		if r.err != nil {
-			failed = append(failed, buildFailedProvider(providers[r.idx], r.resp, r.err, timeoutSeconds))
+			failedResults = append(failedResults, r)
 		} else {
 			successes = append(successes, r.pr)
 		}
+	}
+	otherProvidersContinued := len(successes) > 0
+	for _, r := range failedResults {
+		failed = append(failed, buildFailedProviderWithContext(
+			providers[r.idx],
+			r.resp,
+			r.err,
+			timeoutSeconds,
+			role,
+			otherProvidersContinued,
+		))
 	}
 	if len(successes) == 0 {
 		return nil, failed, fmt.Errorf("all %d providers failed", len(providers))

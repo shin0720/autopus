@@ -2,6 +2,10 @@ package parallel
 
 import "context"
 
+// DefaultWorktreeSlotCap is the default maximum parallel executor worktree slots.
+// @AX:NOTE: [AUTO] magic constant 5 mirrors pipeline maxWorktrees and bounds default isolated worker concurrency.
+const DefaultWorktreeSlotCap = 5
+
 // TaskSemaphore limits concurrent task execution with FIFO queuing.
 // It uses a buffered channel internally so waiters are served in order.
 type TaskSemaphore struct {

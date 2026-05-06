@@ -39,6 +39,28 @@ func TestEmergencyStopSIGTERM(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestEmergencyStopEvidenceRecordsSIGTERM(t *testing.T) {
+	t.Parallel()
+
+	cmd := exec.Command("sleep", "60")
+	cmd.SysProcAttr = sysProcAttr()
+	require.NoError(t, cmd.Start())
+
+	es := NewEmergencyStop()
+	es.SetProcess(cmd)
+
+	evidence, err := es.StopWithEvidence("test evidence")
+
+	require.NoError(t, err)
+	require.NotNil(t, evidence)
+	assert.Equal(t, "test evidence", evidence.Reason)
+	assert.True(t, evidence.SIGTERMSent)
+	assert.False(t, evidence.SIGKILLSent)
+	assert.Contains(t, evidence.ActionSequence, "sigterm_sent")
+	assert.NotZero(t, evidence.PID)
+	assert.NotZero(t, evidence.PGID)
+}
+
 func TestEmergencyStopClearThenStop(t *testing.T) {
 	t.Parallel()
 
@@ -110,8 +132,12 @@ func TestEmergencyStopSIGKILLEscalation(t *testing.T) {
 	es.SetProcess(cmd)
 
 	// Stop should escalate to SIGKILL after 5s timeout.
-	err := es.Stop("escalation test")
+	evidence, err := es.StopWithEvidence("escalation test")
 	assert.NoError(t, err)
+	require.NotNil(t, evidence)
+	assert.True(t, evidence.SIGTERMSent)
+	assert.True(t, evidence.SIGKILLSent)
+	assert.Equal(t, []string{"sigterm_sent", "sigkill_sent"}, evidence.ActionSequence)
 }
 
 func TestEmergencyStopAlreadyStopped(t *testing.T) {

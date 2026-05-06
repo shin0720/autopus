@@ -12,6 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// @AX:ANCHOR: [AUTO] runner configuration contract shared by CLI, subprocess engine, sequential runner, and parallel runner.
+// @AX:REASON: Delegation safety, worktree slot cap, and evidence sink fields coordinate runtime safety gates across runners.
 // RunConfig holds optional configuration for a runner execution.
 type RunConfig struct {
 	// SpecID is used to name the checkpoint file when CheckpointDir is set.
@@ -25,6 +27,12 @@ type RunConfig struct {
 	// CoverageThreshold is the minimum coverage percentage for the coverage gap hook.
 	// Defaults to 85.0 when zero.
 	CoverageThreshold float64
+	// DelegationSafety configures runtime depth and authenticity checks.
+	DelegationSafety DelegationContext
+	// WorktreeSlotCap limits concurrent isolated worktree tasks. Defaults to 5.
+	WorktreeSlotCap int
+	// SafetyEvents receives structured safety decisions when provided.
+	SafetyEvents *[]DegradedEvidence
 }
 
 // SequentialRunner executes pipeline phases one at a time in order.
@@ -41,6 +49,9 @@ func NewSequentialRunner(backend PhaseBackend) *SequentialRunner {
 // When a phase gate fails it retries up to Phase.MaxRetries times.
 // An error is returned if max retries are exceeded.
 func (r *SequentialRunner) RunPhases(ctx context.Context, phases []Phase, cfg RunConfig) ([]PhaseResult, error) {
+	if err := cfg.preflightWorkflowAuthenticity(); err != nil {
+		return nil, err
+	}
 	results := make([]PhaseResult, 0, len(phases))
 	var previousOutput string
 
@@ -69,6 +80,9 @@ const defaultMaxRetries = 10
 // runPhaseWithRetry executes a single phase, retrying on gate failure.
 // When MaxRetries is 0, a safety cap of defaultMaxRetries is applied.
 func (r *SequentialRunner) runPhaseWithRetry(ctx context.Context, phase Phase, previousOutput string, cfg RunConfig) (PhaseResult, error) {
+	if err := cfg.checkDelegationSafety(phase.ID); err != nil {
+		return PhaseResult{}, err
+	}
 	prompt := buildRunnerPrompt(phase.ID, previousOutput)
 
 	maxRetries := phase.MaxRetries
@@ -117,13 +131,28 @@ func NewParallelRunner(backend PhaseBackend) *ParallelRunner {
 	return &ParallelRunner{backend: backend}
 }
 
-// @AX:WARN: [AUTO] goroutines without context cancellation check in worker body — ctx is passed to Execute but goroutine does not short-circuit on ctx.Done() before calling Execute
+// @AX:WARN: [AUTO] parallel worker goroutines depend on slot acquisition and backend Execute honoring ctx after dispatch.
+// @AX:REASON: Cancellation after a slot is acquired still relies on backend context handling; future worker changes must preserve bounded shutdown.
 // RunPhases executes all given phases in parallel and returns their results.
 // Results are returned in the same order as the input phases.
 func (r *ParallelRunner) RunPhases(ctx context.Context, phases []Phase, cfg RunConfig) ([]PhaseResult, error) {
+	if err := cfg.preflightWorkflowAuthenticity(); err != nil {
+		return nil, err
+	}
 	n := len(phases)
 	results := make([]PhaseResult, n)
 	errs := make([]error, n)
+	slotCap := cfg.effectiveWorktreeSlotCap()
+	if n > 0 {
+		schedule := ScheduleWorktreeTasksWithCap(phaseTaskIDs(phases), slotCap)
+		cfg.recordSafetyEvidence(schedule.Evidence)
+	}
+	for _, phase := range phases {
+		if err := cfg.checkDelegationSafety(phase.ID); err != nil {
+			return nil, err
+		}
+	}
+	slots := make(chan struct{}, slotCap)
 
 	// @AX:NOTE: [AUTO] start-gun pattern — gate channel releases all goroutines simultaneously; maximizes concurrency burst
 	// gate is closed after all goroutines are launched, releasing them
@@ -136,6 +165,13 @@ func (r *ParallelRunner) RunPhases(ctx context.Context, phases []Phase, cfg RunC
 		go func(idx int, ph Phase) {
 			defer wg.Done()
 			<-gate
+			select {
+			case slots <- struct{}{}:
+				defer func() { <-slots }()
+			case <-ctx.Done():
+				errs[idx] = ctx.Err()
+				return
+			}
 			resp, err := r.backend.Execute(ctx, PhaseRequest{PhaseID: ph.ID})
 			if err != nil {
 				learnHookExecutorError(cfg.LearnStore, ph.ID, err)

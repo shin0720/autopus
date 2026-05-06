@@ -60,6 +60,7 @@ func (pe *PipelineExecutor) runPhase(ctx context.Context, taskID string, phase P
 	}
 
 	cmd := pe.provider.BuildCommand(ctx, taskCfg)
+	prepareCommandProcessGroup(cmd)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -76,6 +77,8 @@ func (pe *PipelineExecutor) runPhase(ctx context.Context, taskID string, phase P
 	if err := cmd.Start(); err != nil {
 		return PhaseResult{}, fmt.Errorf("start subprocess: %w", err)
 	}
+	stopCancellationWatcher := watchCommandCancellation(ctx, cmd, taskCfg.TaskID, pe.interruptRecorder)
+	defer stopCancellationWatcher()
 
 	var emergencyStop *security.EmergencyStop
 	phaseBudget := pe.phaseIterationBudget(phase)
@@ -98,7 +101,7 @@ func (pe *PipelineExecutor) runPhase(ctx context.Context, taskID string, phase P
 		}
 	}()
 
-	result, parseErr := pe.parsePhaseStream(stdout, phase, phaseBudget, emergencyStop)
+	result, parseErr := pe.parsePhaseStream(stdout, taskCfg.TaskID, phase, phaseBudget, emergencyStop)
 	waitErr := cmd.Wait()
 
 	if parseErr != nil {
@@ -122,7 +125,7 @@ func (pe *PipelineExecutor) runPhase(ctx context.Context, taskID string, phase P
 
 // parsePhaseStream reads subprocess stdout and extracts the phase result.
 // Counts tool_call and tool_use events for budget tracking.
-func (pe *PipelineExecutor) parsePhaseStream(r io.Reader, phase Phase, phaseBudget *budget.IterationBudget, emergencyStop *security.EmergencyStop) (PhaseResult, error) {
+func (pe *PipelineExecutor) parsePhaseStream(r io.Reader, taskID string, phase Phase, phaseBudget *budget.IterationBudget, emergencyStop *security.EmergencyStop) (PhaseResult, error) {
 	scanner := bufio.NewScanner(r)
 	result := PhaseResult{Phase: phase}
 	hasResult := false
@@ -150,7 +153,16 @@ func (pe *PipelineExecutor) parsePhaseStream(r io.Reader, phase Phase, phaseBudg
 				state := counter.Increment()
 				if state.Level == budget.LevelExhausted && emergencyStop != nil {
 					log.Printf("[pipeline] phase %s budget exhausted, stopping", phase)
-					_ = emergencyStop.Stop("pipeline_iteration_budget_exceeded")
+					evidence, _ := emergencyStop.StopWithEvidence("pipeline_iteration_budget_exceeded")
+					if evidence != nil && pe.interruptRecorder != nil {
+						pe.interruptRecorder(newAuditInterruptEvent(
+							taskID,
+							evidence.Reason,
+							evidence.SIGTERMSent,
+							evidence.SIGKILLSent,
+							evidence.ActionSequence,
+						))
+					}
 					return result, fmt.Errorf("phase %s iteration budget exceeded: %d/%d", phase, state.Count, state.Budget.Limit)
 				}
 			}

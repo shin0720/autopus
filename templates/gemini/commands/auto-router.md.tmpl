@@ -910,6 +910,9 @@ IMPORTANT: This is the DEFAULT route. It REQUIRES spawning subagents using the A
 
 Before Phase 1, run workflow authenticity preflight:
 - Initialize `subagent_dispatch_count = 0`, `subagent_roles_dispatched = []`, and `degraded-mode = "none"`.
+- Also emit the machine key `degraded_mode` with the same value for JSON/report consumers.
+- Initialize delegation safety metadata with `delegation_depth = 0`, default `delegation_depth_cap = 2`, and `safety_rail_decisions = []`.
+- A child dispatch at `delegation_depth >= delegation_depth_cap` is blocked unless `delegation_depth_override` and `override_reason` are present; record `delegation_depth_exceeded` with current depth, cap, requested role, and override status.
 - Verify the Agent tool can create and observe subagent dispatch in this runtime.
 - Each successful Agent call MUST increment `subagent_dispatch_count` and append the role or phase name.
 - If Route A cannot create or observe dispatch, stop with a workflow authenticity blocker before Phase 1.
@@ -1184,7 +1187,10 @@ Agent(
 )
 ```
 
-Max concurrent worktrees: **5**. Queue overflow tasks and spawn as slots free.
+Max concurrent worktrees / worktree slot cap: **5**. Queue overflow tasks by `queue_discipline = "fifo_task_id"` and spawn as slots free.
+Record slot evidence: `active_task_ids`, `queued_task_ids`, `slot_count`, `cap`, reason `worktree_slot_cap`.
+Required worktree isolation must fail closed with `worktree_isolation_unavailable` unless explicit `override_reason` is present.
+Slot reclaim records exactly one terminal state: `merged`, `discarded`, `preserved_for_manual_review`, or `cleanup_failed`.
 
 Sequential tasks (Mode = "sequential" OR file ownership conflict) do NOT use worktree isolation:
 ```

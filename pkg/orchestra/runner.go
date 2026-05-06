@@ -12,6 +12,7 @@ import (
 
 // RunOrchestra executes orchestration according to the given config.
 // @AX:ANCHOR: [AUTO] public API — 4 callers; do not change signature
+// @AX:REASON: CLI, pane fallback, spec-review loop, and tests rely on the result/error contract and degraded-provider propagation.
 func RunOrchestra(ctx context.Context, cfg OrchestraConfig) (*OrchestraResult, error) {
 	if len(cfg.Providers) == 0 {
 		return nil, fmt.Errorf("providers 목록이 비어있습니다")
@@ -131,18 +132,30 @@ func runParallel(ctx context.Context, cfg OrchestraConfig) ([]ProviderResponse, 
 	wg.Wait()
 
 	var responses []ProviderResponse
-	var failed []FailedProvider
+	var failedResults []providerResult
 
 	for _, r := range results {
 		if r.err != nil {
-			failed = append(failed, buildFailedProvider(cfg.Providers[r.idx], r.resp, r.err, cfg.TimeoutSeconds))
+			failedResults = append(failedResults, r)
 		} else if r.resp != nil && (r.resp.TimedOut || r.resp.EmptyOutput) {
-			failed = append(failed, buildFailedProvider(cfg.Providers[r.idx], r.resp, nil, cfg.TimeoutSeconds))
+			failedResults = append(failedResults, r)
 		} else if r.resp == nil {
-			failed = append(failed, buildFailedProvider(cfg.Providers[r.idx], nil, nil, cfg.TimeoutSeconds))
+			failedResults = append(failedResults, r)
 		} else {
 			responses = append(responses, *r.resp)
 		}
+	}
+	otherProvidersContinued := len(responses) > 0
+	failed := make([]FailedProvider, 0, len(failedResults))
+	for _, r := range failedResults {
+		failed = append(failed, buildFailedProviderWithContext(
+			cfg.Providers[r.idx],
+			r.resp,
+			r.err,
+			cfg.TimeoutSeconds,
+			"",
+			otherProvidersContinued,
+		))
 	}
 
 	if len(responses) == 0 {

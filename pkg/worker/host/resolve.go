@@ -2,12 +2,16 @@ package host
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	worker "github.com/insajin/autopus-adk/pkg/worker"
 	"github.com/insajin/autopus-adk/pkg/worker/adapter"
 	"github.com/insajin/autopus-adk/pkg/worker/setup"
 )
+
+// @AX:NOTE: [AUTO] explicit env override permits root-worktree fallback only when a human-provided reason is present.
+const worktreeFallbackOverrideReasonEnv = "AUTOPUS_WORKTREE_FALLBACK_OVERRIDE_REASON"
 
 // Input defines typed host assembly inputs independent from Cobra state.
 type Input struct {
@@ -18,45 +22,51 @@ type Input struct {
 
 // RuntimeConfig is the resolved worker host runtime configuration.
 type RuntimeConfig struct {
-	BackendURL           string
-	WorkspaceID          string
-	ProviderName         string
-	ProviderAdapter      adapter.ProviderAdapter
-	AuthToken            string
-	CredentialStore      setup.CredentialStore
-	WorkDir              string
-	MCPConfigPath        string
-	CredentialsPath      string
-	RequestedConcurrency int
-	MaxConcurrency       int
-	WorktreeIsolation    bool
-	KnowledgeSync        bool
-	KnowledgeDir         string
-	MemoryAgentID        string
-	WorkerName           string
-	Warnings             []string
+	BackendURL                     string
+	WorkspaceID                    string
+	ProviderName                   string
+	ProviderAdapter                adapter.ProviderAdapter
+	AuthToken                      string
+	CredentialStore                setup.CredentialStore
+	WorkDir                        string
+	MCPConfigPath                  string
+	CredentialsPath                string
+	RequestedConcurrency           int
+	MaxConcurrency                 int
+	WorktreeIsolation              bool
+	WorktreeFallbackOverrideReason string
+	KnowledgeSync                  bool
+	KnowledgeDir                   string
+	MemoryAgentID                  string
+	WorkerName                     string
+	Warnings                       []string
 }
 
 // LoopConfig converts the resolved runtime config into the shared WorkerLoop config.
 func (cfg RuntimeConfig) LoopConfig() worker.LoopConfig {
 	return worker.LoopConfig{
-		BackendURL:        cfg.BackendURL,
-		WorkerName:        cfg.WorkerName,
-		MemoryAgentID:     cfg.MemoryAgentID,
-		Skills:            []string{"coding", "review"},
-		Providers:         []string{cfg.ProviderName},
-		Provider:          cfg.ProviderAdapter,
-		MCPConfig:         cfg.MCPConfigPath,
-		WorkDir:           cfg.WorkDir,
-		AuthToken:         cfg.AuthToken,
-		CredentialsPath:   cfg.CredentialsPath,
-		CredentialStore:   cfg.CredentialStore,
-		WorkspaceID:       cfg.WorkspaceID,
-		MaxConcurrency:    cfg.MaxConcurrency,
-		WorktreeIsolation: cfg.WorktreeIsolation,
-		KnowledgeSync:     cfg.KnowledgeSync,
-		KnowledgeDir:      cfg.KnowledgeDir,
+		BackendURL:                     cfg.BackendURL,
+		WorkerName:                     cfg.WorkerName,
+		MemoryAgentID:                  cfg.MemoryAgentID,
+		Skills:                         []string{"coding", "review"},
+		Providers:                      []string{cfg.ProviderName},
+		Provider:                       cfg.ProviderAdapter,
+		MCPConfig:                      cfg.MCPConfigPath,
+		WorkDir:                        cfg.WorkDir,
+		AuthToken:                      cfg.AuthToken,
+		CredentialsPath:                cfg.CredentialsPath,
+		CredentialStore:                cfg.CredentialStore,
+		WorkspaceID:                    cfg.WorkspaceID,
+		MaxConcurrency:                 cfg.MaxConcurrency,
+		WorktreeIsolation:              cfg.WorktreeIsolation,
+		WorktreeFallbackOverrideReason: runtimeWorktreeFallbackOverrideReason(),
+		KnowledgeSync:                  cfg.KnowledgeSync,
+		KnowledgeDir:                   cfg.KnowledgeDir,
 	}
+}
+
+func runtimeWorktreeFallbackOverrideReason() string {
+	return strings.TrimSpace(os.Getenv(worktreeFallbackOverrideReasonEnv))
 }
 
 // ResolveRuntime assembles the shared worker host runtime configuration.
@@ -119,22 +129,23 @@ func ResolveRuntime(input Input) (RuntimeConfig, error) {
 	}
 
 	runtimeCfg := RuntimeConfig{
-		BackendURL:           cfg.BackendURL,
-		WorkspaceID:          cfg.WorkspaceID,
-		ProviderName:         providerName,
-		ProviderAdapter:      providerAdapter,
-		AuthToken:            authToken,
-		CredentialStore:      credStore,
-		WorkDir:              workDir,
-		MCPConfigPath:        mcpConfigPath,
-		CredentialsPath:      credentialsPath,
-		RequestedConcurrency: cfg.Concurrency,
-		MaxConcurrency:       EffectiveConcurrency(providerName, cfg.Concurrency),
-		WorktreeIsolation:    cfg.WorktreeIsolation || EffectiveConcurrency(providerName, cfg.Concurrency) > 1,
-		KnowledgeSync:        true,
-		KnowledgeDir:         cfg.KnowledgeDir,
-		MemoryAgentID:        memoryAgentID,
-		WorkerName:           fmt.Sprintf("adk-worker-%s", providerName),
+		BackendURL:                     cfg.BackendURL,
+		WorkspaceID:                    cfg.WorkspaceID,
+		ProviderName:                   providerName,
+		ProviderAdapter:                providerAdapter,
+		AuthToken:                      authToken,
+		CredentialStore:                credStore,
+		WorkDir:                        workDir,
+		MCPConfigPath:                  mcpConfigPath,
+		CredentialsPath:                credentialsPath,
+		RequestedConcurrency:           cfg.Concurrency,
+		MaxConcurrency:                 EffectiveConcurrency(providerName, cfg.Concurrency),
+		WorktreeIsolation:              cfg.WorktreeIsolation || EffectiveConcurrency(providerName, cfg.Concurrency) > 1,
+		WorktreeFallbackOverrideReason: runtimeWorktreeFallbackOverrideReason(),
+		KnowledgeSync:                  true,
+		KnowledgeDir:                   cfg.KnowledgeDir,
+		MemoryAgentID:                  memoryAgentID,
+		WorkerName:                     fmt.Sprintf("adk-worker-%s", providerName),
 	}
 	if warn != "" {
 		runtimeCfg.Warnings = append(runtimeCfg.Warnings, warn)
@@ -170,6 +181,13 @@ func ResolveProviderName(providers []string) string {
 
 // EffectiveConcurrency applies provider-specific concurrency guards.
 func EffectiveConcurrency(providerName string, requested int) int {
+	// @AX:NOTE: [AUTO] concurrency defaults encode worker safety policy: codex stays sequential, other providers default to 5 slots.
+	if requested <= 0 {
+		if strings.EqualFold(providerName, "codex") {
+			return 1
+		}
+		return 5
+	}
 	if strings.EqualFold(providerName, "codex") && requested > 1 {
 		return 1
 	}

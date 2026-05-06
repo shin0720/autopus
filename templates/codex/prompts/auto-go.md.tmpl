@@ -69,6 +69,7 @@ SPEC-ID를 인자로 받아 구현을 실행합니다.
 ## Workflow Authenticity Evidence
 
 - 기본 subagent pipeline 완료 응답에는 `subagent_dispatch_count`, `subagent_roles_dispatched`, `degraded-mode`가 포함되어야 합니다.
+- JSON/report consumers를 위해 `degraded_mode`도 같은 값으로 포함하고 `delegation_depth`, `delegation_depth_cap`, `safety_rail_decisions`를 초기화해야 합니다.
 - subagent pipeline 모드에서 dispatch를 만들거나 관측할 수 없으면 Phase 1 전에 workflow authenticity blocker로 중단합니다.
 - workflow authenticity blocker는 working subagent surface로 재실행하거나 명시적으로 `--solo`를 선택하라고 안내해야 합니다.
 - `--solo`는 `subagent_dispatch_count: 0`으로 보고하되 degraded-mode pipeline처럼 표현하지 않습니다.

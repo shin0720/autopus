@@ -240,6 +240,9 @@ func TestWorkflowAuthenticityTemplateContracts(t *testing.T) {
 			assert.Contains(t, result, "subagent_dispatch_count")
 			assert.Contains(t, result, "workflow authenticity blocker")
 			assert.Contains(t, result, "degraded-mode")
+			assert.Contains(t, result, "degraded_mode")
+			assert.Contains(t, result, "delegation_depth")
+			assert.Contains(t, result, "delegation_depth_cap")
 		})
 	}
 }

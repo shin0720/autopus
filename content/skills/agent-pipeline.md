@@ -60,6 +60,9 @@ WHEN Route A (default subagent pipeline) is selected, THE SYSTEM SHALL preflight
 
 Preflight contract:
 - Initialize `subagent_dispatch_count = 0`, `subagent_roles_dispatched = []`, and `degraded-mode = "none"`.
+- Also emit the machine key `degraded_mode` with the same value for JSON/report consumers.
+- Initialize delegation safety metadata with `delegation_depth = 0`, default `delegation_depth_cap = 2`, and `safety_rail_decisions = []`.
+- A child dispatch at `delegation_depth >= delegation_depth_cap` is blocked unless `delegation_depth_override` and `override_reason` are present; record `delegation_depth_exceeded` with current depth, cap, requested role, and override status.
 - Verify the surface-native subagent tool is available (`Agent`, `task(...)`, `spawn_agent(...)`, or the platform equivalent).
 - On every successful subagent call, increment `subagent_dispatch_count` and append the role or phase name to `subagent_roles_dispatched`.
 - If no dispatch can be created or observed in Route A, stop with a workflow authenticity blocker before Phase 1.

@@ -102,6 +102,7 @@ func resolvePlatform(platform string) string {
 }
 
 // @AX:ANCHOR: [AUTO] CLI integration boundary — wires cobra command args into pipeline engine (fan-in: CLI + tests)
+// @AX:REASON: Default delegation safety metadata is initialized here before the pipeline engine enforces authenticity and depth checks.
 // runPipeline executes the pipeline for the given SPEC ID.
 func runPipeline(cmd *cobra.Command, specID string, cfg *pipelineRunConfig) error {
 	platform := resolvePlatform(cfg.Platform)
@@ -128,6 +129,10 @@ func runPipeline(cmd *cobra.Command, specID string, cfg *pipelineRunConfig) erro
 		RunConfig: pipeline.RunConfig{
 			SpecID:     specID,
 			LearnStore: learnStore,
+			DelegationSafety: pipeline.DelegationContext{
+				DefaultSubagentPipeline:  true,
+				SubagentSurfaceAvailable: true,
+			},
 		},
 	}
 

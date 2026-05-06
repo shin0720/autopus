@@ -59,5 +59,5 @@ func TestExecuteParallel_UsesStructuredFailedProviderDiagnostics(t *testing.T) {
 	assert.Contains(t, failed[0].Error, "subprocess gemini exited")
 	assert.Equal(t, "retry later or reduce provider set", failed[0].NextRemediation)
 	assert.Contains(t, failed[0].StderrPreview, "RESOURCE_EXHAUSTED MODEL_CAPACITY_EXHAUSTED")
-	assert.Contains(t, failed[0].OutputPreview, "partial stdout")
+	assert.Equal(t, "[redacted_provider_output]", failed[0].OutputPreview)
 }

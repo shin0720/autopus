@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Delegation Safety Rails (SPEC-ADK-SAFE-RAILS-001)** (2026-05-06): ADK-managed delegation, worktree, provider-timeout, reclaim, and hard-interrupt paths now emit bounded safety evidence instead of silently continuing.
+  - `pkg/pipeline/{safety,runtime_safety,worktree_scheduler,reclaim,interrupt}.go` — shared `DegradedEvidence`, `DelegationContext`, depth-cap checks, workflow authenticity preflight, FIFO worktree slot scheduling, reclaim terminal states, and hard-interrupt evidence contracts
+  - `pkg/pipeline/{engine,runner}.go` and `internal/cli/pipeline_run.go` — default subagent pipeline authenticity, delegation depth metadata, worktree slot cap decisions, and safety event collection are wired into pipeline execution
+  - `pkg/orchestra/{failure_result,pipeline_execute,runner,types}.go` — failed-provider diagnostics now include timeout source, configured/elapsed duration, role, continuation status, failure class, remediation, and redacted previews
+  - `pkg/worker/{worktree_safety,loop_audit,loop_exec,loop_runtime,loop_subprocess,pipeline,pipeline_phase}.go`, `pkg/worker/host/resolve.go`, `pkg/worker/parallel/semaphore.go`, and `pkg/worker/security/emergency.go` — required worktree isolation fails closed unless an explicit fallback override reason is present, worktree reclaim emits terminal audit states, and emergency stop records SIGTERM/SIGKILL evidence
+  - `content/skills/{agent-pipeline,worktree-isolation}.md` and `templates/**` — source-owned Claude/Codex/Gemini/OpenCode guidance now requires `subagent_dispatch_count`, `degraded_mode`, delegation-depth metadata, worktree slot caps, and reclaim evidence
+  - Acceptance coverage exercises depth-cap blocking, workflow authenticity blockers, FIFO slot scheduling, provider timeout evidence, worktree fallback refusal, reclaim sanitization, emergency stop evidence, and source-template safety wording
+
 - **Structured Context Compression (SPEC-CONTEXT-COMPRESS-001)** (2026-05-06): phase handoff compression now preserves long-running agent context as a replayable compaction contract instead of a lossy short summary.
   - `pkg/worker/compress/{summarizer,compressor,events,pruner,tool_pairs,tool_payload}.go` — seven-section summaries (`Goal`, `Constraints`, `Progress`, `Decisions`, `Relevant Files`, `Next Steps`, `Critical Context`), summary continuity metadata, redacted-derived index eligibility, pair-aware tool call/result pruning, safe provider-payload omission, source-ref extraction, and fail-closed context-budget blockers
   - `pkg/pipeline/{engine,events}.go` and `pkg/worker/pipeline.go` — compaction events are recorded before the next phase/model handoff, and context-budget blockers abort instead of silently dropping constraints or decisions

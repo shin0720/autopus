@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -106,32 +105,11 @@ func (wl *WorkerLoop) executeWithParallel(
 		defer wl.semaphore.Release()
 	}
 
-	// Create an isolated worktree when worktree isolation is enabled.
-	// Falls back to the configured WorkDir on creation failure.
-	if wl.worktreeManager != nil && wl.config.WorktreeIsolation {
-		wtPath, err := wl.worktreeManager.Create(taskID)
-		if err != nil {
-			log.Printf("[worker] worktree create failed for %s, falling back to in-place: %v", taskID, err)
-		} else {
-			taskCfg.WorkDir = wtPath
-			if prepErr := prepareSymphonyWorkspace(taskCfg.WorkDir, taskCfg.Prompt); prepErr != nil {
-				log.Printf("[worker] symphony workspace prepare failed for %s: %v", taskID, prepErr)
-			}
-			if envErr := prepareTaskRuntimeEnv(&taskCfg); envErr != nil {
-				log.Printf("[worker] runtime env prepare failed for %s: %v", taskID, envErr)
-			}
-			defer func() {
-				removed, rmErr := wl.worktreeManager.RemoveIfClean(wtPath)
-				if rmErr != nil {
-					log.Printf("[worker] worktree remove failed: %v", rmErr)
-					return
-				}
-				if !removed {
-					log.Printf("[worker] preserving dirty worktree for %s: %s", taskID, wtPath)
-				}
-			}()
-		}
+	cleanupWorktree, err := wl.assignTaskWorktree(taskID, &taskCfg)
+	if err != nil {
+		return adapter.TaskResult{}, err
 	}
+	defer cleanupWorktree()
 	execution := buildExecutionContextSnapshot(
 		wl.config,
 		requestedWorkDir,
@@ -202,36 +180,12 @@ func (wl *WorkerLoop) executePipelineWithParallel(
 		defer wl.semaphore.Release()
 	}
 
-	workDir := wl.config.WorkDir
-	requestedWorkDir := workDir
-	var envVars map[string]string
-	if wl.worktreeManager != nil && wl.config.WorktreeIsolation {
-		wtPath, err := wl.worktreeManager.Create(taskID)
-		if err != nil {
-			log.Printf("[worker] worktree create failed for %s, falling back to in-place: %v", taskID, err)
-		} else {
-			workDir = wtPath
-			if prepErr := prepareSymphonyWorkspace(workDir, prompt); prepErr != nil {
-				log.Printf("[worker] symphony workspace prepare failed for %s: %v", taskID, prepErr)
-			}
-			runtimeCfg := adapter.TaskConfig{TaskID: taskID, WorkDir: workDir}
-			if envErr := prepareTaskRuntimeEnv(&runtimeCfg); envErr != nil {
-				log.Printf("[worker] runtime env prepare failed for %s: %v", taskID, envErr)
-			} else {
-				envVars = runtimeCfg.EnvVars
-			}
-			defer func() {
-				removed, rmErr := wl.worktreeManager.RemoveIfClean(wtPath)
-				if rmErr != nil {
-					log.Printf("[worker] worktree remove failed: %v", rmErr)
-					return
-				}
-				if !removed {
-					log.Printf("[worker] preserving dirty worktree for %s: %s", taskID, wtPath)
-				}
-			}()
-		}
+	requestedWorkDir := wl.config.WorkDir
+	workDir, envVars, cleanupWorktree, err := wl.assignPipelineWorktree(taskID, prompt)
+	if err != nil {
+		return adapter.TaskResult{}, err
 	}
+	defer cleanupWorktree()
 	execution := buildExecutionContextSnapshot(
 		wl.config,
 		requestedWorkDir,
@@ -251,6 +205,9 @@ func (wl *WorkerLoop) executePipelineWithParallel(
 	pe := NewPipelineExecutor(wl.config.Provider, wl.config.MCPConfig, workDir)
 	baseline := captureExecutionBaseline(workDir)
 	pe.SetEnvVars(envVars)
+	pe.SetInterruptRecorder(func(evt AuditEvent) {
+		recordWorkerSafetyEvent(wl, evt)
+	})
 	pe.SetPhaseInstructions(instructions)
 	pe.SetPhasePromptTemplates(promptTemplates)
 	if bc != nil && bc.Budget.Limit > 0 {

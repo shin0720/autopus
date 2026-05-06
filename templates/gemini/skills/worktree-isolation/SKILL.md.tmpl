@@ -44,7 +44,10 @@ result_t2 = Agent(
 ```
 
 **Constraints:**
-- Max concurrent worktrees: **5**. Overflow tasks are queued and spawned as slots free.
+- Max concurrent worktrees / worktree slot cap: **5**. Overflow tasks are queued by `queue_discipline = "fifo_task_id"` and spawned as slots free.
+- Slot evidence records `active_task_ids`, `queued_task_ids`, `slot_count`, `cap`, and reason `worktree_slot_cap`.
+- Required worktree isolation must fail closed with `worktree_isolation_unavailable` unless an explicit `override_reason` is present.
+- Slot reclaim records exactly one terminal state: `merged`, `discarded`, `preserved_for_manual_review`, or `cleanup_failed`.
 - Collect `worktree_path` and `branch` from each agent return value for Phase 2.1 merge.
 
 Sequential tasks do NOT use `auto pipeline worktree`:

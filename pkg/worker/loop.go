@@ -20,6 +20,8 @@ import (
 	"github.com/insajin/autopus-adk/pkg/worker/setup"
 )
 
+// @AX:ANCHOR: [AUTO] worker runtime configuration boundary assembled by host resolution and consumed by WorkerLoop startup.
+// @AX:REASON: Worktree isolation, fallback override, audit, auth, and provider fields coordinate desktop worker safety behavior.
 // LoopConfig holds configuration for the WorkerLoop.
 type LoopConfig struct {
 	BackendURL    string
@@ -39,10 +41,12 @@ type LoopConfig struct {
 	AuditMaxSize      int64                 // max log size before rotation (default: 10MB)
 	AuditMaxAge       time.Duration         // max age of rotated files (default: 7 days)
 	WorkspaceID       string                // workspace identifier for scheduler
-	MaxConcurrency    int                   // max parallel tasks (0 or 1 = sequential)
+	MaxConcurrency    int                   // max parallel tasks (0 = default slot cap, 1 = sequential)
 	WorktreeIsolation bool                  // enable worktree isolation for parallel tasks
-	KnowledgeSync     bool                  // enable local knowledge context loading
-	KnowledgeDir      string                // local knowledge directory hint (defaults to WorkDir)
+	// WorktreeFallbackOverrideReason permits explicit root-worktree fallback when isolation is unavailable.
+	WorktreeFallbackOverrideReason string
+	KnowledgeSync                  bool   // enable local knowledge context loading
+	KnowledgeDir                   string // local knowledge directory hint (defaults to WorkDir)
 }
 
 // WorkerLoop integrates A2A Server, ProviderAdapter, ContextBuilder, and StreamParser.

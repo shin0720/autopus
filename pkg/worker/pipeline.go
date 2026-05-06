@@ -55,6 +55,7 @@ type PipelineExecutor struct {
 	iterationBudget      *budget.IterationBudget
 	compressor           compress.ContextCompressor // nil if compression not configured
 	router               *routing.Router            // nil if routing not configured
+	interruptRecorder    func(AuditEvent)
 }
 
 // NewPipelineExecutor creates a new PipelineExecutor.
@@ -116,6 +117,11 @@ func (pe *PipelineExecutor) SetPhasePromptTemplates(templates map[Phase]string) 
 	for phase, template := range templates {
 		pe.phasePromptTemplates[phase] = template
 	}
+}
+
+// SetInterruptRecorder configures structured interrupt evidence recording.
+func (pe *PipelineExecutor) SetInterruptRecorder(record func(AuditEvent)) {
+	pe.interruptRecorder = record
 }
 
 // SetRouter configures model routing for the pipeline (REQ-ROUTE-01).

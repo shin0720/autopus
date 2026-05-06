@@ -3,6 +3,7 @@ package worker
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/insajin/autopus-adk/pkg/worker/audit"
@@ -45,6 +46,43 @@ func TestNewAuditFailedEvent(t *testing.T) {
 	assert.Equal(t, "failed", evt.Event)
 	assert.Equal(t, int64(3000), evt.DurationMS)
 	assert.True(t, evt.ComputerUse)
+}
+
+func TestNewAuditReclaimedEvent_RedactsAbsoluteWorktreePath(t *testing.T) {
+	t.Parallel()
+
+	evt := newAuditReclaimedEvent("task-reclaim", "/Users/person/private/autopus-worktree-T1", "preserved_for_manual_review")
+
+	assert.Equal(t, "reclaimed", evt.Event)
+	assert.Equal(t, "autopus-worktree-T1", evt.WorktreePath)
+	assert.NotContains(t, evt.WorktreePath, "/Users/person/private")
+	assert.Equal(t, "preserved_for_manual_review", evt.ReclaimState)
+}
+
+func TestAuditSafetyEvents_RedactPathsAndRecordOverrideEvidence(t *testing.T) {
+	t.Parallel()
+
+	reclaim := newAuditReclaimedEvent("task-reclaim", "/Users/person/private/autopus-worktree-T1", "cleanup_failed")
+	degraded := newAuditDegradedEvent("task-fallback", "worktree_isolation_unavailable", "manual recovery")
+
+	data, err := json.Marshal([]AuditEvent{reclaim, degraded})
+	require.NoError(t, err)
+	text := string(data)
+
+	assert.NotContains(t, text, "/Users/person/private")
+	assert.Contains(t, text, `"worktree_path":"autopus-worktree-T1"`)
+	assert.Contains(t, text, `"override_status":"applied"`)
+	assert.Contains(t, text, `"root_worktree_fallback":true`)
+	assert.False(t, strings.Contains(text, "$HOME"))
+}
+
+func TestSanitizeAuditMessage_RedactsAbsolutePathTokens(t *testing.T) {
+	t.Parallel()
+
+	message := sanitizeAuditMessage(`status /Users/person/private/autopus-worktree-T1: exit status 128`)
+
+	assert.NotContains(t, message, "/Users/person/private")
+	assert.Contains(t, message, "[redacted_path:autopus-worktree-T1:]")
 }
 
 // TestWriteAuditEvent_NilWriter returns nil (audit disabled).

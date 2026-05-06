@@ -34,6 +34,8 @@ func TestEffectiveConcurrency(t *testing.T) {
 
 	assert.Equal(t, 1, EffectiveConcurrency("codex", 3))
 	assert.Equal(t, 1, EffectiveConcurrency("codex", 1))
+	assert.Equal(t, 1, EffectiveConcurrency("codex", 0))
+	assert.Equal(t, 5, EffectiveConcurrency("claude", 0))
 	assert.Equal(t, 3, EffectiveConcurrency("claude", 3))
 }
 
@@ -67,6 +69,28 @@ func TestResolveRuntime_BuildsResolvedConfig(t *testing.T) {
 	assert.True(t, cfg.KnowledgeSync)
 	require.NotNil(t, cfg.ProviderAdapter)
 	assert.Equal(t, []string{"codex"}, cfg.LoopConfig().Providers)
+}
+
+func TestResolveRuntime_UsesPerRunWorktreeFallbackOverrideEnv(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	t.Setenv(worktreeFallbackOverrideReasonEnv, "manual recovery for this run")
+
+	require.NoError(t, setup.SaveWorkerConfig(setup.WorkerConfig{
+		BackendURL:  "https://api.autopus.co",
+		WorkspaceID: "ws-test",
+		Providers:   []string{"codex"},
+	}))
+
+	customPath := filepath.Join(t.TempDir(), "desktop", "credentials.json")
+	require.NoError(t, os.MkdirAll(filepath.Dir(customPath), 0o700))
+	require.NoError(t, os.WriteFile(customPath, []byte(`{"auth_type":"api_key","api_key":"acos_worker_test"}`), 0o600))
+
+	cfg, err := ResolveRuntime(Input{CredentialsPath: customPath})
+	require.NoError(t, err)
+
+	assert.Equal(t, "manual recovery for this run", cfg.WorktreeFallbackOverrideReason)
+	assert.Equal(t, "manual recovery for this run", cfg.LoopConfig().WorktreeFallbackOverrideReason)
 }
 
 func TestResolveRuntime_UsesCustomCredentialsPath(t *testing.T) {

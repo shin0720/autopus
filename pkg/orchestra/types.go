@@ -68,18 +68,25 @@ type ProviderResponse struct {
 	Receipt     string        // reliability collection receipt path, if persisted
 }
 
+// @AX:ANCHOR: [AUTO] failure diagnostics wire schema shared by CLI JSON output, spec health projection, and yield reports.
+// @AX:REASON: JSON field names and timeout/redaction metadata must stay stable for downstream failure summaries and retry hints.
 // FailedProvider records a provider that failed during execution.
 type FailedProvider struct {
-	Name             string // Provider name
-	Error            string // Error message
-	FailureClass     string // timeout, capacity_exhausted, rate_limited, binary_or_transport, execution_error
-	PreflightFailed  bool   // true when execution stopped before round start
-	Receipt          string // reliability receipt path, if persisted
-	NextRemediation  string // exact next step surfaced in summaries
-	CollectionMode   string // hook, poll, file_ipc, subprocess_stdout
-	CorrelationRunID string // run identifier for artifact lookup
-	StderrPreview    string // sanitized stderr excerpt for postmortem summaries
-	OutputPreview    string // sanitized stdout excerpt for postmortem summaries
+	Name                    string        `json:"provider"`                            // Provider name
+	Role                    string        `json:"role,omitempty"`                      // role that timed out or failed, when known
+	Error                   string        `json:"error"`                               // Error message
+	FailureClass            string        `json:"failure_class"`                       // timeout, capacity_exhausted, rate_limited, binary_or_transport, execution_error
+	TimeoutSource           string        `json:"timeout_source,omitempty"`            // source used to resolve timeout duration
+	ConfiguredDuration      time.Duration `json:"configured_duration,omitempty"`       // configured timeout duration
+	ElapsedDuration         time.Duration `json:"elapsed_duration,omitempty"`          // observed provider duration
+	OtherProvidersContinued bool          `json:"other_providers_continued,omitempty"` // true when a sibling provider completed
+	PreflightFailed         bool          `json:"preflight_failed,omitempty"`          // true when execution stopped before round start
+	Receipt                 string        `json:"receipt,omitempty"`                   // reliability receipt path, if persisted
+	NextRemediation         string        `json:"next_remediation,omitempty"`          // exact next step surfaced in summaries
+	CollectionMode          string        `json:"collection_mode,omitempty"`           // hook, poll, file_ipc, subprocess_stdout
+	CorrelationRunID        string        `json:"correlation_run_id,omitempty"`        // run identifier for artifact lookup
+	StderrPreview           string        `json:"stderr_preview,omitempty"`            // sanitized stderr excerpt for postmortem summaries
+	OutputPreview           string        `json:"output_preview,omitempty"`            // sanitized stdout excerpt for postmortem summaries
 }
 
 // OrchestraResult는 오케스트레이션 최종 결과이다.

@@ -2,6 +2,7 @@ package orchestra
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"testing"
 	"time"
@@ -39,7 +40,13 @@ func TestBuildFailedProvider_ClassifiesTimeoutAndCapacity(t *testing.T) {
 
 	timeoutFailure := buildFailedProvider(
 		ProviderConfig{Name: "claude", StartupTimeout: 30 * time.Millisecond},
-		&ProviderResponse{Provider: "claude", TimedOut: true},
+		&ProviderResponse{
+			Provider: "claude",
+			TimedOut: true,
+			Duration: 90 * time.Second,
+			Output:   "raw provider output should not be copied",
+			Error:    "raw provider stderr should not be copied",
+		},
 		nil,
 		120,
 	)
@@ -53,7 +60,35 @@ func TestBuildFailedProvider_ClassifiesTimeoutAndCapacity(t *testing.T) {
 	assert.Equal(t, "timeout", timeoutFailure.FailureClass)
 	assert.Contains(t, timeoutFailure.Error, "deadline")
 	assert.Contains(t, timeoutFailure.NextRemediation, "increase timeout")
+	assert.Equal(t, "orchestra_timeout_seconds", timeoutFailure.TimeoutSource)
+	assert.Equal(t, 120*time.Second, timeoutFailure.ConfiguredDuration)
+	assert.Equal(t, 90*time.Second, timeoutFailure.ElapsedDuration)
+	assert.Empty(t, timeoutFailure.StderrPreview)
+	assert.Empty(t, timeoutFailure.OutputPreview)
+	assert.NotContains(t, timeoutFailure.Error, "raw provider")
 
 	assert.Equal(t, "capacity_exhausted", capacityFailure.FailureClass)
 	assert.Contains(t, capacityFailure.NextRemediation, "retry later")
+}
+
+func TestBuildFailedProvider_RedactsNonTimeoutFailureEvidence(t *testing.T) {
+	t.Parallel()
+
+	failure := buildFailedProvider(
+		ProviderConfig{Name: "gemini"},
+		&ProviderResponse{
+			Provider: "gemini",
+			Output:   "SECRET_TOKEN=abc123 generated content",
+			Error:    "RESOURCE_EXHAUSTED at /Users/example/private/project",
+		},
+		fmt.Errorf("provider failed with API_KEY=secret at /Users/example/private/project"),
+		120,
+	)
+
+	assert.Equal(t, "resource_exhausted", failure.FailureClass)
+	assert.Equal(t, "[redacted_provider_output]", failure.OutputPreview)
+	assert.Contains(t, failure.StderrPreview, "RESOURCE_EXHAUSTED")
+	assert.NotContains(t, failure.StderrPreview, "/Users/example")
+	assert.NotContains(t, failure.Error, "API_KEY=secret")
+	assert.NotContains(t, failure.Error, "/Users/example")
 }

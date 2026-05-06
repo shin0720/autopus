@@ -79,6 +79,7 @@ func TestRunParallel_PerProviderTimeout_RecordsFailedProvider(t *testing.T) {
 	// S2: sleep provider is recorded as FailedProvider with timeout
 	require.Len(t, result.FailedProviders, 1, "one provider should fail")
 	assert.Equal(t, "sleeper", result.FailedProviders[0].Name)
+	assert.True(t, result.FailedProviders[0].OtherProvidersContinued)
 
 	// S2: total time << sleep duration (10s), proving per-provider cancellation
 	assert.Less(t, elapsed, 6*time.Second,

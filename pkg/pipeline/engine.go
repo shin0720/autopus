@@ -97,6 +97,9 @@ func NewSubprocessEngine(cfg EngineConfig) *SubprocessEngine {
 // @AX:ANCHOR: [AUTO] @AX:REASON: architectural boundary — sole orchestration entry point for 5-phase pipeline
 // Run executes the full 5-phase pipeline.
 func (e *SubprocessEngine) Run(ctx context.Context) (*PipelineResult, error) {
+	if err := e.cfg.RunConfig.preflightWorkflowAuthenticity(); err != nil {
+		return nil, err
+	}
 	phases := DefaultPhases()
 
 	results := make([]PhaseResult, len(phases))
@@ -129,6 +132,9 @@ func (e *SubprocessEngine) Run(ctx context.Context) (*PipelineResult, error) {
 		req := PhaseRequest{
 			Prompt:  prompt,
 			PhaseID: phaseID,
+		}
+		if err := e.cfg.RunConfig.checkDelegationSafety(phaseID); err != nil {
+			return nil, err
 		}
 
 		resp, err := e.cfg.Backend.Execute(ctx, req)

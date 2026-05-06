@@ -2,35 +2,90 @@ package orchestra
 
 import (
 	"fmt"
+	"path"
+	"regexp"
 	"strings"
 	"time"
 )
 
+var (
+	// @AX:NOTE: [AUTO] redaction regexes protect diagnostic output; extend cautiously when new secret/path formats enter failure payloads.
+	secretAssignmentPattern = regexp.MustCompile(`(?i)\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASS|API[_-]?KEY|ACCESS[_-]?KEY)[A-Z0-9_]*)\s*=\s*([^\s,;]+)`)
+	userPathPattern         = regexp.MustCompile(`/Users/[^\s"'<>:]+`)
+)
+
 func buildFailedProvider(provider ProviderConfig, resp *ProviderResponse, err error, fallbackSeconds int) FailedProvider {
-	failure := FailedProvider{Name: provider.Name}
+	return buildFailedProviderWithContext(provider, resp, err, fallbackSeconds, "", false)
+}
+
+func buildFailedProviderWithContext(
+	provider ProviderConfig,
+	resp *ProviderResponse,
+	err error,
+	fallbackSeconds int,
+	role string,
+	otherProvidersContinued bool,
+) FailedProvider {
+	failure := FailedProvider{
+		Name:                    provider.Name,
+		Role:                    role,
+		OtherProvidersContinued: otherProvidersContinued,
+	}
 	if resp != nil {
 		if resp.Provider != "" {
 			failure.Name = resp.Provider
 		}
-		failure.StderrPreview = previewFailureText(resp.Error)
-		failure.OutputPreview = previewFailureText(resp.Output)
+		if !resp.TimedOut {
+			failure.StderrPreview = previewFailureText(resp.Error)
+			failure.OutputPreview = previewProviderOutput(resp.Output)
+		}
 	}
 
 	switch {
 	case resp != nil && resp.TimedOut:
-		timeoutUsed := providerExecutionTimeout(provider, fallbackSeconds)
-		failure.Error = fmt.Sprintf("timeout: provider exceeded %v deadline", timeoutUsed)
+		fillTimeoutFailure(&failure, provider, resp, fallbackSeconds)
 	case resp != nil && resp.EmptyOutput:
 		failure.Error = "empty output: provider returned no content (check binary args or prompt_via_args setting)"
 	case err != nil:
-		failure.Error = err.Error()
+		failure.Error = redactFailureText(err.Error())
 	default:
 		failure.Error = "provider failed without a structured error"
 	}
 
-	failure.FailureClass = classifyFailure(failure.Error, resp)
+	if failure.FailureClass == "" {
+		failure.FailureClass = classifyFailure(failure.Error, resp)
+	}
 	failure.NextRemediation = remediationForFailureClass(failure.FailureClass)
 	return failure
+}
+
+func fillTimeoutFailure(failure *FailedProvider, provider ProviderConfig, resp *ProviderResponse, fallbackSeconds int) {
+	timeoutUsed := providerExecutionTimeout(provider, fallbackSeconds)
+	failure.FailureClass = "timeout"
+	failure.TimeoutSource = providerTimeoutSource(provider, fallbackSeconds)
+	failure.ConfiguredDuration = timeoutUsed
+	failure.ElapsedDuration = resp.Duration
+	subject := fmt.Sprintf("provider %s", failure.Name)
+	if failure.Role != "" {
+		subject = fmt.Sprintf("%s role %s", subject, failure.Role)
+	}
+	if resp.Duration > 0 {
+		failure.Error = fmt.Sprintf("timeout: %s exceeded %v deadline after %v", subject, timeoutUsed, resp.Duration)
+		return
+	}
+	failure.Error = fmt.Sprintf("timeout: %s exceeded %v deadline", subject, timeoutUsed)
+}
+
+func providerTimeoutSource(provider ProviderConfig, fallbackSeconds int) string {
+	// @AX:NOTE: [AUTO] timeout source strings are diagnostics wire values surfaced through FailedProvider JSON.
+	switch {
+	case provider.ExecutionTimeout > 0:
+		return "provider_execution_timeout"
+	case fallbackSeconds > 0:
+		return "orchestra_timeout_seconds"
+	default:
+		return "default_provider_execution_timeout"
+	}
 }
 
 func classifyFailure(errMsg string, resp *ProviderResponse) string {
@@ -94,10 +149,29 @@ func previewFailureText(text string) string {
 	if normalized == "" {
 		return ""
 	}
+	normalized = redactFailureText(normalized)
 	if len(normalized) <= 160 {
 		return normalized
 	}
 	return normalized[:160] + "..."
+}
+
+func previewProviderOutput(text string) string {
+	if strings.TrimSpace(text) == "" {
+		return ""
+	}
+	return "[redacted_provider_output]"
+}
+
+func redactFailureText(text string) string {
+	if strings.TrimSpace(text) == "" {
+		return ""
+	}
+	redacted := secretAssignmentPattern.ReplaceAllString(text, "${1}=[redacted]")
+	redacted = userPathPattern.ReplaceAllStringFunc(redacted, func(match string) string {
+		return "[redacted_path:" + path.Base(match) + "]"
+	})
+	return redacted
 }
 
 func buildFailureResult(cfg OrchestraConfig, failed []FailedProvider, roundHistory [][]ProviderResponse, start time.Time, runErr error) *OrchestraResult {

@@ -5,19 +5,33 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/insajin/autopus-adk/pkg/worker/audit"
 )
 
+// @AX:ANCHOR: [AUTO] worker audit JSONL schema for task lifecycle, degraded worktree fallback, reclaim, and interrupts.
+// @AX:REASON: CLI diagnostics and safety evidence tests rely on event names, reason codes, and signal/action fields staying stable.
 // AuditEvent represents a structured audit log entry for task execution.
 type AuditEvent struct {
-	TaskID      string  `json:"task_id"`
-	Event       string  `json:"event"` // "started", "completed", "failed"
-	Timestamp   string  `json:"timestamp"`
-	DurationMS  int64   `json:"duration_ms,omitempty"`
-	CostUSD     float64 `json:"cost_usd,omitempty"`
-	ComputerUse bool    `json:"computer_use,omitempty"`
+	TaskID          string   `json:"task_id"`
+	Event           string   `json:"event"` // "started", "completed", "failed", "degraded", "reclaimed"
+	Timestamp       string   `json:"timestamp"`
+	DurationMS      int64    `json:"duration_ms,omitempty"`
+	CostUSD         float64  `json:"cost_usd,omitempty"`
+	ComputerUse     bool     `json:"computer_use,omitempty"`
+	ReasonCode      string   `json:"reason_code,omitempty"`
+	OverrideReason  string   `json:"override_reason,omitempty"`
+	OverrideStatus  string   `json:"override_status,omitempty"`
+	RootFallback    bool     `json:"root_worktree_fallback,omitempty"`
+	WorktreePath    string   `json:"worktree_path,omitempty"`
+	ReclaimState    string   `json:"reclaim_state,omitempty"`
+	ActionSequence  []string `json:"action_sequence,omitempty"`
+	InterruptReason string   `json:"interrupt_reason,omitempty"`
+	SIGTERMSent     bool     `json:"sigterm_sent,omitempty"`
+	SIGKILLSent     bool     `json:"sigkill_sent,omitempty"`
 }
 
 // writeAuditEvent writes a JSON Lines entry to the audit writer.
@@ -66,6 +80,70 @@ func newAuditFailedEvent(taskID string, durationMS int64, computerUse bool) Audi
 		DurationMS:  durationMS,
 		ComputerUse: computerUse,
 	}
+}
+
+func newAuditDegradedEvent(taskID, reasonCode, overrideReason string) AuditEvent {
+	evt := AuditEvent{
+		TaskID:         taskID,
+		Event:          "degraded",
+		Timestamp:      time.Now().UTC().Format(time.RFC3339),
+		ReasonCode:     reasonCode,
+		OverrideReason: overrideReason,
+	}
+	if strings.TrimSpace(overrideReason) != "" {
+		evt.OverrideStatus = "applied"
+		evt.RootFallback = true
+	}
+	return evt
+}
+
+func newAuditReclaimedEvent(taskID, worktreePath, state string) AuditEvent {
+	return AuditEvent{
+		TaskID:       taskID,
+		Event:        "reclaimed",
+		Timestamp:    time.Now().UTC().Format(time.RFC3339),
+		ReasonCode:   "worktree_reclaim",
+		WorktreePath: sanitizeAuditRef(worktreePath),
+		ReclaimState: state,
+	}
+}
+
+func newAuditInterruptEvent(taskID, reason string, sigtermSent, sigkillSent bool, actions []string) AuditEvent {
+	return AuditEvent{
+		TaskID:          taskID,
+		Event:           "interrupted",
+		Timestamp:       time.Now().UTC().Format(time.RFC3339),
+		ReasonCode:      "hard_interrupt",
+		InterruptReason: reason,
+		SIGTERMSent:     sigtermSent,
+		SIGKILLSent:     sigkillSent,
+		ActionSequence:  append([]string(nil), actions...),
+	}
+}
+
+func sanitizeAuditRef(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if filepath.IsAbs(value) {
+		return filepath.Base(value)
+	}
+	return value
+}
+
+func sanitizeAuditMessage(value string) string {
+	fields := strings.Fields(strings.TrimSpace(value))
+	if len(fields) == 0 {
+		return ""
+	}
+	for i, field := range fields {
+		trimmed := strings.Trim(field, `"'`)
+		if filepath.IsAbs(trimmed) {
+			fields[i] = "[redacted_path:" + filepath.Base(trimmed) + "]"
+		}
+	}
+	return strings.Join(fields, " ")
 }
 
 // LogBuffer captures structured log entries for audit write error tracking.

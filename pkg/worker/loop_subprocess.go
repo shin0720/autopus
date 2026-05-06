@@ -109,7 +109,9 @@ func (wl *WorkerLoop) executeWithBudget(ctx context.Context, taskCfg adapter.Tas
 	if err := cmd.Start(); err != nil {
 		return adapter.TaskResult{}, fmt.Errorf("start subprocess: %w", err)
 	}
-	stopCancellationWatcher := watchCommandCancellation(ctx, cmd, taskCfg.TaskID)
+	stopCancellationWatcher := watchCommandCancellation(ctx, cmd, taskCfg.TaskID, func(evt AuditEvent) {
+		recordWorkerSafetyEvent(wl, evt)
+	})
 	defer stopCancellationWatcher()
 
 	if bc != nil && bc.EmergencyStop != nil {
@@ -228,7 +230,16 @@ func (wl *WorkerLoop) parseStreamWithBudget(r io.Reader, taskID string, sw *Stdi
 				}
 				if r.Level == budget.LevelExhausted && bc.EmergencyStop != nil {
 					log.Printf("[worker] task %s: budget exhausted, stopping", taskID)
-					_ = bc.EmergencyStop.Stop("iteration_budget_exceeded")
+					evidence, _ := bc.EmergencyStop.StopWithEvidence("iteration_budget_exceeded")
+					if evidence != nil {
+						recordWorkerSafetyEvent(wl, newAuditInterruptEvent(
+							taskID,
+							evidence.Reason,
+							evidence.SIGTERMSent,
+							evidence.SIGKILLSent,
+							evidence.ActionSequence,
+						))
+					}
 					return lastResult, fmt.Errorf("iteration budget exceeded: %d/%d", r.Count, r.Budget.Limit)
 				}
 			}

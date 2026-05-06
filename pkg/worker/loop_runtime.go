@@ -18,17 +18,20 @@ import (
 
 func (wl *WorkerLoop) configureExecutionConcurrency() {
 	concurrencyLimit := wl.config.MaxConcurrency
-	if concurrencyLimit <= 1 {
+	if concurrencyLimit <= 0 {
+		concurrencyLimit = parallel.DefaultWorktreeSlotCap
+	} else if concurrencyLimit == 1 {
 		concurrencyLimit = 1
 	}
 	wl.semaphore = parallel.NewTaskSemaphore(concurrencyLimit)
-	if wl.config.WorktreeIsolation && concurrencyLimit > 1 {
+	if wl.config.WorktreeIsolation {
 		wl.worktreeManager = parallel.NewWorktreeManager(wl.config.WorkDir)
 	}
 }
 
 // Start connects to the backend and begins processing tasks.
 // @AX:ANCHOR[AUTO]: public lifecycle entry point — Start/Close are the primary WorkerLoop API; callers (CLI, tests) depend on error contract
+// @AX:REASON: Startup order wires PID lock, A2A server, services, semaphore, and worktree manager before task dispatch.
 func (wl *WorkerLoop) Start(ctx context.Context) error {
 	wl.pidLock = pidlock.New(pidlock.DefaultPath())
 	if err := wl.pidLock.Acquire(); err != nil {
