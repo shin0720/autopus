@@ -258,9 +258,9 @@ func TestMigrateOrchestraConfig_AlreadyCorrectConfigNoChange(t *testing.T) {
 				"claude": {Binary: "claude", Args: []string{"--print"}},
 				"codex": {
 					Binary:        "codex",
-					Args:          []string{"exec", "--full-auto", "-m", CodexFrontierModel},
+					Args:          []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel},
 					PromptViaArgs: false,
-					Subprocess:    SubprocessProvConf{Timeout: CodexOrchestraTimeoutSeconds},
+					Subprocess:    SubprocessProvConf{Timeout: CodexOrchestraTimeoutSeconds, SchemaFlag: "--output-schema"},
 				},
 			},
 			Commands: map[string]CommandEntry{

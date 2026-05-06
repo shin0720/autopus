@@ -81,13 +81,40 @@ func migrateKnownProviderDefaults(cfg *HarnessConfig) bool {
 		if !exists {
 			continue
 		}
-		if existing.Subprocess.Timeout == 0 && defaults.Subprocess.Timeout > 0 {
-			existing.Subprocess.Timeout = defaults.Subprocess.Timeout
-			cfg.Orchestra.Providers[providerName] = existing
+		if providerName == "codex" {
+			if args, migrated := migrateCodexDeprecatedArgs(existing.Args); migrated {
+				existing.Args = args
+				changed = true
+			}
+		}
+		if existing.Subprocess.SchemaFlag == "" && defaults.Subprocess.SchemaFlag != "" {
+			existing.Subprocess.SchemaFlag = defaults.Subprocess.SchemaFlag
 			changed = true
 		}
+		if existing.Subprocess.Timeout == 0 && defaults.Subprocess.Timeout > 0 {
+			existing.Subprocess.Timeout = defaults.Subprocess.Timeout
+			changed = true
+		}
+		cfg.Orchestra.Providers[providerName] = existing
 	}
 	return changed
+}
+
+func migrateCodexDeprecatedArgs(args []string) ([]string, bool) {
+	if len(args) == 0 {
+		return args, false
+	}
+	changed := false
+	next := make([]string, 0, len(args)+1)
+	for _, arg := range args {
+		if arg == "--full-auto" {
+			next = append(next, "--sandbox", "workspace-write")
+			changed = true
+			continue
+		}
+		next = append(next, arg)
+	}
+	return next, changed
 }
 
 // EnsureOrchestraProvider ensures a specific provider exists in the orchestra config.

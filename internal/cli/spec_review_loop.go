@@ -64,9 +64,16 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 		// spurious VERDICT keywords (PASS/REJECT) that must not contribute to
 		// the merged verdict — the ProviderStatuses table already records the
 		// failure for operator visibility.
+		failedProviderNames := make(map[string]struct{}, len(result.FailedProviders))
+		for _, failed := range result.FailedProviders {
+			failedProviderNames[failed.Name] = struct{}{}
+		}
 		var reviews []spec.ReviewResult
 		for _, resp := range result.Responses {
-			if resp.TimedOut || resp.ExitCode != 0 || resp.Error != "" {
+			if _, failed := failedProviderNames[resp.Provider]; failed {
+				continue
+			}
+			if resp.TimedOut || resp.ExitCode != 0 || resp.EmptyOutput {
 				continue
 			}
 			r := spec.ParseVerdict(p.specID, resp.Output, resp.Provider, revision, nilIfEmpty(priorFindings))

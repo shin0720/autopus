@@ -18,10 +18,13 @@ const (
 func DefaultCodexProviderEntry() ProviderEntry {
 	return ProviderEntry{
 		Binary:        "codex",
-		Args:          []string{"exec", "--full-auto", "-m", CodexFrontierModel},
+		Args:          []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel},
 		PaneArgs:      []string{"-m", CodexFrontierModel},
 		PromptViaArgs: false,
-		Subprocess:    SubprocessProvConf{Timeout: CodexOrchestraTimeoutSeconds},
+		Subprocess: SubprocessProvConf{
+			SchemaFlag: "--output-schema",
+			Timeout:    CodexOrchestraTimeoutSeconds,
+		},
 	}
 }
 

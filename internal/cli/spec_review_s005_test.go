@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/insajin/autopus-adk/pkg/config"
 	"github.com/insajin/autopus-adk/pkg/orchestra"
+	"github.com/insajin/autopus-adk/pkg/spec"
 )
 
 // TestRunSpecReview_FailedProviderRejectIgnored covers SPEC-SPECREV-001 S-005
@@ -49,4 +51,57 @@ func TestRunSpecReview_FailedProviderRejectIgnored(t *testing.T) {
 	// gemini failed → 1/2 ratio = 50% → degraded label expected.
 	assert.Contains(t, reviewText, "(degraded — 1/2 providers responded)",
 		"degraded label must reflect 1 success out of 2 configured providers")
+}
+
+func TestRunSpecReview_StderrWarningsDoNotDegradeSuccessfulProviders(t *testing.T) {
+	dir := t.TempDir()
+	specDir := scaffoldReviewSpec(t, dir, "SPEC-STDERR-WARN-001")
+
+	origWD, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(origWD) }()
+	require.NoError(t, os.Chdir(dir))
+
+	origBuilder := specReviewConfigProviders
+	specReviewConfigProviders = func(_ *config.HarnessConfig, _ []string) []orchestra.ProviderConfig {
+		return []orchestra.ProviderConfig{
+			{Name: "codex", Binary: "codex"},
+			{Name: "gemini", Binary: "gemini"},
+		}
+	}
+	defer func() { specReviewConfigProviders = origBuilder }()
+
+	origRunner := specReviewRunOrchestra
+	specReviewRunOrchestra = func(_ context.Context, _ orchestra.OrchestraConfig) (*orchestra.OrchestraResult, error) {
+		return &orchestra.OrchestraResult{Responses: []orchestra.ProviderResponse{
+			{
+				Provider: "codex",
+				ExitCode: 0,
+				Output:   `{"verdict":"PASS","summary":"ok","findings":[]}`,
+				Error:    "warning: --full-auto is deprecated; use --sandbox workspace-write instead",
+			},
+			{
+				Provider: "gemini",
+				ExitCode: 0,
+				Output:   `{"verdict":"PASS","summary":"ok","findings":[]}`,
+				Error:    "Ripgrep is not available. Falling back to GrepTool.\nSkill conflict detected: \"find-skills\"",
+			},
+		}}, nil
+	}
+	defer func() { specReviewRunOrchestra = origRunner }()
+
+	require.NoError(t, runSpecReview(context.Background(), "SPEC-STDERR-WARN-001", "consensus", 10))
+
+	reviewBytes, err := os.ReadFile(filepath.Join(specDir, "review.md"))
+	require.NoError(t, err)
+	reviewText := string(reviewBytes)
+	assert.Contains(t, reviewText, "**Verdict**: PASS")
+	assert.NotContains(t, reviewText, "degraded",
+		"stderr-only provider warnings must not mark successful reviews degraded")
+	assert.Contains(t, reviewText, "| codex | success | - |")
+	assert.Contains(t, reviewText, "| gemini | success | - |")
+
+	doc, err := spec.Load(specDir)
+	require.NoError(t, err)
+	assert.Equal(t, "approved", doc.Status)
 }

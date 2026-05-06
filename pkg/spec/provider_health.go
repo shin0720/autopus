@@ -66,20 +66,12 @@ func BuildProviderStatuses(
 
 	out := make([]ProviderStatus, 0, len(configured))
 	for _, name := range configured {
-		if r, ok := respByName[name]; ok {
-			out = append(out, classifyResponse(name, r))
+		if f, ok := failByName[name]; ok {
+			out = append(out, classifyFailedProvider(name, f))
 			continue
 		}
-		if f, ok := failByName[name]; ok {
-			note := f.FailureClass
-			if note == "" {
-				note = emptyNotePlaceholder
-			}
-			out = append(out, ProviderStatus{
-				Provider: name,
-				Status:   providerStatusError,
-				Note:     note,
-			})
+		if r, ok := respByName[name]; ok {
+			out = append(out, classifyResponse(name, r))
 			continue
 		}
 		out = append(out, ProviderStatus{
@@ -89,6 +81,22 @@ func BuildProviderStatuses(
 		})
 	}
 	return out
+}
+
+func classifyFailedProvider(name string, f orchestra.FailedProvider) ProviderStatus {
+	status := providerStatusError
+	if f.FailureClass == providerStatusTimeout {
+		status = providerStatusTimeout
+	}
+	note := f.FailureClass
+	if note == "" {
+		note = emptyNotePlaceholder
+	}
+	return ProviderStatus{
+		Provider: name,
+		Status:   status,
+		Note:     note,
+	}
 }
 
 // noteMaxLen bounds Note length so provider stderr (which can carry stack
@@ -104,7 +112,7 @@ func classifyResponse(name string, r orchestra.ProviderResponse) ProviderStatus 
 	switch {
 	case r.TimedOut:
 		return ProviderStatus{Provider: name, Status: providerStatusTimeout, Note: emptyNotePlaceholder}
-	case r.ExitCode != 0 || r.Error != "":
+	case r.ExitCode != 0:
 		note := sanitizeNote(r.Error)
 		if note == "" {
 			note = fmt.Sprintf("exit=%d", r.ExitCode)

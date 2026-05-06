@@ -38,9 +38,10 @@ func TestMigrateOpencodeToCodex_Basic(t *testing.T) {
 	codex, hasCodex := cfg.Orchestra.Providers["codex"]
 	require.True(t, hasCodex, "codex provider must exist after migration")
 	assert.Equal(t, "codex", codex.Binary)
-	assert.Equal(t, []string{"exec", "--full-auto", "-m", CodexFrontierModel}, codex.Args)
+	assert.Equal(t, []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel}, codex.Args)
 	assert.False(t, codex.PromptViaArgs, "codex PromptViaArgs must be false")
 	assert.Equal(t, CodexOrchestraTimeoutSeconds, codex.Subprocess.Timeout)
+	assert.Equal(t, "--output-schema", codex.Subprocess.SchemaFlag)
 
 	// Commands must reference codex instead of opencode.
 	review := cfg.Orchestra.Commands["review"]
@@ -145,7 +146,7 @@ func TestDefaultProviderEntries_CodexArgs(t *testing.T) {
 	codex, ok := defaultProviderEntries["codex"]
 	require.True(t, ok, "codex must exist in defaultProviderEntries")
 
-	expectedArgs := []string{"exec", "--full-auto", "-m", CodexFrontierModel}
+	expectedArgs := []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel}
 	assert.Equal(t, expectedArgs, codex.Args, "codex args must match new exec-mode format")
 	assert.Equal(t, "codex", codex.Binary)
 }
@@ -181,6 +182,8 @@ func TestMigrateOrchestraConfig_FillsCodexSubprocessTimeout(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, changed)
 	assert.Equal(t, CodexOrchestraTimeoutSeconds, cfg.Orchestra.Providers["codex"].Subprocess.Timeout)
+	assert.Equal(t, []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel}, cfg.Orchestra.Providers["codex"].Args)
+	assert.Equal(t, "--output-schema", cfg.Orchestra.Providers["codex"].Subprocess.SchemaFlag)
 }
 
 func TestMigrateOrchestraConfig_PreservesCustomCodexSubprocessTimeout(t *testing.T) {
@@ -204,8 +207,54 @@ func TestMigrateOrchestraConfig_PreservesCustomCodexSubprocessTimeout(t *testing
 
 	changed, err := MigrateOrchestraConfig(cfg)
 	require.NoError(t, err)
-	assert.False(t, changed)
+	assert.True(t, changed)
 	assert.Equal(t, 900, cfg.Orchestra.Providers["codex"].Subprocess.Timeout)
+	assert.Equal(t, []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel}, cfg.Orchestra.Providers["codex"].Args)
+	assert.Equal(t, "--output-schema", cfg.Orchestra.Providers["codex"].Subprocess.SchemaFlag)
+}
+
+func TestMigrateOrchestraConfig_RewritesDeprecatedCodexFullAutoArgs(t *testing.T) {
+	t.Parallel()
+
+	cfg := &HarnessConfig{
+		Platforms: []string{"codex"},
+		Orchestra: OrchestraConf{
+			Enabled: true,
+			Providers: map[string]ProviderEntry{
+				"codex": {
+					Binary: "codex",
+					Args: []string{
+						"exec",
+						"--full-auto",
+						"-m",
+						CodexFrontierModel,
+						"-c",
+						`model_reasoning_effort="xhigh"`,
+					},
+					PromptViaArgs: false,
+					Subprocess:    SubprocessProvConf{Timeout: CodexOrchestraTimeoutSeconds},
+				},
+			},
+			Commands: map[string]CommandEntry{},
+		},
+	}
+
+	changed, err := MigrateOrchestraConfig(cfg)
+	require.NoError(t, err)
+	assert.True(t, changed)
+
+	codex := cfg.Orchestra.Providers["codex"]
+	assert.Equal(t, []string{
+		"exec",
+		"--sandbox",
+		"workspace-write",
+		"-m",
+		CodexFrontierModel,
+		"-c",
+		`model_reasoning_effort="xhigh"`,
+	}, codex.Args)
+	assert.NotContains(t, codex.Args, "--full-auto")
+	assert.Equal(t, "--output-schema", codex.Subprocess.SchemaFlag)
 }
 
 // --- R4: PlatformToProvider opencode -> codex ---

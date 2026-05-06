@@ -38,11 +38,11 @@ func TestBuildSubprocessArgs_SkipsSchemaFlagWhenNotConfigured(t *testing.T) {
 	args := buildSubprocessArgs(ProviderRequest{
 		SchemaPath: "/tmp/schema.json",
 		Config: ProviderConfig{
-			Args: []string{"exec", "--full-auto"},
+			Args: []string{"exec", "--sandbox", "workspace-write"},
 		},
 	})
 
-	assert.Equal(t, []string{"exec", "--full-auto"}, args)
+	assert.Equal(t, []string{"exec", "--sandbox", "workspace-write"}, args)
 }
 
 func TestSubprocessBackend_Execute_SkipsJSONValidationForTextOutput(t *testing.T) {

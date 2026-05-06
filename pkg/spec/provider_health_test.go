@@ -159,6 +159,47 @@ func TestBuildProviderStatuses_OrchestraResponses(t *testing.T) {
 	require.Equal(spec.ProviderStatus{Provider: "opus2", Status: "error", Note: "exit=137"}, got[3])
 }
 
+func TestBuildProviderStatuses_StderrOnlyWarningIsSuccess(t *testing.T) {
+	t.Parallel()
+
+	responses := []orchestra.ProviderResponse{
+		{
+			Provider: "codex",
+			ExitCode: 0,
+			Output:   `{"verdict":"PASS","summary":"ok","findings":[]}`,
+			Error:    "warning: --full-auto is deprecated; use --sandbox workspace-write instead",
+		},
+	}
+
+	got := spec.BuildProviderStatuses(responses, nil, []string{"codex"})
+
+	require := assert.New(t)
+	require.Len(got, 1)
+	require.Equal(spec.ProviderStatus{Provider: "codex", Status: "success", Note: "-"}, got[0])
+}
+
+func TestBuildProviderStatuses_FailedProviderOverridesWarningResponse(t *testing.T) {
+	t.Parallel()
+
+	responses := []orchestra.ProviderResponse{
+		{
+			Provider: "gemini",
+			ExitCode: 0,
+			Output:   `{"verdict":"PASS","summary":"ok","findings":[]}`,
+			Error:    "Ripgrep is not available. Falling back to GrepTool.",
+		},
+	}
+	failed := []orchestra.FailedProvider{
+		{Name: "gemini", FailureClass: "execution_error"},
+	}
+
+	got := spec.BuildProviderStatuses(responses, failed, []string{"gemini"})
+
+	require := assert.New(t)
+	require.Len(got, 1)
+	require.Equal(spec.ProviderStatus{Provider: "gemini", Status: "error", Note: "execution_error"}, got[0])
+}
+
 // TestBuildProviderStatuses_FailedProviderAndMissing covers two paths missing
 // from the response slice: providers in the FailedProvider list (preflight
 // failure) and providers absent from BOTH responses and failed (silent drop).

@@ -24,7 +24,7 @@ func (a *CodexAdapter) Name() string { return "codex" }
 func (a *CodexAdapter) BuildCommand(ctx context.Context, task TaskConfig) *exec.Cmd {
 	// Worker tasks already run inside an isolated worktree with platform-level
 	// policy enforcement. Git push requires outbound network access, which the
-	// Codex workspace sandbox blocks even in --full-auto mode.
+	// Codex workspace sandbox blocks in workspace-write mode.
 	args := []string{"exec", "--dangerously-bypass-approvals-and-sandbox"}
 	if task.Prompt != "" {
 		// Read the sensitive task prompt from stdin instead of exposing it

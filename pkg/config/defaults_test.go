@@ -88,10 +88,12 @@ func TestDefaultFullConfig_CodexPromptViaArgs(t *testing.T) {
 	codex, ok := cfg.Orchestra.Providers["codex"]
 	require.True(t, ok, "codex provider must exist in default full config")
 	assert.False(t, codex.PromptViaArgs, "codex provider must have PromptViaArgs=false")
-	assert.Equal(t, []string{"exec", "--full-auto", "-m", CodexFrontierModel}, codex.Args,
+	assert.Equal(t, []string{"exec", "--sandbox", "workspace-write", "-m", CodexFrontierModel}, codex.Args,
 		"codex provider must have correct exec-mode args")
 	assert.Equal(t, CodexOrchestraTimeoutSeconds, codex.Subprocess.Timeout,
 		"codex provider must have a longer default orchestra timeout")
+	assert.Equal(t, "--output-schema", codex.Subprocess.SchemaFlag,
+		"codex provider must use Codex CLI structured output schema support")
 }
 
 // TestDefaultFullConfig_BrainstormCommand verifies that DefaultFullConfig includes
