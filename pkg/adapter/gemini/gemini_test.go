@@ -208,4 +208,6 @@ func TestGeminiAdapter_Generate_WorkflowSkillsAndCommandsStayAligned(t *testing.
 	autoIdeaSkill, err := os.ReadFile(filepath.Join(dir, ".gemini", "skills", "autopus", "auto-idea", "SKILL.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(autoIdeaSkill), "auto orchestra brainstorm")
+	assert.Contains(t, string(autoIdeaSkill), "Intent Clarification Q&A")
+	assert.Contains(t, string(autoIdeaSkill), "product-discovery")
 }

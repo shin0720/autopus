@@ -83,6 +83,8 @@ func TestCodexAdapter_Generate_WorkflowSurfacesUseCodexConventions(t *testing.T)
 	autoIdeaSkill, err := os.ReadFile(filepath.Join(dir, ".agents", "skills", "auto-idea", "SKILL.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(autoIdeaSkill), "auto orchestra brainstorm")
+	assert.Contains(t, string(autoIdeaSkill), "Intent Clarification Q&A")
+	assert.Contains(t, string(autoIdeaSkill), "product-discovery")
 	assert.Contains(t, string(autoIdeaSkill), "Sequential Thinking으로 fallback할까요?")
 	assert.Contains(t, string(autoIdeaSkill), "Pre-Completion Verification")
 

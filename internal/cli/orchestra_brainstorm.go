@@ -71,6 +71,23 @@ func buildBrainstormPrompt(feature string) string {
 ## Feature
 %s
 
+## Intent Understanding
+Before proposing solutions, reconstruct the user's intent:
+- Problem: the core problem, not just the requested mechanism
+- Target users: primary users, operators, or stakeholders
+- Desired outcome: the behavior or operational result that should change
+- Success signal: the measurable or observable signal that would prove progress
+- Constraints: technical, timeline, operational, business, or policy limits
+- Scope boundary: what should stay out of this idea for now
+
+If any intent field is unclear, state the strongest reasonable assumption and mark its confidence as high, medium, or low. Then use those assumptions to guide the brainstorm.
+
+## Problem-Framing Debate
+Before SCAMPER, answer:
+1. What user problem is this idea really trying to solve?
+2. What assumption would make the whole idea weak if false?
+3. What should the judge verify before turning this into a SPEC?
+
 ## SCAMPER Analysis
 For each of the 7 SCAMPER lenses, generate at least 2 concrete ideas:
 
@@ -86,6 +103,8 @@ For each of the 7 SCAMPER lenses, generate at least 2 concrete ideas:
 Generate 5 "How Might We..." questions that reframe constraints as opportunities.
 
 ## Output Format
+- Intent brief with assumptions and confidence
+- Problem-framing debate answers
 - List ideas per SCAMPER lens
 - List HMW questions
 - If you are the judge: INTEGRATE all provider ideas into a merged list, then apply ICE scoring (Impact 1-10, Confidence 1-10, Ease 1-10) to the top 5 merged ideas. Do NOT discard divergent ideas — include them in an appendix.

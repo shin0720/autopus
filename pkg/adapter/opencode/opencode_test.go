@@ -76,6 +76,8 @@ func TestAdapter_Generate_CreatesOpenCodeFiles(t *testing.T) {
 	autoIdeaSkill, err := os.ReadFile(filepath.Join(dir, ".agents", "skills", "auto-idea", "SKILL.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(autoIdeaSkill), "auto orchestra brainstorm")
+	assert.Contains(t, string(autoIdeaSkill), "Intent Clarification Q&A")
+	assert.Contains(t, string(autoIdeaSkill), "Debate focus")
 	assert.Contains(t, string(autoIdeaSkill), "## OpenCode Invocation")
 	assert.Contains(t, string(autoIdeaSkill), "## Autopus Branding")
 	autoSetupSkill, err := os.ReadFile(filepath.Join(dir, ".agents", "skills", "auto-setup", "SKILL.md"))

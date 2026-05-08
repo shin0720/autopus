@@ -114,6 +114,8 @@ func TestRenderPromptTemplates_WorkflowContractsPresent(t *testing.T) {
 	}
 
 	assert.Contains(t, byName["auto-idea.md"], "orchestra CLI를 반드시 먼저 호출")
+	assert.Contains(t, byName["auto-idea.md"], "Intent Clarification Q&A")
+	assert.Contains(t, byName["auto-idea.md"], "Debate focus")
 	assert.Contains(t, byName["auto-status.md"], "auto status")
 	assert.Contains(t, byName["auto-setup.md"], "explorer")
 	assert.Contains(t, byName["auto-setup.md"], "ARCHITECTURE.md")

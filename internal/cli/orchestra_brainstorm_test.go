@@ -57,6 +57,17 @@ func TestBuildBrainstormPrompt_ContainsHMW(t *testing.T) {
 	assert.Contains(t, prompt, "How Might We", "prompt must include How Might We phrasing")
 }
 
+func TestBuildBrainstormPrompt_ContainsIntentUnderstanding(t *testing.T) {
+	t.Parallel()
+
+	prompt := buildBrainstormPrompt("any feature")
+
+	assert.Contains(t, prompt, "Intent Understanding", "prompt must clarify intent before ideation")
+	assert.Contains(t, prompt, "Problem-Framing Debate", "prompt must debate the problem framing")
+	assert.Contains(t, prompt, "Scope boundary", "prompt must capture scope boundaries")
+	assert.Contains(t, prompt, "assumptions and confidence", "prompt must surface assumption confidence")
+}
+
 // TestNewOrchestraBrainstormCmd_DefaultTimeout verifies that the brainstorm
 // cmd has the default timeout of 300 seconds (higher than other orchestra
 // commands due to SCAMPER+HMW+ICE complexity and extended thinking).
