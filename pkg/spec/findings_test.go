@@ -174,6 +174,26 @@ func TestDeduplicateFindings_AssignsSequentialIDs(t *testing.T) {
 	assert.Equal(t, "F-002", deduped[1].ID, "second finding must be F-002")
 }
 
+func TestNormalizeAdvisoryFindings_DefersOpenSuggestions(t *testing.T) {
+	t.Parallel()
+
+	findings := []ReviewFinding{
+		{ID: "F-001", Severity: "suggestion", Category: FindingCategoryCompleteness, Status: FindingStatusOpen},
+		{ID: "F-002", Severity: "major", Category: FindingCategoryCorrectness, Status: FindingStatusOpen},
+		{ID: "F-003", Severity: "suggestion", Category: FindingCategorySecurity, Status: FindingStatusOpen},
+	}
+
+	normalized := NormalizeAdvisoryFindings(findings)
+
+	require.Len(t, normalized, 3)
+	assert.Equal(t, FindingStatusDeferred, normalized[0].Status)
+	assert.False(t, IsActiveBlockingFinding(normalized[0]))
+	assert.Equal(t, FindingStatusOpen, normalized[1].Status)
+	assert.True(t, IsActiveBlockingFinding(normalized[1]))
+	assert.Equal(t, FindingStatusOpen, normalized[2].Status, "security suggestions must still block")
+	assert.True(t, IsActiveBlockingFinding(normalized[2]))
+}
+
 // Issue #44: SummarizeFindings returns a status breakdown so CLI output can
 // show "N unique (open: x, resolved: y, out_of_scope: z)" instead of a raw count.
 
@@ -186,6 +206,7 @@ func TestSummarizeFindings_Empty(t *testing.T) {
 	assert.Equal(t, 0, s.Open)
 	assert.Equal(t, 0, s.Resolved)
 	assert.Equal(t, 0, s.Regressed)
+	assert.Equal(t, 0, s.Deferred)
 	assert.Equal(t, 0, s.OutOfScope)
 }
 
@@ -198,14 +219,16 @@ func TestSummarizeFindings_CountsEachStatus(t *testing.T) {
 		{ID: "F-003", Status: FindingStatusResolved},
 		{ID: "F-004", Status: FindingStatusRegressed},
 		{ID: "F-005", Status: FindingStatusOutOfScope},
+		{ID: "F-006", Status: FindingStatusDeferred},
 	}
 
 	s := SummarizeFindings(findings)
 
-	assert.Equal(t, 5, s.Total)
+	assert.Equal(t, 6, s.Total)
 	assert.Equal(t, 2, s.Open)
 	assert.Equal(t, 1, s.Resolved)
 	assert.Equal(t, 1, s.Regressed)
+	assert.Equal(t, 1, s.Deferred)
 	assert.Equal(t, 1, s.OutOfScope)
 }
 
@@ -217,13 +240,15 @@ func TestSummarizeFindings_FormatIncludesBreakdown(t *testing.T) {
 		{ID: "F-002", Status: FindingStatusResolved},
 		{ID: "F-003", Status: FindingStatusResolved},
 		{ID: "F-004", Status: FindingStatusOutOfScope},
+		{ID: "F-005", Status: FindingStatusDeferred},
 	}
 
 	got := SummarizeFindings(findings).Format()
 
-	assert.Contains(t, got, "4 unique")
+	assert.Contains(t, got, "5 unique")
 	assert.Contains(t, got, "open: 1")
 	assert.Contains(t, got, "resolved: 2")
+	assert.Contains(t, got, "deferred: 1")
 	assert.Contains(t, got, "out_of_scope: 1")
 }
 

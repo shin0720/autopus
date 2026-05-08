@@ -76,7 +76,7 @@ func countActiveFindings(findings []ReviewFinding, excludeEscapeHatch bool) int 
 		if excludeEscapeHatch && f.EscapeHatch {
 			continue
 		}
-		if f.Status == FindingStatusOpen || f.Status == FindingStatusRegressed {
+		if IsActiveBlockingFinding(f) {
 			count++
 		}
 	}
@@ -99,10 +99,14 @@ func countEscapeHatch(findings []ReviewFinding) int {
 // totalProviders is the configured provider count (denominator for threshold math).
 // When no supermajority is reached, any REVISE vote keeps the result as REVISE.
 //
-// Backward-compat wrapper: delegates to MergeVerdictsWithDenomMode with
-// excludeFailed=false (SPEC-SPECREV-001 REQ-VERD-3).
+// Backward-compat wrapper: preserves the historical empty-input PASS result,
+// otherwise delegates to MergeVerdictsWithDenomMode with excludeFailed=false
+// (SPEC-SPECREV-001 REQ-VERD-3).
 // @AX:NOTE: [AUTO] public API contract — signature is pinned by AC-VERD-BACKCOMPAT; adding parameters here is a breaking change
 func MergeVerdicts(results []ReviewResult, threshold float64, totalProviders int) ReviewVerdict {
+	if len(results) == 0 {
+		return VerdictPass
+	}
 	return MergeVerdictsWithDenomMode(results, threshold, totalProviders, false, 0)
 }
 
@@ -120,6 +124,8 @@ func MergeVerdicts(results []ReviewResult, threshold float64, totalProviders int
 // (len(results) < totalProviders) and the surviving providers fail to
 // reach the supermajority, the merger returns VerdictRevise instead of
 // silently passing on a single survivor's PASS vote.
+// If every provider failed, the merger also returns VerdictRevise so provider
+// infrastructure failures never approve a SPEC by accident.
 // @AX:WARN: [AUTO] cyclomatic complexity — dual denom-mode branches + AC-VERD-1 special case; @AX:REASON: four independent decision paths make edge cases non-obvious (excludeFailed, denom<=0, dropped providers, tolerance check)
 // @AX:NOTE: [AUTO] behavior boundary — denom<=0 fallback to VerdictRevise only applies when excludeFailed=true; excludeFailed=false falls back to len(results) denom instead
 func MergeVerdictsWithDenomMode(
@@ -147,7 +153,7 @@ func MergeVerdictsWithDenomMode(
 	}
 
 	if len(results) == 0 {
-		return VerdictPass
+		return VerdictRevise
 	}
 	denom := float64(totalProviders)
 	if denom <= 0 {

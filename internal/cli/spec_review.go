@@ -164,7 +164,7 @@ func nilIfEmpty(findings []spec.ReviewFinding) []spec.ReviewFinding {
 // hasActiveFindings returns true if there are any open or regressed findings.
 func hasActiveFindings(findings []spec.ReviewFinding) bool {
 	for _, f := range findings {
-		if f.Status == spec.FindingStatusOpen || f.Status == spec.FindingStatusRegressed {
+		if spec.IsActiveBlockingFinding(f) {
 			return true
 		}
 	}

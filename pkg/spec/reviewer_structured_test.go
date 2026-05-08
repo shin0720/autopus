@@ -35,3 +35,25 @@ func TestParseVerdict_StructuredJSONVerify(t *testing.T) {
 	assert.True(t, result.Findings[1].EscapeHatch)
 	assert.Equal(t, FindingCategorySecurity, result.Findings[1].Category)
 }
+
+func TestParseVerdict_StructuredJSONPassDefersOpenSuggestionStatus(t *testing.T) {
+	t.Parallel()
+
+	prior := []ReviewFinding{
+		{
+			ID:          "F-001",
+			Severity:    "suggestion",
+			Status:      FindingStatusOpen,
+			Category:    FindingCategoryCompleteness,
+			Description: "Optional wording improvement",
+		},
+	}
+	output := `{"verdict":"PASS","summary":"Advisory only","finding_statuses":[{"id":"F-001","status":"open","reason":"nice to have"}],"findings":[]}`
+
+	result := ParseVerdict("SPEC-JSON-003", output, "gemini", 2, prior)
+
+	require.Len(t, result.Findings, 1)
+	assert.Equal(t, VerdictPass, result.Verdict)
+	assert.Equal(t, FindingStatusDeferred, result.Findings[0].Status)
+	assert.False(t, IsActiveBlockingFinding(result.Findings[0]))
+}

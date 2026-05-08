@@ -13,6 +13,7 @@ type FindingsSummary struct {
 	Open       int
 	Resolved   int
 	Regressed  int
+	Deferred   int
 	OutOfScope int
 }
 
@@ -28,6 +29,8 @@ func SummarizeFindings(findings []ReviewFinding) FindingsSummary {
 			s.Resolved++
 		case FindingStatusRegressed:
 			s.Regressed++
+		case FindingStatusDeferred:
+			s.Deferred++
 		case FindingStatusOutOfScope:
 			s.OutOfScope++
 		}
@@ -50,6 +53,7 @@ func (s FindingsSummary) Format() string {
 		{"open", s.Open},
 		{"regressed", s.Regressed},
 		{"resolved", s.Resolved},
+		{"deferred", s.Deferred},
 		{"out_of_scope", s.OutOfScope},
 	}
 

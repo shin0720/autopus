@@ -19,6 +19,42 @@ func PersistFindings(dir string, findings []ReviewFinding) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
+// NormalizeAdvisoryFindings keeps suggestion-level feedback visible without
+// letting it block review-gate convergence.
+func NormalizeAdvisoryFindings(findings []ReviewFinding) []ReviewFinding {
+	if len(findings) == 0 {
+		return nil
+	}
+
+	updated := make([]ReviewFinding, len(findings))
+	for i, f := range findings {
+		updated[i] = f
+		if IsAdvisoryFinding(f) && isOpenOrRegressed(f.Status) {
+			updated[i].Status = FindingStatusDeferred
+		}
+	}
+	return updated
+}
+
+// IsAdvisoryFinding reports whether a finding is non-blocking review feedback.
+func IsAdvisoryFinding(f ReviewFinding) bool {
+	return strings.EqualFold(strings.TrimSpace(f.Severity), "suggestion") &&
+		f.Category != FindingCategorySecurity &&
+		!f.EscapeHatch
+}
+
+// IsActiveBlockingFinding reports whether a finding should block PASS.
+func IsActiveBlockingFinding(f ReviewFinding) bool {
+	if !isOpenOrRegressed(f.Status) {
+		return false
+	}
+	return !IsAdvisoryFinding(f)
+}
+
+func isOpenOrRegressed(status FindingStatus) bool {
+	return status == FindingStatusOpen || status == FindingStatusRegressed
+}
+
 // LoadFindings reads prior findings from review-findings.json.
 // Returns empty slice (not error) if file doesn't exist.
 // Returns error if file exists but is corrupted.

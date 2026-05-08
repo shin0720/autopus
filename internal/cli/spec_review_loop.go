@@ -108,6 +108,7 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 		// REQ-06: MergeSupermajority then DeduplicateFindings.
 		allFindings = spec.MergeSupermajority(allFindings, len(reviews), p.threshold)
 		allFindings = spec.DeduplicateFindings(allFindings)
+		allFindings = spec.NormalizeAdvisoryFindings(allFindings)
 
 		merged := &spec.ReviewResult{
 			SpecID:            p.specID,
@@ -122,7 +123,9 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 		// Apply scope lock in verify mode
 		if revision > 0 {
 			merged.Findings = spec.ApplyScopeLock(merged.Findings, priorFindings, spec.ReviewModeVerify)
+			merged.Findings = spec.NormalizeAdvisoryFindings(merged.Findings)
 		}
+		merged.Verdict = effectiveReviewVerdict(merged.Verdict, reviews, merged.Findings)
 
 		// A mid-pipeline write failure must abort (issue #38).
 		if persistErr := spec.PersistFindings(p.specDir, merged.Findings); persistErr != nil {
@@ -135,7 +138,7 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 		finalResult = merged
 
 		// PASS: no open or regressed findings
-		if finalVerdict == spec.VerdictPass && !hasActiveFindings(merged.Findings) {
+		if merged.Verdict == spec.VerdictPass && !hasActiveFindings(merged.Findings) {
 			break
 		}
 
@@ -155,6 +158,45 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 	}
 
 	return finalResult, nil
+}
+
+func effectiveReviewVerdict(verdict spec.ReviewVerdict, reviews []spec.ReviewResult, findings []spec.ReviewFinding) spec.ReviewVerdict {
+	if len(reviews) == 0 {
+		return spec.VerdictRevise
+	}
+	if verdict != spec.VerdictRevise || hasActiveFindings(findings) {
+		return verdict
+	}
+	for _, r := range reviews {
+		if r.Verdict == spec.VerdictReject {
+			return verdict
+		}
+		if r.Verdict == spec.VerdictRevise && (reviewHasBlockingFindings(r.Findings) || reviewHasFailingChecklist(r.ChecklistOutcomes)) {
+			return verdict
+		}
+	}
+	return spec.VerdictPass
+}
+
+func reviewHasBlockingFindings(findings []spec.ReviewFinding) bool {
+	if len(findings) == 0 {
+		return true
+	}
+	for _, f := range findings {
+		if spec.IsActiveBlockingFinding(f) {
+			return true
+		}
+	}
+	return false
+}
+
+func reviewHasFailingChecklist(outcomes []spec.ChecklistOutcome) bool {
+	for _, outcome := range outcomes {
+		if outcome.Status == spec.ChecklistStatusFail {
+			return true
+		}
+	}
+	return false
 }
 
 // buildPromptOpts builds ReviewPromptOptions for the current revision.

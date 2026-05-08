@@ -57,18 +57,27 @@ func TestMergeVerdictsWithDenomMode_ExcludeFailedAllFailed(t *testing.T) {
 		"all providers failed with excludeFailed=true must return VerdictRevise (not Reject)")
 }
 
+func TestMergeVerdictsWithDenomMode_LegacyAllFailedRevises(t *testing.T) {
+	t.Parallel()
+
+	got := MergeVerdictsWithDenomMode(nil, 0.67, 3, false, 3)
+
+	assert.Equal(t, VerdictRevise, got,
+		"all providers failed must not silently approve in legacy denominator mode")
+}
+
 // TestMergeVerdictsWithDenomMode_TableDriven aggregates further denom-mode cases.
 func TestMergeVerdictsWithDenomMode_TableDriven(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name             string
-		results          []ReviewResult
-		threshold        float64
-		totalProviders   int
-		excludeFailed    bool
-		failedCount      int
-		want             ReviewVerdict
+		name           string
+		results        []ReviewResult
+		threshold      float64
+		totalProviders int
+		excludeFailed  bool
+		failedCount    int
+		want           ReviewVerdict
 	}{
 		{
 			name: "exclude=false 2 PASS / 1 REVISE -> REVISE",

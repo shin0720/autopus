@@ -23,6 +23,7 @@
 - `DESIGN.md` 또는 설정된 디자인 baseline이 없으면 `Design context: skipped (not configured)`를 non-error로 기록하고 기존 리뷰 흐름을 유지합니다.
 - 외부 import 디자인 레퍼런스는 명시적으로 promote되기 전까지 untrusted supplemental context로만 취급합니다.
 - 리뷰는 읽기 전용입니다. 발견 사항을 보고하고 executor/fixer로 위임하며, review surface가 직접 파일을 수정하지 않습니다.
+- 리뷰는 가능한 전체 diff를 한 번에 훑고, 지금 방어 가능한 actionable issue를 모두 반환합니다. 첫 번째 이슈만 보고 멈추거나 optional suggestion을 `REQUEST_CHANGES` 근거로 삼지 않습니다.
 - 이 리뷰가 `@auto go --auto --loop` 내부에서 실행 중이면, `REQUEST_CHANGES`는 terminal handoff가 아니라 같은 invocation 안의 repair loop 입력입니다.
 - 위 경우 retry budget이 남아 있으면 `@auto go --continue` 를 권장하지 말고, 열린 findings checklist를 executor/fixer로 되돌려 자동 수렴을 계속합니다.
 - standalone `@auto review`에서만, loop 문맥이 없고 사용자가 다음 복구 명령을 원할 때 `@auto fix ...` 또는 `@auto go {SPEC-ID} --continue` 같은 후속 명령을 제안합니다.

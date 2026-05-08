@@ -149,6 +149,8 @@ func buildVerifyInstructions(sb *strings.Builder, priorFindings []ReviewFinding,
 	sb.WriteString("### Instructions (Verify Mode)\n\n")
 	sb.WriteString("For each finding below, report its current status.\n\n")
 	sb.WriteString("Do NOT stop early, narrow the scope on your own, or replace the requested output with progress notes.\n")
+	sb.WriteString("Review all prior findings in one pass; do not drip-feed one optional suggestion per revision.\n")
+	sb.WriteString("A `suggestion` is advisory and must not be the only reason for REVISE. If VERDICT is PASS, do not keep suggestion-only findings open.\n")
 	sb.WriteString("Responses that omit the required VERDICT/FINDING_STATUS lines are treated as malformed review output.\n\n")
 
 	if len(priorFindings) > 0 {
@@ -190,6 +192,8 @@ func buildDiscoverInstructions(sb *strings.Builder, staticFindings []ReviewFindi
 
 	sb.WriteString("### Instructions\n\n")
 	sb.WriteString("Do NOT stop early, narrow the scope on your own, or replace the requested output with progress notes.\n")
+	sb.WriteString("Review the whole SPEC in one pass and return the full set of actionable issues together.\n")
+	sb.WriteString("Use `suggestion` only for non-blocking advisory improvements; suggestions alone must not drive REVISE.\n")
 	sb.WriteString("Responses that omit the required VERDICT/FINDING lines are treated as malformed review output.\n\n")
 
 	if len(staticFindings) > 0 {
@@ -225,6 +229,7 @@ func writeVerdictRules(sb *strings.Builder, passCriteria string) {
 	sb.WriteString("- PASS: critical == 0 AND security == 0 AND major <= 2\n")
 	sb.WriteString("- REJECT: critical > 0 OR security > 0\n")
 	sb.WriteString("- REVISE: otherwise (major > 2, or unresolved issues requiring author attention)\n")
+	sb.WriteString("- suggestion findings are advisory; they may be listed, but they do not block PASS by themselves\n")
 }
 
 // writeFindingExamples writes positive and negative few-shot examples for the FINDING format.
