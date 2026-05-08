@@ -88,3 +88,40 @@ func TestRunSubprocessPipeline_CLITimeoutOverridesConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 90, captured.TimeoutSeconds)
 }
+
+func TestRunSubprocessPipeline_ExplicitProvidersDoNotUseExcludedConfigJudge(t *testing.T) {
+	origLoadConfig := orchestraRunLoadConfig
+	origBuildProviders := orchestraRunBuildProviders
+	origBackendFactory := orchestraRunBackendFactory
+	origExecutePipeline := orchestraRunExecutePipeline
+	t.Cleanup(func() {
+		orchestraRunLoadConfig = origLoadConfig
+		orchestraRunBuildProviders = origBuildProviders
+		orchestraRunBackendFactory = origBackendFactory
+		orchestraRunExecutePipeline = origExecutePipeline
+	})
+
+	orchestraRunLoadConfig = func() (*config.OrchestraConf, error) {
+		return &config.OrchestraConf{
+			Judge: "claude",
+			Providers: map[string]config.ProviderEntry{
+				"claude": {Binary: "claude"},
+				"codex":  {Binary: "codex", Args: []string{"exec"}},
+			},
+		}, nil
+	}
+	orchestraRunBuildProviders = buildProviderConfigs
+	orchestraRunBackendFactory = func() orchestra.ExecutionBackend { return noopExecutionBackend{} }
+
+	var captured orchestra.SubprocessPipelineConfig
+	orchestraRunExecutePipeline = func(_ context.Context, cfg orchestra.SubprocessPipelineConfig) (*orchestra.OrchestraResult, error) {
+		captured = cfg
+		return &orchestra.OrchestraResult{Merged: "ok", Summary: "done"}, nil
+	}
+
+	err := runSubprocessPipeline(context.Background(), "topic", "debate", []string{"codex"}, "fast", 120, false, "", false, false)
+	require.NoError(t, err)
+	assert.Equal(t, "codex", captured.Judge.Name)
+	require.Len(t, captured.Providers, 1)
+	assert.Equal(t, "codex", captured.Providers[0].Name)
+}

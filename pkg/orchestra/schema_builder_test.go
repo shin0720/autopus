@@ -25,6 +25,7 @@ func TestSchemaBuilder_Generate_AllRoles(t *testing.T) {
 
 			assert.Equal(t, "http://json-schema.org/draft-07/schema#", parsed["$schema"])
 			assert.Equal(t, "object", parsed["type"])
+			assert.Equal(t, false, parsed["additionalProperties"])
 			assert.NotEmpty(t, parsed["properties"])
 			assert.NotEmpty(t, parsed["required"])
 		})
@@ -79,6 +80,25 @@ func TestSchemaBuilder_Generate_ReviewerProperties(t *testing.T) {
 	assert.Contains(t, props, "findings")
 	assert.Contains(t, props, "verdict")
 	assert.Contains(t, props, "summary")
+	assert.Contains(t, props, "checklist")
+	assert.Contains(t, props, "finding_statuses")
+	assert.NotContains(t, props, "checklist,omitempty")
+	assert.NotContains(t, props, "finding_statuses,omitempty")
+}
+
+func TestSchemaBuilder_Generate_NestedObjectsDisallowAdditionalProperties(t *testing.T) {
+	t.Parallel()
+	sb := &SchemaBuilder{}
+	schema, err := sb.Generate("reviewer")
+	require.NoError(t, err)
+
+	var parsed map[string]any
+	require.NoError(t, json.Unmarshal([]byte(schema), &parsed))
+
+	props := parsed["properties"].(map[string]any)
+	findings := props["findings"].(map[string]any)
+	findingItem := findings["items"].(map[string]any)
+	assert.Equal(t, false, findingItem["additionalProperties"])
 }
 
 func TestSchemaBuilder_Generate_UnknownRole(t *testing.T) {

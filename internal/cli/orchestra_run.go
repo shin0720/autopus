@@ -60,6 +60,8 @@ func runSubprocessPipeline(
 	forceSubprocess bool,
 	dryRun bool,
 ) error {
+	explicitProviderSelection := len(providerNames) > 0
+	explicitJudge := judgeName != ""
 	orchConf, configErr := orchestraRunLoadConfig()
 
 	var providerConfigs []orchestra.ProviderConfig
@@ -72,6 +74,9 @@ func runSubprocessPipeline(
 		providerConfigs = resolveProviders(orchConf, "run", providerNames)
 		if judgeName == "" {
 			judgeName = resolveJudge(orchConf, "run", "")
+		}
+		if explicitProviderSelection && !explicitJudge && judgeName != "" && !hasProviderConfig(providerConfigs, judgeName) && len(providerConfigs) > 0 {
+			judgeName = providerConfigs[0].Name
 		}
 		timeout = resolveCommandTimeout(orchConf, timeout, timeoutChanged)
 	}
@@ -154,6 +159,15 @@ func runSubprocessPipeline(
 	fmt.Println(result.Merged)
 	fmt.Fprintf(os.Stderr, "\nSummary: %s (total %s)\n", result.Summary, result.Duration.Round(1e6))
 	return nil
+}
+
+func hasProviderConfig(providers []orchestra.ProviderConfig, name string) bool {
+	for _, provider := range providers {
+		if provider.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // executeDryRun writes prompts to files without executing providers.

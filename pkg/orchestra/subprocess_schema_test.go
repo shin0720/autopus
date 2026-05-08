@@ -2,7 +2,9 @@ package orchestra
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"testing"
 	"time"
 
@@ -144,6 +146,58 @@ func TestSubprocessBackend_Execute_ContextCancelTerminatesBlockedWait(t *testing
 	}
 }
 
+func TestSubprocessBackend_Execute_CodexReadsOutputLastMessage(t *testing.T) {
+	origNewCommand := newCommand
+	defer func() {
+		newCommand = origNewCommand
+	}()
+
+	var capturedArgs []string
+	waitCh := make(chan error, 1)
+	waitCh <- nil
+	fake := &fakeCommand{
+		waitCh:   waitCh,
+		exitCode: 0,
+		startFn: func(cmd *fakeCommand) error {
+			lastMessagePath := argValueAfter(capturedArgs, "--output-last-message")
+			if lastMessagePath == "" {
+				return fmt.Errorf("missing --output-last-message arg")
+			}
+			if _, err := io.WriteString(cmd.stdout, "codex\n{\"verdict\":\"PASS\"}\ntokens used\n1\n"); err != nil {
+				return err
+			}
+			return os.WriteFile(lastMessagePath, []byte(`{"verdict":"PASS","summary":"ok","findings":[]}`), 0600)
+		},
+	}
+
+	newCommand = func(_ context.Context, _ string, args ...string) command {
+		capturedArgs = append([]string{}, args...)
+		return fake
+	}
+
+	backend := NewSubprocessBackendImpl()
+	resp, err := backend.Execute(context.Background(), ProviderRequest{
+		Provider:   "codex",
+		Prompt:     "Review this SPEC",
+		SchemaPath: "/tmp/reviewer-schema.json",
+		Role:       "reviewer",
+		Config: ProviderConfig{
+			Name:       "codex",
+			Binary:     "codex",
+			Args:       []string{"exec", "--sandbox", "workspace-write"},
+			SchemaFlag: "--output-schema",
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, `{"verdict":"PASS","summary":"ok","findings":[]}`, resp.Output)
+	assert.Empty(t, resp.Error)
+	assert.Contains(t, capturedArgs, "--output-schema")
+	assert.Contains(t, capturedArgs, "--output-last-message")
+	assert.Equal(t, "Review this SPEC", fake.stdinBuf.String())
+}
+
 type recordingBackend struct {
 	requests []ProviderRequest
 }
@@ -185,4 +239,13 @@ func TestRunSubprocessPipeline_EmbedsPromptSchemaWhenProviderLacksSchemaFlag(t *
 	require.NotEmpty(t, backend.requests)
 	assert.Contains(t, backend.requests[0].Prompt, "Required JSON structure:")
 	assert.Contains(t, backend.requests[0].Prompt, "\"$schema\"")
+}
+
+func argValueAfter(args []string, flag string) string {
+	for i, arg := range args {
+		if arg == flag && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
 }

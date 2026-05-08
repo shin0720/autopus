@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 )
 
 // SchemaBuilder generates JSON schemas from output struct definitions.
@@ -76,19 +77,19 @@ func buildSchema(t reflect.Type) map[string]any {
 	required := []string{}
 	for i := range t.NumField() {
 		f := t.Field(i)
-		tag := f.Tag.Get("json")
-		if tag == "" || tag == "-" {
+		name, ok := jsonFieldName(f)
+		if !ok {
 			continue
 		}
-		name := tag
 		required = append(required, name)
 		props[name] = fieldSchema(f.Type)
 	}
 	return map[string]any{
-		"$schema":    "http://json-schema.org/draft-07/schema#",
-		"type":       "object",
-		"properties": props,
-		"required":   required,
+		"$schema":              "http://json-schema.org/draft-07/schema#",
+		"type":                 "object",
+		"properties":           props,
+		"required":             required,
+		"additionalProperties": false,
 	}
 }
 
@@ -113,21 +114,34 @@ func fieldSchema(t reflect.Type) map[string]any {
 		req := []string{}
 		for i := range t.NumField() {
 			f := t.Field(i)
-			tag := f.Tag.Get("json")
-			if tag == "" || tag == "-" {
+			name, ok := jsonFieldName(f)
+			if !ok {
 				continue
 			}
-			props[tag] = fieldSchema(f.Type)
-			req = append(req, tag)
+			props[name] = fieldSchema(f.Type)
+			req = append(req, name)
 		}
 		return map[string]any{
-			"type":       "object",
-			"properties": props,
-			"required":   req,
+			"type":                 "object",
+			"properties":           props,
+			"required":             req,
+			"additionalProperties": false,
 		}
 	default:
 		return map[string]any{"type": "string"}
 	}
+}
+
+func jsonFieldName(f reflect.StructField) (string, bool) {
+	tag := f.Tag.Get("json")
+	if tag == "" || tag == "-" {
+		return "", false
+	}
+	name := strings.Split(tag, ",")[0]
+	if name == "" {
+		return "", false
+	}
+	return name, true
 }
 
 func removeIfExists(path string) {

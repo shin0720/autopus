@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ type fakeStructuredReviewBackend struct {
 	mu       sync.Mutex
 	requests []orchestra.ProviderRequest
 	outputs  map[string]orchestra.ProviderResponse
+	errors   map[string]error
 }
 
 func (f *fakeStructuredReviewBackend) Execute(_ context.Context, req orchestra.ProviderRequest) (*orchestra.ProviderResponse, error) {
@@ -26,6 +28,9 @@ func (f *fakeStructuredReviewBackend) Execute(_ context.Context, req orchestra.P
 	resp.Provider = req.Provider
 	if resp.Duration == 0 {
 		resp.Duration = 5 * time.Millisecond
+	}
+	if f.errors != nil && f.errors[req.Provider] != nil {
+		return &resp, f.errors[req.Provider]
 	}
 	return &resp, nil
 }
@@ -127,4 +132,36 @@ func TestRunStructuredSpecReviewOrchestra_RecordsTimeoutDiagnostics(t *testing.T
 	require.Len(t, out.Findings, 1)
 	assert.Contains(t, out.Findings[0].Description, "provider timed out after 1m30s")
 	assert.Contains(t, out.Findings[0].Suggestion, "orchestra.providers.codex.subprocess.timeout")
+}
+
+func TestRunStructuredSpecReviewOrchestra_PreservesExecutionDiagnostics(t *testing.T) {
+	backend := &fakeStructuredReviewBackend{
+		outputs: map[string]orchestra.ProviderResponse{
+			"codex": {
+				Output:   "transcript stdout",
+				Error:    "stderr with cli failure",
+				Duration: 3 * time.Second,
+				ExitCode: 1,
+			},
+		},
+		errors: map[string]error{
+			"codex": errors.New("subprocess codex exited with code 1"),
+		},
+	}
+
+	origFactory := specReviewBackendFactory
+	specReviewBackendFactory = func() orchestra.ExecutionBackend { return backend }
+	defer func() { specReviewBackendFactory = origFactory }()
+
+	result, err := runStructuredSpecReviewOrchestra(context.Background(), orchestra.OrchestraConfig{
+		Providers:      []orchestra.ProviderConfig{{Name: "codex", Binary: "codex"}},
+		Prompt:         "Review this SPEC",
+		TimeoutSeconds: 10,
+	})
+	require.NoError(t, err)
+	require.Len(t, result.FailedProviders, 1)
+	assert.Equal(t, "execution_error", result.FailedProviders[0].FailureClass)
+	assert.Contains(t, result.FailedProviders[0].Error, "execution failed")
+	assert.Equal(t, "stderr with cli failure", result.FailedProviders[0].StderrPreview)
+	assert.Equal(t, "transcript stdout", result.FailedProviders[0].OutputPreview)
 }

@@ -56,7 +56,7 @@ func runStructuredSpecReviewOrchestra(ctx context.Context, cfg orchestra.Orchest
 
 			resp, execErr := backend.Execute(ctx, req)
 			if execErr != nil {
-				results[idx] = malformedStructuredOutcome(provider.Name, fmt.Errorf("execution failed: %w", execErr), nil)
+				results[idx] = malformedStructuredOutcome(provider.Name, fmt.Errorf("execution failed: %w", execErr), resp)
 				return
 			}
 			if resp == nil {
