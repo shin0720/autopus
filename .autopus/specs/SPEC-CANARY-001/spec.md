@@ -11,6 +11,18 @@
 
 gstack의 `/canary` (스크린샷 diff + 콘솔 에러 감지)에서 영감을 받되, autopus-adk의 기존 인프라(e2e 패키지, browse 패키지, scenarios.md)를 활용하는 접근.
 
+## 구현 동기화 — 2026-05-10
+
+`auto canary`는 이제 generated workflow guidance만이 아니라 `autopus-adk/internal/cli`가 소유하는 실행 가능한 Go CLI 서브커맨드다. 현재 baseline은 다음을 제공한다.
+
+- `auto canary --dry-run --format json`: 프로젝트 커맨드 실행 없이 계획/skip 결과를 JSON envelope로 출력하고 `.autopus/canary/latest.json`을 갱신한다.
+- `auto canary`: root workspace 기준 ADK, backend, frontend, desktop build targets를 순차 실행하고, `auto test run --scenario version --format json` 및 `auto doctor`를 실행한다.
+- `auto canary --url <base>`: `/health`, `/metrics`, `/login`, `/docs`, `/marketplace`에 대해 HTTP 2xx/3xx health checks를 수행한다.
+- URL이 없고 `Autopus/frontend/package.json`이 존재하면 로컬 Next server를 띄워 `/login`, `/docs`, `/marketplace`를 Playwright Chromium으로 열고 body/console/page-error를 확인한다.
+- 결과 저장 오류와 실행 오류는 JSON/text 출력 모두에서 fail-closed `FAIL`로 반영한다.
+
+`--watch`와 `--compare` 플래그는 현재 CLI flag/metadata로 수용하지만 active 반복 실행 및 commit snapshot diff는 후속 hardening scope로 남아 있다.
+
 ## 요구사항
 
 ### R1: 빌드 검증
@@ -60,6 +72,10 @@ WHEN `/auto sync` runs, THE SYSTEM SHALL update `.autopus/project/canary.md` to 
 | `templates/codex/prompts/auto-canary.md.tmpl` | codex 플랫폼 canary 프롬프트 |
 | `templates/gemini/commands/auto-canary.md.tmpl` | gemini 플랫폼 canary 커맨드 |
 | `auto-router.md.tmpl` (수정) | canary 서브커맨드 라우팅 추가 |
+| `internal/cli/canary.go` | executable `auto canary` CLI entrypoint, JSON/text output, PASS/WARN/FAIL handling |
+| `internal/cli/canary_helpers.go` | build/endpoint result persistence helpers |
+| `internal/cli/canary_browser.go` | local Next server and Playwright page health checks |
+| `internal/cli/canary_test.go` | dry-run JSON and fail-closed persistence regression coverage |
 | `.autopus/canary/` (런타임 생성) | 스냅샷 및 히스토리 저장 디렉토리 |
 
 ## 데이터 저장

@@ -26,6 +26,18 @@
 
 ## 구현 전략
 
+### 2026-05-10 동기화 결과
+
+초기 계획은 스킬/템플릿 중심 구현을 가정했지만, 현재 source of truth는 `internal/cli`의 executable `auto canary` 서브커맨드다.
+
+- `internal/cli/root.go`: `newCanaryCmd()` 등록 완료.
+- `internal/cli/canary.go`: `--project-dir`, `--url`, `--watch`, `--compare`, `--dry-run`, JSON/text output, result persistence, PASS/WARN/FAIL 판정.
+- `internal/cli/canary_helpers.go`: root workspace build target 실행, endpoint/page HTTP checks, latest result writer.
+- `internal/cli/canary_browser.go`: local frontend `npm run start` + Playwright Chromium health check path.
+- `internal/cli/canary_test.go`: dry-run JSON contract와 result persistence 실패 시 fail-closed regression.
+
+`--watch` 반복 실행과 `--compare` commit snapshot diff는 플래그/metadata만 존재하므로 후속 hardening에서 닫는다. 현재 완료 범위는 post-deploy/local canary baseline과 JSON evidence surface다.
+
 ### 기존 코드 활용
 
 - **`pkg/e2e`**: E2E 시나리오 파싱(`scenario.go`) 및 실행(`runner.go`)은 이미 구현되어 있음. canary는 이를 스킬 레벨에서 호출하는 형태.
@@ -34,7 +46,7 @@
 
 ### 변경 범위
 
-canary는 스킬 레벨 기능이므로 Go 코드 변경은 최소화. 주요 작업은 템플릿 파일 3개 신규 + router 수정 1개.
+canary는 스킬/템플릿 guidance와 Go CLI baseline을 함께 가진다. Generated root surface는 source of truth가 아니며, executable behavior는 `internal/cli`가 소유한다.
 
 ### 의존성
 

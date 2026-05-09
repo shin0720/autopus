@@ -21,11 +21,13 @@
 - Given: 정상 작동하는 프로젝트
 - When: `/auto canary --watch 5m` 실행
 - Then: 5분 간격으로 health check가 반복 실행되고, FAIL 발생 시 즉시 중단 및 알림
+- Status: deferred hardening. 현재 CLI는 `--watch` 값을 JSON flags에 보존하지만 반복 실행은 수행하지 않는다.
 
 ### S5: 커밋 비교
 - Given: `.autopus/canary/{commit-hash}.json`에 이전 canary 결과가 존재
 - When: `/auto canary --compare abc123` 실행
 - Then: 현재 결과와 지정 커밋 결과의 diff가 표시됨 (새로 실패한 시나리오, 새로 성공한 시나리오)
+- Status: deferred hardening. 현재 CLI는 `--compare` 값을 JSON flags에 보존하지만 commit snapshot diff는 수행하지 않는다.
 
 ### S6: sync 후 canary 안내
 - Given: `/auto sync` 실행 완료
@@ -41,3 +43,13 @@
 - Given: scenarios.md가 존재하지 않는 프로젝트
 - When: `/auto canary` 실행
 - Then: 빌드 검증만 수행하고 "E2E 시나리오가 없습니다. /auto setup으로 생성하세요" 안내 출력
+
+### S9: dry-run JSON evidence
+- Given: initialized project directory
+- When: `auto canary --dry-run --project-dir <dir> --format json` 실행
+- Then: JSON envelope status는 `ok`, verdict는 `PASS`, build/e2e/doctor/endpoint/browser는 `SKIPPED`, skipped reason이 포함됨
+
+### S10: result persistence failure is fail-closed
+- Given: `--project-dir` points at a file path so `.autopus/canary/latest.json` cannot be written
+- When: `auto canary --dry-run --project-dir <file> --format json` 실행
+- Then: command exits with error, JSON envelope status는 `error`, verdict는 `FAIL`

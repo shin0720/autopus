@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Executable canary CLI baseline (SPEC-CANARY-001)** (2026-05-10): `auto canary` is now a real Cobra subcommand in addition to generated workflow guidance.
+  - `internal/cli/{canary,canary_helpers,canary_browser}.go` — dry-run JSON planning, root workspace build targets, `auto test run --scenario version`, `auto doctor`, URL endpoint/page checks, local frontend Playwright smoke, latest-result persistence, and PASS/WARN/FAIL summary output
+  - `internal/cli/root.go` — public command registration
+  - `internal/cli/canary_test.go` — dry-run JSON contract and fail-closed persistence error regression
+  - `--watch` and `--compare` are accepted and reported in result metadata; active loop and commit snapshot diff remain follow-up hardening
+
 - **Delegation Safety Rails (SPEC-ADK-SAFE-RAILS-001)** (2026-05-06): ADK-managed delegation, worktree, provider-timeout, reclaim, and hard-interrupt paths now emit bounded safety evidence instead of silently continuing.
   - `pkg/pipeline/{safety,runtime_safety,worktree_scheduler,reclaim,interrupt}.go` — shared `DegradedEvidence`, `DelegationContext`, depth-cap checks, workflow authenticity preflight, FIFO worktree slot scheduling, reclaim terminal states, and hard-interrupt evidence contracts
   - `pkg/pipeline/{engine,runner}.go` and `internal/cli/pipeline_run.go` — default subagent pipeline authenticity, delegation depth metadata, worktree slot cap decisions, and safety event collection are wired into pipeline execution
