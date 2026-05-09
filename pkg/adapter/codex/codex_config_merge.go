@@ -9,26 +9,6 @@ var userOwnedCodexConfigKeys = map[string]map[string]bool{
 		"model_reasoning_summary": true,
 		"model_verbosity":         true,
 	},
-	"profiles.fallback": {
-		"model":                  true,
-		"model_reasoning_effort": true,
-	},
-	"profiles.mini": {
-		"model":                  true,
-		"model_reasoning_effort": true,
-	},
-	"profiles.codex": {
-		"model":                  true,
-		"model_reasoning_effort": true,
-	},
-	"profiles.spark": {
-		"model":                  true,
-		"model_reasoning_effort": true,
-	},
-	"profiles.legacy": {
-		"model":                  true,
-		"model_reasoning_effort": true,
-	},
 }
 
 // preserveUserCodexModelSettings keeps user-selected model controls while

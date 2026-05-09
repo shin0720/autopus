@@ -84,11 +84,6 @@ func TestUpdate_PreservesUserCodexModelSettings(t *testing.T) {
 	require.NoError(t, err)
 	userConfig := strings.Replace(string(data), `model = "gpt-5.5"`, `model = "gpt-5.4"`, 1)
 	userConfig = strings.Replace(userConfig, `model_reasoning_effort = "medium"`, `model_reasoning_effort = "xhigh"`, 1)
-	userConfig = strings.Replace(userConfig, `[profiles.fallback]
-model = "gpt-5.5"
-model_reasoning_effort = "medium"`, `[profiles.fallback]
-model = "gpt-5.5"
-model_reasoning_effort = "high"`, 1)
 	require.NoError(t, os.WriteFile(configPath, []byte(userConfig), 0644))
 
 	_, err = a.Update(context.Background(), cfg)
@@ -99,9 +94,7 @@ model_reasoning_effort = "high"`, 1)
 	rootSection := strings.SplitN(string(updated), "[agents]", 2)[0]
 	assert.Contains(t, rootSection, `model = "gpt-5.4"`)
 	assert.Contains(t, rootSection, `model_reasoning_effort = "xhigh"`)
-	assert.Contains(t, string(updated), `[profiles.fallback]
-model = "gpt-5.5"
-model_reasoning_effort = "high"`)
+	assert.NotContains(t, string(updated), "[profiles.")
 }
 
 func TestUpdate_PreservesExistingMediumEffortWhenQualityBecomesUltra(t *testing.T) {
