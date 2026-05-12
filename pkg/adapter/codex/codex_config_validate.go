@@ -34,6 +34,7 @@ func (a *Adapter) validateConfig(errs *[]adapter.ValidationError) {
 	}
 	validateDeprecatedConfigKeys(content, errs)
 	validateProjectDocBudget(content, errs)
+	validateBundledCodexPlugins(content, errs)
 }
 
 func appendConfigReadError(errs *[]adapter.ValidationError, err error) {
@@ -112,4 +113,34 @@ func parseProjectDocMaxBytes(content string) (int, bool) {
 		return value, err == nil
 	}
 	return 0, false
+}
+
+func validateBundledCodexPlugins(content string, errs *[]adapter.ValidationError) {
+	if sectionHasEnabledTrue(content, `plugins."browser-use@openai-bundled"`) {
+		return
+	}
+	*errs = append(*errs, adapter.ValidationError{
+		File:    codexConfigRelPath,
+		Message: "Codex bundled browser-use plugin이 enabled 상태가 아님",
+		Level:   "warning",
+	})
+}
+
+func sectionHasEnabledTrue(content, wantSection string) bool {
+	var section string
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if parsedSection, ok := parseCodexConfigSection(trimmed); ok {
+			section = parsedSection
+			continue
+		}
+		if section != wantSection {
+			continue
+		}
+		key, value, ok := parseCodexConfigAssignment(trimmed)
+		if ok && key == "enabled" && value == "true" {
+			return true
+		}
+	}
+	return false
 }

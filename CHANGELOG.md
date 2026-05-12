@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Codex bundled browser plugin enablement** (2026-05-12): generated `.codex/config.toml` now enables `browser-use@openai-bundled` by default so frontend verification sessions can load the in-app Browser plugin without manual project setup. Codex validation now warns when that bundled browser plugin toggle is missing.
+
 - **Executable canary CLI baseline (SPEC-CANARY-001)** (2026-05-10): `auto canary` is now a real Cobra subcommand in addition to generated workflow guidance.
   - `internal/cli/{canary,canary_helpers,canary_browser}.go` — dry-run JSON planning, root workspace build targets, `auto test run --scenario version`, `auto doctor`, URL endpoint/page checks, local frontend Playwright smoke, latest-result persistence, and PASS/WARN/FAIL summary output
   - `internal/cli/root.go` — public command registration

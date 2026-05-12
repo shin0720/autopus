@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/insajin/autopus-adk/pkg/adapter"
 	"github.com/insajin/autopus-adk/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -105,4 +106,44 @@ func TestGenerateConfig_MCPServers(t *testing.T) {
 	assert.Contains(t, content, "max_threads = 6")
 	assert.Contains(t, content, "max_depth = 1")
 	assert.NotContains(t, content, "features.collab")
+}
+
+func TestGenerateConfig_EnablesBundledBrowserUsePlugin(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	a := NewWithRoot(dir)
+	cfg := config.DefaultFullConfig("test-project")
+
+	files, err := a.generateConfig(cfg)
+	require.NoError(t, err)
+	content := string(files[0].Content)
+
+	assert.Contains(t, content, `[plugins."browser-use@openai-bundled"]`)
+	assert.Contains(t, content, "enabled = true")
+}
+
+func TestValidateConfig_WarnsWhenBundledBrowserUsePluginMissing(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	a := NewWithRoot(dir)
+	configPath := filepath.Join(dir, ".codex", "config.toml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
+	require.NoError(t, os.WriteFile(configPath, []byte(`model = "gpt-5.5"
+model_reasoning_effort = "medium"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "cached"
+project_doc_max_bytes = 262144
+`), 0644))
+
+	var errs []adapter.ValidationError
+	a.validateConfig(&errs)
+
+	found := false
+	for _, e := range errs {
+		if e.File == codexConfigRelPath && e.Message == "Codex bundled browser-use plugin이 enabled 상태가 아님" {
+			found = true
+		}
+	}
+	assert.True(t, found, "missing browser-use plugin enablement should warn")
 }
