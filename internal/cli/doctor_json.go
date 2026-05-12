@@ -49,6 +49,7 @@ type doctorDependencyPayload struct {
 
 type doctorRuntimeProcessPayload struct {
 	PID        int    `json:"pid"`
+	PPID       int    `json:"ppid,omitempty"`
 	Executable string `json:"executable"`
 	Command    string `json:"command,omitempty"`
 	Reason     string `json:"reason,omitempty"`
@@ -116,6 +117,7 @@ func collectDoctorJSONReport(cmd *cobra.Command, opts doctorOptions) doctorJSONR
 	report.collectRuleConflictChecks(opts.dir, cfg)
 	report.collectCLIChecks()
 	report.collectQualityGateChecks(cfg)
+	report.collectProviderTransportSmokeChecks(cfg, opts)
 	report.collectHookChecks(opts.dir)
 
 	return report

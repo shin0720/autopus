@@ -191,7 +191,7 @@ func structuredFailureClass(err error) string {
 	case strings.Contains(msg, "timed out"):
 		return "timeout"
 	case strings.Contains(msg, "empty output"):
-		return "execution_error"
+		return "empty_output"
 	case strings.Contains(msg, "invalid reviewer json"):
 		return "execution_error"
 	default:
@@ -210,6 +210,9 @@ func structuredFailureRemediationText(description, provider string) string {
 	msg := strings.ToLower(description)
 	if strings.Contains(msg, "timed out") {
 		return fmt.Sprintf("Increase --timeout or set orchestra.providers.%s.subprocess.timeout, then retry with a smaller review context if needed.", provider)
+	}
+	if strings.Contains(msg, "empty output") {
+		return "Check provider args or prompt transport, then inspect stderr diagnostics before retrying."
 	}
 	if strings.Contains(msg, "invalid reviewer json") {
 		return "Retry with stricter JSON-only prompting or provider-specific structured output settings."

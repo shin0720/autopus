@@ -46,6 +46,19 @@ func TestResolveOrchestraTimeout_ConfigProvenanceAndProviderOverrides(t *testing
 	assert.Equal(t, "autopus.yaml orchestra.providers.gemini.subprocess.timeout", resolved.Providers[1].Source)
 }
 
+func TestResolveOrchestraTimeout_DoesNotUseStartupTimeoutAsExecution(t *testing.T) {
+	t.Parallel()
+
+	conf := &config.OrchestraConf{TimeoutSeconds: 240}
+	resolved := resolveOrchestraTimeout(conf, 180, true, []orchestra.ProviderConfig{
+		{Name: "gemini", StartupTimeout: 20 * time.Second},
+	})
+
+	require.Len(t, resolved.Providers, 1)
+	assert.Equal(t, 180*time.Second, resolved.Providers[0].Duration)
+	assert.Equal(t, "flag --timeout", resolved.Providers[0].Source)
+}
+
 func TestResolveOrchestraTimeout_FlagOverridesConfig(t *testing.T) {
 	t.Parallel()
 

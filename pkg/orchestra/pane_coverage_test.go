@@ -103,6 +103,14 @@ func TestBuildPaneCommand_StdinMode(t *testing.T) {
 	assert.Contains(t, cmd, "tee '/tmp/test.out'")
 }
 
+func TestBuildPaneCommand_StdinModeUsesPipelineGrouping(t *testing.T) {
+	t.Parallel()
+	p := ProviderConfig{Name: "claude", Binary: "claude", Args: []string{"--model", "opus"}, PromptViaArgs: false}
+	cmd := buildPaneCommand(p, "test prompt", "/tmp/test.out")
+	assert.Contains(t, cmd, ") | tee '/tmp/test.out'")
+	assert.NotContains(t, cmd, "\n | tee ")
+}
+
 // TestReadOutputFile_StripsSentinel covers sentinel stripping in readOutputFile.
 func TestReadOutputFile_StripsSentinel(t *testing.T) {
 	t.Parallel()

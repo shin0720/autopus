@@ -165,3 +165,29 @@ func TestRunStructuredSpecReviewOrchestra_PreservesExecutionDiagnostics(t *testi
 	assert.Equal(t, "stderr with cli failure", result.FailedProviders[0].StderrPreview)
 	assert.Equal(t, "transcript stdout", result.FailedProviders[0].OutputPreview)
 }
+
+func TestRunStructuredSpecReviewOrchestra_ClassifiesEmptyOutput(t *testing.T) {
+	backend := &fakeStructuredReviewBackend{
+		outputs: map[string]orchestra.ProviderResponse{
+			"codex": {
+				EmptyOutput: true,
+				Error:       "failed to initialize in-process runtime",
+				Duration:    2 * time.Second,
+			},
+		},
+	}
+
+	origFactory := specReviewBackendFactory
+	specReviewBackendFactory = func() orchestra.ExecutionBackend { return backend }
+	defer func() { specReviewBackendFactory = origFactory }()
+
+	result, err := runStructuredSpecReviewOrchestra(context.Background(), orchestra.OrchestraConfig{
+		Providers:      []orchestra.ProviderConfig{{Name: "codex", Binary: "codex"}},
+		Prompt:         "Review this SPEC",
+		TimeoutSeconds: 10,
+	})
+	require.NoError(t, err)
+	require.Len(t, result.FailedProviders, 1)
+	assert.Equal(t, "empty_output", result.FailedProviders[0].FailureClass)
+	assert.Contains(t, result.FailedProviders[0].NextRemediation, "prompt transport")
+}

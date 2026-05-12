@@ -82,6 +82,48 @@ func TestCollectRuntimeProcessChecksFixTerminatesStaleProcess(t *testing.T) {
 	assert.Equal(t, "pass", report.checks[0].Status)
 }
 
+func TestFindOrphanedOrchestraProviderProcesses(t *testing.T) {
+	restore := stubRuntimeProcessHooks(t,
+		[]runtimeProcessRow{
+			{PID: 41, PPID: 1, Command: "node /opt/homebrew/bin/gemini -m gemini-3.1-pro-preview -p "},
+			{PID: 42, PPID: 1, Command: "codex exec --sandbox workspace-write -m gpt-5.5"},
+			{PID: 43, PPID: 1, Command: "claude --print --model opus"},
+			{PID: 44, PPID: 40, Command: "gemini -m gemini-3.1-pro-preview -p active"},
+			{PID: 45, PPID: 1, Command: "node /opt/homebrew/bin/npm run dev"},
+		},
+		nil,
+		nil,
+		nil,
+	)
+	defer restore()
+
+	stale := findOrphanedOrchestraProviderProcesses()
+
+	require.Len(t, stale, 3)
+	assert.Equal(t, []int{41, 42, 43}, []int{stale[0].PID, stale[1].PID, stale[2].PID})
+	assert.Equal(t, "orphaned orchestra provider process", stale[0].Reason)
+}
+
+func TestCollectRuntimeProcessChecksWarnsOnOrphanedProviderProcess(t *testing.T) {
+	restore := stubRuntimeProcessHooks(t,
+		[]runtimeProcessRow{{PID: 51, PPID: 1, Command: "gemini -m gemini-3.1-pro-preview -p "}},
+		nil,
+		nil,
+		nil,
+	)
+	defer restore()
+
+	report := doctorJSONReport{status: jsonStatusOK}
+	report.collectRuntimeProcessChecks(doctorOptions{})
+
+	assert.Equal(t, jsonStatusWarn, report.status)
+	require.Len(t, report.data.Runtime, 1)
+	assert.Equal(t, 51, report.data.Runtime[0].PID)
+	assert.Equal(t, 1, report.data.Runtime[0].PPID)
+	assert.Len(t, report.warnings, 1)
+	assert.Equal(t, "orphaned_orchestra_provider", report.warnings[0].Code)
+}
+
 func stubRuntimeProcessHooks(
 	t *testing.T,
 	rows []runtimeProcessRow,

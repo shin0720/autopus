@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.47.5] — 2026-05-12
+
 ### Added
+
+- **Provider transport smoke diagnostics** (2026-05-12): `auto doctor --provider-smoke` now runs a bounded text transport smoke against configured spec-review providers and reports per-provider pass/warn/fail status in both terminal and JSON doctor output. The default `auto doctor` path keeps this probe skipped so routine diagnostics remain non-blocking.
+
+- **Orphaned orchestra provider process detection** (2026-05-12): `auto doctor` now identifies orphaned headless provider commands from orchestra/spec-review runs and includes them in stale runtime process warnings and `--fix` cleanup.
 
 - **Codex bundled browser plugin enablement** (2026-05-12): generated `.codex/config.toml` now enables `browser-use@openai-bundled` by default so frontend verification sessions can load the in-app Browser plugin without manual project setup. Codex validation now warns when that bundled browser plugin toggle is missing.
 
@@ -34,6 +40,10 @@ All notable changes to this project will be documented in this file.
   - `internal/cli/mem.go` and `internal/cli/root.go` — public `auto mem rebuild|search|context|status` command namespace with JSON envelopes
   - `internal/cli/init.go` — generated gitignore patterns now include `.autopus/runtime/` so projection files stay runtime-only
   - `pkg/worker/a2a/{heartbeat.go,heartbeat_test.go}` — resolved the stale `@AX:TODO` heartbeat branch-test note by adding non-ok response coverage and removing the annotation during sync lifecycle management
+
+### Fixed
+
+- **Spec review and orchestra provider failure convergence** (2026-05-12): provider-only review failures now stop the spec-review loop without burning all revision retries, empty provider output is classified separately from generic execution errors, pane stdin commands use valid pipeline grouping before `tee`, and provider timeout evidence now reports execution timeout provenance instead of pane startup timeout.
 
 ## [v0.44.0] — 2026-05-05
 

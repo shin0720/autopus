@@ -76,6 +76,48 @@ func TestRunSpecReviewLoop_PromotesReviseWithOnlyAdvisoryFindings(t *testing.T) 
 	assert.Equal(t, spec.VerdictPass, result.Verdict)
 }
 
+func TestRunSpecReviewLoop_StopsAfterProviderOnlyFailures(t *testing.T) {
+	dir := t.TempDir()
+	specID := "SPEC-REVIEW-PROVIDER-FAIL-001"
+	specDir := scaffoldReviewSpec(t, dir, specID)
+	doc, err := spec.Load(specDir)
+	require.NoError(t, err)
+
+	callCount := 0
+	origRunner := specReviewRunOrchestra
+	specReviewRunOrchestra = func(_ context.Context, _ orchestra.OrchestraConfig) (*orchestra.OrchestraResult, error) {
+		callCount++
+		return &orchestra.OrchestraResult{
+			Responses: []orchestra.ProviderResponse{
+				{
+					Provider: "claude",
+					Output:   `{"verdict":"REVISE","summary":"provider failed","findings":[{"severity":"major","category":"completeness","scope_ref":"provider:claude","location":"provider:claude","description":"provider timed out","suggestion":"Retry provider transport."}]}`,
+				},
+				{
+					Provider: "codex",
+					Output:   `{"verdict":"REVISE","summary":"provider failed","findings":[{"severity":"major","category":"completeness","scope_ref":"provider:codex","location":"provider:codex","description":"provider returned empty output","suggestion":"Retry provider transport."}]}`,
+				},
+				{
+					Provider: "gemini",
+					Output:   `{"verdict":"REVISE","summary":"provider failed","findings":[{"severity":"major","category":"completeness","scope_ref":"provider:gemini","location":"provider:gemini","description":"provider timed out","suggestion":"Retry provider transport."}]}`,
+				},
+			},
+			FailedProviders: []orchestra.FailedProvider{
+				{Name: "claude", FailureClass: "timeout", Error: "timed out"},
+				{Name: "codex", FailureClass: "empty_output", Error: "empty output"},
+				{Name: "gemini", FailureClass: "timeout", Error: "timed out"},
+			},
+		}, nil
+	}
+	defer func() { specReviewRunOrchestra = origRunner }()
+
+	result, err := runSpecReviewLoop(reviewLoopParams(specID, specDir), doc, nil)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, spec.VerdictRevise, result.Verdict)
+	assert.Equal(t, 1, callCount, "provider-only failures must not burn every revision timeout")
+}
+
 func reviewLoopParams(specID, specDir string) specReviewLoopParams {
 	return specReviewLoopParams{
 		ctx:          context.Background(),

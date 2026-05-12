@@ -209,7 +209,7 @@ func buildPaneCommand(provider ProviderConfig, prompt, outputFile string) string
 	}
 	// SEC-001: use unique heredoc delimiter to prevent prompt content from terminating it
 	delim := uniqueHeredocDelimiter("PROMPT_EOF", prompt, randomHex())
-	return fmt.Sprintf("%s %s <<'%s'\n%s\n%s\n | tee %s; echo %s >> %s",
+	return fmt.Sprintf("( %s %s <<'%s'\n%s\n%s\n) | tee %s; echo %s >> %s",
 		binary, args, delim, prompt, delim, safeOutput, sentinel, safeOutput)
 }
 

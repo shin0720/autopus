@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -20,20 +21,24 @@ import (
 )
 
 type doctorOptions struct {
-	dir          string
-	fix          bool
-	requiredOnly bool
-	yes          bool
+	dir                  string
+	fix                  bool
+	requiredOnly         bool
+	yes                  bool
+	providerSmoke        bool
+	providerSmokeTimeout time.Duration
 }
 
 func newDoctorCmd() *cobra.Command {
 	var (
-		dir          string
-		fix          bool
-		requiredOnly bool
-		yes          bool
-		jsonOutput   bool
-		format       string
+		dir                  string
+		fix                  bool
+		requiredOnly         bool
+		yes                  bool
+		jsonOutput           bool
+		format               string
+		providerSmoke        bool
+		providerSmokeTimeout time.Duration
 	)
 
 	cmd := &cobra.Command{
@@ -75,10 +80,12 @@ func newDoctorCmd() *cobra.Command {
 			}
 
 			opts := doctorOptions{
-				dir:          dir,
-				fix:          fix,
-				requiredOnly: requiredOnly,
-				yes:          yes,
+				dir:                  dir,
+				fix:                  fix,
+				requiredOnly:         requiredOnly,
+				yes:                  yes,
+				providerSmoke:        providerSmoke,
+				providerSmokeTimeout: providerSmokeTimeout,
 			}
 			if jsonMode {
 				return runDoctorJSON(cmd, opts)
@@ -91,6 +98,8 @@ func newDoctorCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&fix, "fix", false, "Auto-install missing dependencies")
 	cmd.Flags().BoolVar(&requiredOnly, "required-only", false, "Only auto-install required dependencies")
 	cmd.Flags().BoolVar(&yes, "yes", false, "Skip interactive prompts (use with --fix)")
+	cmd.Flags().BoolVar(&providerSmoke, "provider-smoke", false, "Run live provider subprocess transport smoke checks")
+	cmd.Flags().DurationVar(&providerSmokeTimeout, "provider-smoke-timeout", 30*time.Second, "Timeout per provider smoke check")
 	addJSONFlags(cmd, &jsonOutput, &format)
 	return cmd
 }
@@ -215,6 +224,10 @@ func runDoctorText(cmd *cobra.Command, opts doctorOptions) error {
 		allOK = false
 	}
 
+	if !checkProviderTransportSmokeText(out, cfg, opts) {
+		allOK = false
+	}
+
 	tui.SectionHeader(out, "Hooks & Permissions")
 	if !checkHooksPermissions(out, opts.dir) {
 		allOK = false
@@ -225,7 +238,7 @@ func runDoctorText(cmd *cobra.Command, opts doctorOptions) error {
 		if allOK {
 			return "All checks passed"
 		}
-		return "Issues found — run 'auto update' to fix"
+		return "Issues found — review warnings or run 'auto doctor --fix' where offered"
 	}())
 
 	return nil

@@ -18,11 +18,13 @@ import (
 
 type runtimeProcessRow struct {
 	PID     int
+	PPID    int
 	Command string
 }
 
 type staleRuntimeProcess struct {
 	PID        int
+	PPID       int
 	Executable string
 	Command    string
 	Reason     string
@@ -37,16 +39,19 @@ var (
 
 func checkRuntimeProcessesText(w io.Writer, opts doctorOptions) bool {
 	tui.SectionHeader(w, "Runtime Processes")
-	stale := findStaleLegacyWorkerMCPProcesses()
+	staleLegacy := findStaleLegacyWorkerMCPProcesses()
+	orphanedProviders := findOrphanedOrchestraProviderProcesses()
+	stale := append(staleLegacy, orphanedProviders...)
 	if len(stale) == 0 {
 		tui.OK(w, "legacy worker MCP: no stale processes")
+		tui.OK(w, "orchestra providers: no orphaned processes")
 		return true
 	}
 
 	if opts.fix {
 		failed := terminateStaleRuntimeProcesses(stale)
 		if len(failed) == 0 {
-			tui.OK(w, fmt.Sprintf("terminated %d stale legacy worker MCP process(es)", len(stale)))
+			tui.OK(w, fmt.Sprintf("terminated %d stale runtime process(es)", len(stale)))
 			return true
 		}
 		for _, err := range failed {
@@ -56,14 +61,16 @@ func checkRuntimeProcessesText(w io.Writer, opts doctorOptions) bool {
 	}
 
 	for _, proc := range stale {
-		tui.SKIP(w, fmt.Sprintf("stale legacy worker MCP pid=%d exe=%s (%s)", proc.PID, proc.Executable, proc.Reason))
+		tui.SKIP(w, fmt.Sprintf("stale runtime pid=%d %s (%s)", proc.PID, runtimeProcessDisplayRef(proc), proc.Reason))
 	}
-	tui.Bullet(w, "Run 'auto doctor --fix' to terminate stale legacy worker MCP processes.")
+	tui.Bullet(w, "Run 'auto doctor --fix' to terminate stale runtime processes.")
 	return false
 }
 
 func (r *doctorJSONReport) collectRuntimeProcessChecks(opts doctorOptions) {
-	stale := findStaleLegacyWorkerMCPProcesses()
+	staleLegacy := findStaleLegacyWorkerMCPProcesses()
+	orphanedProviders := findOrphanedOrchestraProviderProcesses()
+	stale := append(staleLegacy, orphanedProviders...)
 	for _, proc := range stale {
 		r.data.Runtime = append(r.data.Runtime, doctorRuntimeProcessPayload(proc))
 	}
@@ -74,7 +81,13 @@ func (r *doctorJSONReport) collectRuntimeProcessChecks(opts doctorOptions) {
 			Severity: "info",
 			Status:   "pass",
 			Detail:   "legacy worker MCP: no stale processes",
-		})
+		},
+			jsonCheck{
+				ID:       "doctor.runtime.orchestra_provider",
+				Severity: "info",
+				Status:   "pass",
+				Detail:   "orchestra providers: no orphaned processes",
+			})
 		return
 	}
 
@@ -85,7 +98,7 @@ func (r *doctorJSONReport) collectRuntimeProcessChecks(opts doctorOptions) {
 				ID:       "doctor.runtime.legacy_worker_mcp.cleanup",
 				Severity: "info",
 				Status:   "pass",
-				Detail:   fmt.Sprintf("terminated %d stale legacy worker MCP process(es)", len(stale)),
+				Detail:   fmt.Sprintf("terminated %d stale runtime process(es)", len(stale)),
 			})
 			return
 		}
@@ -106,15 +119,23 @@ func (r *doctorJSONReport) collectRuntimeProcessChecks(opts doctorOptions) {
 	}
 
 	r.status = jsonStatusWarn
-	r.warnings = append(r.warnings, jsonMessage{
-		Code:    "stale_legacy_worker_mcp",
-		Message: fmt.Sprintf("%d stale legacy worker MCP process(es) are still running; run 'auto doctor --fix'", len(stale)),
-	})
+	if len(staleLegacy) > 0 {
+		r.warnings = append(r.warnings, jsonMessage{
+			Code:    "stale_legacy_worker_mcp",
+			Message: fmt.Sprintf("%d stale legacy worker MCP process(es) are still running; run 'auto doctor --fix'", len(staleLegacy)),
+		})
+	}
+	if len(orphanedProviders) > 0 {
+		r.warnings = append(r.warnings, jsonMessage{
+			Code:    "orphaned_orchestra_provider",
+			Message: fmt.Sprintf("%d orphaned orchestra provider process(es) are still running; run 'auto doctor --fix'", len(orphanedProviders)),
+		})
+	}
 	r.checks = append(r.checks, jsonCheck{
-		ID:       "doctor.runtime.legacy_worker_mcp",
+		ID:       "doctor.runtime.stale_processes",
 		Severity: "warning",
 		Status:   "warn",
-		Detail:   fmt.Sprintf("%d stale legacy worker MCP process(es) detected", len(stale)),
+		Detail:   fmt.Sprintf("%d stale runtime process(es) detected", len(stale)),
 	})
 }
 
@@ -137,6 +158,7 @@ func findStaleLegacyWorkerMCPProcesses() []staleRuntimeProcess {
 		if ok, reason := isStaleAutoExecutable(exe); ok {
 			stale = append(stale, staleRuntimeProcess{
 				PID:        row.PID,
+				PPID:       row.PPID,
 				Executable: exe,
 				Command:    row.Command,
 				Reason:     reason,
@@ -151,10 +173,20 @@ func terminateStaleRuntimeProcesses(stale []staleRuntimeProcess) []error {
 	var failed []error
 	for _, proc := range stale {
 		if err := terminateRuntimeProcessID(proc.PID); err != nil {
-			failed = append(failed, fmt.Errorf("terminate stale legacy worker MCP pid=%d: %w", proc.PID, err))
+			failed = append(failed, fmt.Errorf("terminate stale runtime process pid=%d: %w", proc.PID, err))
 		}
 	}
 	return failed
+}
+
+func runtimeProcessDisplayRef(proc staleRuntimeProcess) string {
+	if strings.TrimSpace(proc.Executable) != "" {
+		return "exe=" + proc.Executable
+	}
+	if strings.TrimSpace(proc.Command) != "" {
+		return "cmd=" + proc.Command
+	}
+	return "cmd=<unknown>"
 }
 
 func isLegacyWorkerMCPCommand(command string) bool {
@@ -183,7 +215,7 @@ func normalizeExecutablePath(path string) string {
 }
 
 func listRuntimeProcessesPS() ([]runtimeProcessRow, error) {
-	out, err := exec.Command("ps", "-axo", "pid=,command=").Output()
+	out, err := exec.Command("ps", "-axo", "pid=,ppid=,command=").Output()
 	if err != nil {
 		return nil, err
 	}
@@ -194,16 +226,20 @@ func listRuntimeProcessesPS() ([]runtimeProcessRow, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, " ", 2)
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
 		pid, err := strconv.Atoi(strings.TrimSpace(parts[0]))
 		if err != nil {
 			continue
 		}
-		command := ""
-		if len(parts) > 1 {
-			command = strings.TrimSpace(parts[1])
+		ppid, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			continue
 		}
-		rows = append(rows, runtimeProcessRow{PID: pid, Command: command})
+		command := strings.Join(parts[2:], " ")
+		rows = append(rows, runtimeProcessRow{PID: pid, PPID: ppid, Command: command})
 	}
 	return rows, nil
 }

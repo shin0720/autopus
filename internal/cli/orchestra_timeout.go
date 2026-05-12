@@ -39,15 +39,15 @@ func resolveOrchestraTimeout(conf *config.OrchestraConf, requestedTimeout int, t
 			Duration: fallback,
 			Source:   resolved.Source,
 		}
+		if provider.ExecutionTimeout > 0 {
+			detail.Duration = provider.ExecutionTimeout
+			detail.Source = "provider_execution_timeout"
+		}
 		if conf != nil {
 			if entry, ok := conf.Providers[provider.Name]; ok && entry.Subprocess.Timeout > 0 {
 				detail.Duration = time.Duration(entry.Subprocess.Timeout) * time.Second
 				detail.Source = fmt.Sprintf("autopus.yaml orchestra.providers.%s.subprocess.timeout", provider.Name)
 			}
-		}
-		if detail.Source == resolved.Source && provider.StartupTimeout > 0 {
-			detail.Duration = provider.StartupTimeout
-			detail.Source = fmt.Sprintf("built-in provider default (%s)", provider.Name)
 		}
 		resolved.Providers = append(resolved.Providers, detail)
 	}

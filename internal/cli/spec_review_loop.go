@@ -137,6 +137,11 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 
 		finalResult = merged
 
+		if noProviderReviewsSucceeded(reviews, providerStatuses) {
+			fmt.Fprintf(os.Stderr, "경고: 모든 provider review가 실패하여 리비전 반복을 중단합니다\n")
+			break
+		}
+
 		// PASS: no open or regressed findings
 		if merged.Verdict == spec.VerdictPass && !hasActiveFindings(merged.Findings) {
 			break
@@ -158,6 +163,10 @@ func runSpecReviewLoop(p specReviewLoopParams, doc *spec.SpecDocument, priorFind
 	}
 
 	return finalResult, nil
+}
+
+func noProviderReviewsSucceeded(reviews []spec.ReviewResult, statuses []spec.ProviderStatus) bool {
+	return len(reviews) == 0 && len(statuses) > 0 && spec.CountProviderStatus(statuses, "success") == 0
 }
 
 func effectiveReviewVerdict(verdict spec.ReviewVerdict, reviews []spec.ReviewResult, findings []spec.ReviewFinding) spec.ReviewVerdict {
