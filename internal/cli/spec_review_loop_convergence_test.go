@@ -118,6 +118,44 @@ func TestRunSpecReviewLoop_StopsAfterProviderOnlyFailures(t *testing.T) {
 	assert.Equal(t, 1, callCount, "provider-only failures must not burn every revision timeout")
 }
 
+func TestRunSpecReviewLoop_UsesVerifyModeWhenPriorFindingsExistAtRevisionZero(t *testing.T) {
+	dir := t.TempDir()
+	specID := "SPEC-REVIEW-VERIFY-BOOTSTRAP-001"
+	specDir := scaffoldReviewSpec(t, dir, specID)
+	doc, err := spec.Load(specDir)
+	require.NoError(t, err)
+
+	priorFindings := []spec.ReviewFinding{{
+		ID:          "F-001",
+		Severity:    "major",
+		Category:    spec.FindingCategoryCorrectness,
+		ScopeRef:    "REQ-001",
+		Description: "Existing open finding must be verified, not rediscovered.",
+		Status:      spec.FindingStatusOpen,
+	}}
+
+	var capturedPrompt string
+	origRunner := specReviewRunOrchestra
+	specReviewRunOrchestra = func(_ context.Context, cfg orchestra.OrchestraConfig) (*orchestra.OrchestraResult, error) {
+		capturedPrompt = cfg.Prompt
+		return &orchestra.OrchestraResult{
+			Responses: []orchestra.ProviderResponse{
+				{Provider: "claude", Output: `{"verdict":"PASS","summary":"fixed","finding_statuses":[{"id":"F-001","status":"resolved","reason":"closed"}],"findings":[]}`},
+				{Provider: "codex", Output: `{"verdict":"PASS","summary":"fixed","finding_statuses":[{"id":"F-001","status":"resolved","reason":"closed"}],"findings":[]}`},
+			},
+		}, nil
+	}
+	defer func() { specReviewRunOrchestra = origRunner }()
+
+	result, err := runSpecReviewLoop(reviewLoopParams(specID, specDir), doc, priorFindings)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, spec.VerdictPass, result.Verdict)
+	assert.Contains(t, capturedPrompt, "Instructions (Verify Mode)")
+	assert.Contains(t, capturedPrompt, "Prior Findings Checklist")
+	assert.NotContains(t, capturedPrompt, "Review the SPEC and respond with:")
+}
+
 func reviewLoopParams(specID, specDir string) specReviewLoopParams {
 	return specReviewLoopParams{
 		ctx:          context.Background(),

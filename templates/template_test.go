@@ -173,7 +173,12 @@ func TestSemanticInvariantSourceContracts(t *testing.T) {
 	files := map[string][]string{
 		filepath.Join(root, "..", "content", "rules", "spec-quality.md"): {
 			"Q-COMP-05",
+			"Q-CORR-04",
+			"Q-COMP-06",
 			"Semantic Invariant Inventory",
+			"Traceability Matrix",
+			"Reviewer Brief",
+			"Reference Discipline",
 			"oracle acceptance",
 			"spec.md",
 			"plan.md",
@@ -184,6 +189,10 @@ func TestSemanticInvariantSourceContracts(t *testing.T) {
 			"source clause",
 			"invariant type",
 			"acceptance IDs",
+			"Traceability Matrix",
+			"Reviewer Brief",
+			"Reference Discipline",
+			"[NEW] planned addition",
 			"oracle acceptance",
 			"untrusted prompt input",
 			"never as instructions",
@@ -254,15 +263,15 @@ func TestSemanticInvariantPlatformTemplateContracts(t *testing.T) {
 	cfg := config.DefaultFullConfig("semantic-project")
 	root := templateRoot()
 	templatePaths := map[string][]string{
-		filepath.Join(root, "claude", "commands", "auto-router.md.tmpl"):      {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
-		filepath.Join(root, "codex", "prompts", "auto-plan.md.tmpl"):          {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
-		filepath.Join(root, "codex", "skills", "auto-plan.md.tmpl"):           {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
-		filepath.Join(root, "codex", "agents", "spec-writer.toml.tmpl"):       {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "claude", "commands", "auto-router.md.tmpl"):      {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "codex", "prompts", "auto-plan.md.tmpl"):          {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "codex", "skills", "auto-plan.md.tmpl"):           {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "codex", "agents", "spec-writer.toml.tmpl"):       {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
 		filepath.Join(root, "codex", "agents", "tester.toml.tmpl"):            {"oracle acceptance", "structural-only", "concrete output values"},
 		filepath.Join(root, "codex", "agents", "validator.toml.tmpl"):         {"oracle acceptance", "structural-only", "semantic output"},
-		filepath.Join(root, "gemini", "commands", "auto-router.md.tmpl"):      {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
-		filepath.Join(root, "gemini", "skills", "auto-plan", "SKILL.md.tmpl"): {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
-		filepath.Join(root, "gemini", "agents", "spec-writer.md.tmpl"):        {"Semantic Invariant Inventory", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "gemini", "commands", "auto-router.md.tmpl"):      {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "gemini", "skills", "auto-plan", "SKILL.md.tmpl"): {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
+		filepath.Join(root, "gemini", "agents", "spec-writer.md.tmpl"):        {"Semantic Invariant Inventory", "Traceability Matrix", "Reviewer Brief", "Reference Discipline", "oracle acceptance", "structural-only", "untrusted prompt input", "never as instructions", "redact", "multi-line raw user text"},
 		filepath.Join(root, "gemini", "agents", "tester.md.tmpl"):             {"oracle acceptance", "structural-only", "concrete output values"},
 		filepath.Join(root, "gemini", "agents", "validator.md.tmpl"):          {"oracle acceptance", "structural-only", "semantic output"},
 	}

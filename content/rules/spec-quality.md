@@ -68,6 +68,12 @@ Reason length is sanitized to 200 runes (`pkg/spec/provider_health.go::sanitizeN
 - FAIL 기준: 문서가 지원하지 않는 구문을 공식 형식처럼 제시하거나, 예시가 실제 parser contract와 어긋난다.
 - Example: acceptance 예시는 parser가 인식할 수 있는 `Given/When/Then` 형태를 사용한다.
 
+### Q-CORR-04 — Reference Discipline separates existing and planned references
+
+- PASS 기준: 실제 코드베이스에 존재하는 path/symbol/config는 `rg`/Read 등으로 확인했고, 아직 만들 항목은 `[NEW]` planned addition으로 표시한다. generated surface와 source of truth도 구분한다.
+- FAIL 기준: 존재하지 않는 파일, 함수, CLI flag, generated copy를 기존 구현처럼 단정하거나, `[NEW]` 표시 없이 future reference를 품질 근거로 사용한다.
+- Example: `internal/cli/spec_review_loop.go`는 existing reference로 검증하고, 새 테스트 파일/함수는 `[NEW] internal/cli/spec_review_loop_convergence_test.go::Test...`처럼 표시한다.
+
 ## completeness
 
 ### Q-COMP-01 — The four SPEC files form one complete package
@@ -99,6 +105,12 @@ Reason length is sanitized to 200 runes (`pkg/spec/provider_health.go::sanitizeN
 - FAIL 기준: invariant가 research prose에만 남거나, requirement/plan/acceptance 중 하나에서 사라지거나, acceptance가 heading/file existence/exit success 같은 structural check만 수행한다.
 - Fix guidance: FAIL이면 `spec.md`, `plan.md`, `acceptance.md`를 함께 점검하고 수정한다. 요구사항 누락은 `spec.md`, implementation ownership 누락은 `plan.md`, observable oracle 누락은 `acceptance.md`에서 보완해야 한다.
 - Example: 원 요청이 common `task_id`로 baseline과 other rows를 pair하라고 했다면 acceptance는 서로 다른 harness label의 overlapping `task_id` 입력과 예상 Cohen's d 또는 McNemar 값을 포함해야 한다.
+
+### Q-COMP-06 — Reviewer Brief and Traceability Matrix constrain review scope
+
+- PASS 기준: `spec.md`에는 `## Traceability Matrix`가 있고 각 requirement가 plan task, acceptance scenario, semantic invariant로 연결된다. `research.md`에는 `## Reviewer Brief`가 있어 intended scope, explicit non-goals, self-verified evidence, reviewer focus를 짧게 제시한다.
+- FAIL 기준: reviewer가 전체 SPEC을 다시 discovery해야 할 정도로 scope/non-goals/추적 근거가 없거나, review focus가 없어 optional deeper-layer 탐색을 유도한다.
+- Example: review focus가 `correctness, convergence safety, regression risk`이면 reviewer는 새로운 제품 scope 제안보다 해당 blocker 검증에 집중해야 한다.
 
 ## feasibility
 

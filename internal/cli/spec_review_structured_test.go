@@ -67,6 +67,21 @@ func TestRunStructuredSpecReviewOrchestra_InjectsReviewerContract(t *testing.T) 
 	assert.Contains(t, backend.requests[0].Prompt, "Required JSON schema")
 }
 
+func TestBuildStructuredSpecReviewPrompt_UsesScopedContractInVerifyMode(t *testing.T) {
+	prompt := buildStructuredSpecReviewPrompt("### Instructions (Verify Mode)\n\nFor each finding below, report its current status.", "{}", false)
+
+	assert.Contains(t, prompt, "In verify mode, scope the review to the prior findings")
+	assert.Contains(t, prompt, "Do not perform a fresh full-SPEC discovery pass")
+	assert.NotContains(t, prompt, "Review the full SPEC in one pass")
+}
+
+func TestBuildStructuredSpecReviewPrompt_UsesFullDiscoveryContractInDiscoverMode(t *testing.T) {
+	prompt := buildStructuredSpecReviewPrompt("### Instructions\n\nReview the SPEC and respond with:", "{}", false)
+
+	assert.Contains(t, prompt, "Review the full SPEC in one pass")
+	assert.NotContains(t, prompt, "Do not perform a fresh full-SPEC discovery pass")
+}
+
 func TestRunStructuredSpecReviewOrchestra_DowngradesMalformedOutput(t *testing.T) {
 	backend := &fakeStructuredReviewBackend{
 		outputs: map[string]orchestra.ProviderResponse{

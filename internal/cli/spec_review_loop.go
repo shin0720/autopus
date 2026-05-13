@@ -215,7 +215,7 @@ func buildPromptOpts(priorFindings []spec.ReviewFinding, revision int, specDir s
 		PassCriteria:       gate.PassCriteria,
 		DocContextMaxLines: gate.DocContextMaxLines,
 	}
-	if revision == 0 || len(priorFindings) == 0 {
+	if len(priorFindings) == 0 {
 		opts.Mode = spec.ReviewModeDiscover
 		return opts
 	}

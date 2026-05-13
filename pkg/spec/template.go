@@ -123,6 +123,11 @@ IF [비정상 상태] THEN 시스템은 [대응]합니다.
 - [ ] 인수 기준 1
 - [ ] 인수 기준 2
 
+## Traceability Matrix
+
+| Requirement | Plan Task | Acceptance Scenario | Semantic Invariant |
+|-------------|-----------|---------------------|--------------------|
+
 ## Out of Scope
 
 이 SPEC의 범위 밖 항목을 나열합니다.
@@ -184,6 +189,7 @@ func generateAcceptanceMd(specID, title string) string {
 Given [초기 상태]
 When [동작]
 Then [예상 결과]
+And [구체 기대 출력/상태/값]
 
 ### Scenario 2: [시나리오 제목]
 
@@ -198,6 +204,10 @@ Then [예상 결과]
 Given [비정상 상태]
 When [동작]
 Then [에러 처리]
+
+## Oracle Acceptance Notes
+
+- Must 시나리오는 파일 존재, heading, exit code, non-empty output만으로 닫지 않고 concrete expected output 또는 explicit tolerance를 포함합니다.
 
 ## Definition of Done
 
@@ -232,6 +242,25 @@ func generateResearchMd(specID, title string) string {
 
 `+"`auto arch enforce`"+`로 확인한 아키텍처 정합성 결과입니다.
 
+## Reference Discipline
+
+| Reference | Type | Verification |
+|-----------|------|--------------|
+| [path or symbol] | existing / [NEW] planned addition | existing refs verified with rg/read; [NEW] excluded from existing-reference checks |
+
+## Reviewer Brief
+
+- Intended scope: [이 SPEC가 닫는 결과]
+- Explicit non-goals: [리뷰어가 새 scope로 확장하지 말아야 할 항목]
+- Self-verified: Traceability Matrix, Semantic Invariant Inventory, oracle acceptance, existing/[NEW] reference discipline
+- Reviewer should focus on: correctness, convergence safety, regression risk
+
+## Semantic Invariant Inventory
+
+| ID | source clause | invariant type | affected outputs | acceptance IDs |
+|----|---------------|----------------|------------------|----------------|
+| INV-001 | [sanitized user request evidence] | [ordering / parser / formula / state transition] | [stdout/API field/file content] | S1 |
+
 ## Key Findings
 
 리서치 과정에서 발견된 주요 사항을 정리합니다.
@@ -239,5 +268,10 @@ func generateResearchMd(specID, title string) string {
 ## Recommendations
 
 구현 시 참고할 권고사항을 나열합니다.
+
+## Self-Verify Summary
+
+- Q-CORR-04 | status: PASS | attempt: 1 | files: research.md | reason: existing/[NEW] reference discipline recorded
+- Q-COMP-06 | status: PASS | attempt: 1 | files: spec.md, research.md | reason: Reviewer Brief and Traceability Matrix present
 `, specID, title)
 }

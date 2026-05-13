@@ -32,6 +32,7 @@ func TestBuildReviewPrompt_VerifyMode_ContainsChecklist(t *testing.T) {
 	assert.Contains(t, prompt, "F-002", "second finding ID must appear in checklist")
 	assert.Contains(t, prompt, "FINDING_STATUS", "verify mode must instruct provider to report FINDING_STATUS")
 	assert.Contains(t, prompt, "REQ-001", "ScopeRef must appear in checklist")
+	assert.Contains(t, prompt, "Reviewer Brief", "verify mode must honor reviewer brief scope control")
 }
 
 func TestBuildReviewPrompt_VerifyMode_EmptyPriorFindings(t *testing.T) {
@@ -91,6 +92,7 @@ func TestBuildReviewPrompt_DiscoverMode_NoStaticFindings(t *testing.T) {
 
 	assert.NotContains(t, prompt, "Already Discovered Static Analysis Issues")
 	assert.Contains(t, prompt, "VERDICT")
+	assert.Contains(t, prompt, "Reviewer Brief", "discover mode must honor reviewer brief scope control")
 }
 
 // Tests for parseVerifyFindings (reviewer.go) — was 0% covered

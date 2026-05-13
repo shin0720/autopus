@@ -159,6 +159,7 @@ func TestScaffold_SpecMdHasStructuredSections(t *testing.T) {
 	assert.Contains(t, body, "## Background")
 	assert.Contains(t, body, "## Requirements")
 	assert.Contains(t, body, "## Acceptance Criteria")
+	assert.Contains(t, body, "## Traceability Matrix")
 	assert.Contains(t, body, "## Out of Scope")
 	assert.Contains(t, body, "## Traceability")
 }
@@ -200,6 +201,8 @@ func TestScaffold_AcceptanceMdHasGherkin(t *testing.T) {
 	// 필수 섹션 확인
 	assert.Contains(t, body, "## Test Scenarios")
 	assert.Contains(t, body, "## Edge Cases")
+	assert.Contains(t, body, "## Oracle Acceptance Notes")
+	assert.Contains(t, body, "concrete expected output")
 	assert.Contains(t, body, "## Definition of Done")
 }
 
@@ -218,6 +221,11 @@ func TestScaffold_ResearchMdHasSections(t *testing.T) {
 	assert.Contains(t, body, "## Codebase Analysis")
 	assert.Contains(t, body, "## Lore Decisions")
 	assert.Contains(t, body, "## Architecture Compliance")
+	assert.Contains(t, body, "## Reference Discipline")
+	assert.Contains(t, body, "existing / [NEW] planned addition")
+	assert.Contains(t, body, "## Reviewer Brief")
+	assert.Contains(t, body, "## Semantic Invariant Inventory")
+	assert.Contains(t, body, "## Self-Verify Summary")
 	assert.Contains(t, body, "## Key Findings")
 	assert.Contains(t, body, "## Recommendations")
 }

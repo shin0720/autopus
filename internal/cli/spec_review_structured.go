@@ -105,7 +105,12 @@ func buildStructuredSpecReviewPrompt(basePrompt, schemaJSON string, inlineSchema
 	sb.WriteString("\n\n### Structured Response Contract\n\n")
 	sb.WriteString("Return ONLY valid JSON. Do NOT return progress notes, partial summaries, markdown fences, or prose before/after the JSON.\n")
 	sb.WriteString("If you are blocked or the scope is too large, still return valid JSON with `verdict: \"REVISE\"` and describe the blocker in `summary` plus at least one finding.\n")
-	sb.WriteString("Review the full SPEC in one pass and include all actionable findings together; do not drip-feed optional suggestions across revisions.\n")
+	if isVerifyReviewPrompt(basePrompt) {
+		sb.WriteString("In verify mode, scope the review to the prior findings and checklist statuses requested above.\n")
+		sb.WriteString("Do not perform a fresh full-SPEC discovery pass. Add new findings only for critical/security regressions or behavior newly broken by the revision.\n")
+	} else {
+		sb.WriteString("Review the full SPEC in one pass and include all actionable findings together; do not drip-feed optional suggestions across revisions.\n")
+	}
 	sb.WriteString("Use `severity: \"suggestion\"` only for advisory feedback. Suggestion-only feedback must not be the reason for `verdict: \"REVISE\"`.\n")
 	sb.WriteString("Use these fields:\n")
 	sb.WriteString("- `verdict`: `PASS`, `REVISE`, or `REJECT`\n")
@@ -119,6 +124,10 @@ func buildStructuredSpecReviewPrompt(basePrompt, schemaJSON string, inlineSchema
 		sb.WriteString("\n```\n")
 	}
 	return sb.String()
+}
+
+func isVerifyReviewPrompt(prompt string) bool {
+	return strings.Contains(prompt, "Instructions (Verify Mode)")
 }
 
 func malformedStructuredOutcome(provider string, err error, sourceResp *orchestra.ProviderResponse) specReviewStructuredOutcome {
