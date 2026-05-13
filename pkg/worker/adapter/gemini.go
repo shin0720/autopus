@@ -56,7 +56,7 @@ func (a *GeminiAdapter) BuildCommand(ctx context.Context, task TaskConfig) *exec
 	for k, v := range task.EnvVars {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
-	cmd.Env = env
+	cmd.Env = EnvironWithToolPath(env)
 
 	return cmd
 }

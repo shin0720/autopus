@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // wellKnownDirs lists directories where CLI tools are commonly installed.
@@ -49,4 +50,46 @@ func ResolveBinary(name string) string {
 	}
 	// Fallback: return bare name, let exec.Command fail with a clear error.
 	return name
+}
+
+// EnvironWithToolPath prepends well-known CLI install directories to PATH.
+// GUI-launched desktop apps often inherit a restricted PATH, while npm-based
+// provider shims such as Codex resolve node through /usr/bin/env.
+func EnvironWithToolPath(env []string) []string {
+	currentPath := envValue(env, "PATH")
+	parts := append([]string{}, wellKnownDirs...)
+	if currentPath != "" {
+		parts = append(parts, strings.Split(currentPath, string(os.PathListSeparator))...)
+	}
+
+	seen := make(map[string]bool, len(parts))
+	merged := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" || seen[part] {
+			continue
+		}
+		seen[part] = true
+		merged = append(merged, part)
+	}
+
+	next := make([]string, 0, len(env)+1)
+	for _, item := range env {
+		if strings.HasPrefix(item, "PATH=") {
+			continue
+		}
+		next = append(next, item)
+	}
+	next = append(next, "PATH="+strings.Join(merged, string(os.PathListSeparator)))
+	return next
+}
+
+func envValue(env []string, key string) string {
+	prefix := key + "="
+	for i := len(env) - 1; i >= 0; i-- {
+		if strings.HasPrefix(env[i], prefix) {
+			return strings.TrimPrefix(env[i], prefix)
+		}
+	}
+	return ""
 }
