@@ -19,9 +19,13 @@ func TestRegistryContainsRequiredAdapters(t *testing.T) {
 		assert.NotEmpty(t, item.DefaultLanes)
 		assert.NotEmpty(t, item.ArtifactCapabilities)
 	}
-	for _, id := range []string{"go-test", "node-script", "vitest", "jest", "playwright", "pytest", "cargo-test", "auto-test-run", "auto-verify", "canary-template", "custom-command"} {
+	for _, id := range []string{"go-test", "node-script", "vitest", "jest", "playwright", "gui-explore", "pytest", "cargo-test", "auto-test-run", "auto-verify", "canary-template", "custom-command"} {
 		assert.True(t, ids[id], id)
 	}
+	gui, ok := ByID("gui-explore")
+	require.True(t, ok)
+	assert.Contains(t, gui.ArtifactCapabilities, "journey_graph")
+	assert.Contains(t, gui.ArtifactCapabilities, "screenshot_quarantine_ref")
 }
 
 func TestDetectFindsProjectAdapters(t *testing.T) {

@@ -11,6 +11,7 @@ type Pack struct {
 	Artifacts           []Artifact          `yaml:"artifacts" json:"artifacts"`
 	SourceRefs          SourceRefs          `yaml:"source_refs" json:"source_refs"`
 	ProfileRequirements ProfileRequirements `yaml:"profile_requirements" json:"profile_requirements"`
+	GUI                 GUIPolicy           `yaml:"gui,omitempty" json:"gui,omitempty"`
 	PassFailAuthority   string              `yaml:"pass_fail_authority,omitempty" json:"pass_fail_authority,omitempty"`
 	InputSource         string              `yaml:"source,omitempty" json:"input_source,omitempty"`
 	Source              string              `yaml:"-" json:"source"`
@@ -49,6 +50,24 @@ type SourceRefs struct {
 
 type ProfileRequirements struct {
 	Capabilities []string `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
+}
+
+type GUIPolicy struct {
+	AllowedOrigins    []string             `yaml:"allowed_origins,omitempty" json:"allowed_origins,omitempty"`
+	ForbiddenActions  []string             `yaml:"forbidden_actions,omitempty" json:"forbidden_actions,omitempty"`
+	SelectorStrategy  string               `yaml:"selector_strategy,omitempty" json:"selector_strategy,omitempty"`
+	NetworkPolicy     GUINetworkPolicy     `yaml:"network_policy,omitempty" json:"network_policy,omitempty"`
+	ArtifactRetention GUIArtifactRetention `yaml:"artifact_retention,omitempty" json:"artifact_retention,omitempty"`
+}
+
+type GUINetworkPolicy struct {
+	Mode          string `yaml:"mode,omitempty" json:"mode,omitempty"`
+	RetainHeaders bool   `yaml:"retain_headers,omitempty" json:"retain_headers,omitempty"`
+	RetainBodies  bool   `yaml:"retain_bodies,omitempty" json:"retain_bodies,omitempty"`
+}
+
+type GUIArtifactRetention struct {
+	PublishRaw bool `yaml:"publish_raw,omitempty" json:"publish_raw,omitempty"`
 }
 
 type ValidationError struct {

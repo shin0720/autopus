@@ -14,16 +14,17 @@ import (
 )
 
 type commandResult struct {
-	Status         string
-	ExitCode       int
-	FailureSummary string
-	StdoutText     string
-	StdoutPath     string
-	StderrPath     string
-	StartedAt      time.Time
-	EndedAt        time.Time
-	DurationMS     int64
-	Command        string
+	Status            string
+	ExitCode          int
+	FailureSummary    string
+	StdoutText        string
+	StdoutPath        string
+	StderrPath        string
+	StartedAt         time.Time
+	EndedAt           time.Time
+	DurationMS        int64
+	Command           string
+	GUIGuardReadyPath string
 }
 
 func runCommand(projectDir string, pack journey.Pack, artifactDir string) commandResult {
@@ -36,6 +37,14 @@ func runCommand(projectDir string, pack journey.Pack, artifactDir string) comman
 		result.FailureSummary = "empty command"
 		return finishCommandResult(result, artifactDir, nil, nil)
 	}
+	guiInput, err := prepareGUIPolicyInput(pack, artifactDir)
+	if err != nil {
+		result.Status = "blocked"
+		result.ExitCode = -1
+		result.FailureSummary = err.Error()
+		return finishCommandResult(result, artifactDir, nil, nil)
+	}
+	result.GUIGuardReadyPath = guiInput.GuardReadyPath
 	timeout := 60 * time.Second
 	if parsed, err := time.ParseDuration(pack.Command.Timeout); err == nil && parsed > 0 {
 		timeout = parsed
@@ -44,11 +53,17 @@ func runCommand(projectDir string, pack journey.Pack, artifactDir string) comman
 	defer cancel()
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Dir = filepath.Join(projectDir, pack.Command.CWD)
-	cmd.Env = allowedEnv(projectDir, pack.Command.EnvAllowlist)
+	cmd.Env = appendEnvOverrides(allowedEnv(projectDir, pack.Command.EnvAllowlist), guiInput.Env)
+	if err := verifyGUIGuardPreflight(ctx, cmd.Dir, cmd.Env, guiInput, args); err != nil {
+		result.Status = "blocked"
+		result.ExitCode = -1
+		result.FailureSummary = err.Error()
+		return finishCommandResult(result, artifactDir, nil, nil)
+	}
 	stdout, stderr := strings.Builder{}, strings.Builder{}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
 		result.Status = "blocked"
 		result.ExitCode = -1

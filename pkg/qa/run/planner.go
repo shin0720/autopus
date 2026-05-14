@@ -31,6 +31,7 @@ func BuildPlan(opts Options) (Plan, error) {
 		Deferred:                   []SetupGap{},
 		AdapterMetadata:            adapter.WithSetupGaps(),
 		CandidateJourneys:          candidatePayloads(candidates),
+		ArtifactPreviewRefs:        []ArtifactPreview{},
 	}
 	for _, pack := range packs {
 		plan.ConfiguredJourneys = append(plan.ConfiguredJourneys, pack.ID)
@@ -44,6 +45,7 @@ func BuildPlan(opts Options) (Plan, error) {
 			plan.SelectedJourneys = append(plan.SelectedJourneys, pack.ID)
 			plan.SelectedAdapters = appendUnique(plan.SelectedAdapters, pack.Adapter.ID)
 			plan.ManifestOutputPreviewPaths = append(plan.ManifestOutputPreviewPaths, filepath.Join(opts.Output, "<run-id>", safeSegment(pack.ID), "manifest.json"))
+			plan.ArtifactPreviewRefs = append(plan.ArtifactPreviewRefs, artifactPreviewsForPack(pack)...)
 		}
 	}
 	for _, candidate := range candidates {
@@ -59,6 +61,7 @@ func BuildPlan(opts Options) (Plan, error) {
 		plan.SelectedJourneys = appendUnique(plan.SelectedJourneys, candidate.JourneyID)
 		plan.SelectedAdapters = appendUnique(plan.SelectedAdapters, candidate.Adapter)
 		plan.ManifestOutputPreviewPaths = append(plan.ManifestOutputPreviewPaths, filepath.Join(opts.Output, "<run-id>", safeSegment(candidate.JourneyID), "manifest.json"))
+		plan.ArtifactPreviewRefs = append(plan.ArtifactPreviewRefs, artifactPreviewsForCandidate(candidate)...)
 	}
 	for _, detection := range detections {
 		plan.DetectedAdapters = append(plan.DetectedAdapters, detection.AdapterID)

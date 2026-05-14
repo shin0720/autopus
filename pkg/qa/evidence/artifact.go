@@ -9,7 +9,7 @@ import (
 
 func sanitizeArtifact(artifact ArtifactRef, outputDir string) (ArtifactRef, error) {
 	if !isTextArtifactPath(artifact.Path) {
-		return ArtifactRef{}, fmt.Errorf("binary artifact %s must be represented by a sanitized text summary before publication", artifact.Path)
+		return ArtifactRef{}, fmt.Errorf("binary artifact %s must be represented by a sanitized text summary before publication", RedactText(artifact.Path))
 	}
 	body, err := os.ReadFile(artifact.Path)
 	if err != nil {

@@ -147,6 +147,8 @@ func surfaceForAdapter(id string) string {
 		return "package"
 	case "playwright", "auto-verify":
 		return "frontend"
+	case "gui-explore":
+		return "frontend"
 	case "custom-command":
 		return "custom"
 	case "auto-test-run", "canary-template":

@@ -135,6 +135,7 @@ func TestValidateCommandAcceptsBuiltInRunnerShapes(t *testing.T) {
 		{adapterID: "go-test", run: "go test ./..."},
 		{adapterID: "node-script", run: "npm test"},
 		{adapterID: "node-script", run: "pnpm test"},
+		{adapterID: "gui-explore", run: "npm exec playwright test"},
 		{adapterID: "pytest", run: "pytest"},
 		{adapterID: "pytest", run: "python -m pytest"},
 		{adapterID: "cargo-test", run: "cargo test"},
@@ -145,6 +146,54 @@ func TestValidateCommandAcceptsBuiltInRunnerShapes(t *testing.T) {
 			t.Parallel()
 			err := ValidateCommand(tt.adapterID, Command{Run: tt.run, CWD: ".", Timeout: "60s"}, nil, t.TempDir(), "qa_journey")
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestValidateGUIExplorePolicy(t *testing.T) {
+	t.Parallel()
+
+	base := Pack{
+		ID:      "gui-smoke",
+		Lanes:   []string{"gui-explore"},
+		Surface: "frontend",
+		Adapter: AdapterRef{ID: "gui-explore"},
+		Command: Command{Run: "npm exec playwright test", CWD: ".", Timeout: "60s"},
+		Checks:  []Check{{ID: "gui", Type: "gui_exploration"}},
+		GUI: GUIPolicy{
+			AllowedOrigins:    []string{"http://127.0.0.1:4173"},
+			ForbiddenActions:  []string{"mutation", "payment", "email_send"},
+			SelectorStrategy:  "role-first",
+			NetworkPolicy:     GUINetworkPolicy{Mode: "summary-only"},
+			ArtifactRetention: GUIArtifactRetention{PublishRaw: false},
+		},
+	}
+
+	require.NoError(t, Validate(base, t.TempDir()))
+
+	tests := []struct {
+		name   string
+		mutate func(*Pack)
+	}{
+		{name: "missing origins", mutate: func(pack *Pack) { pack.GUI.AllowedOrigins = nil }},
+		{name: "origin path", mutate: func(pack *Pack) { pack.GUI.AllowedOrigins = []string{"http://127.0.0.1:4173/app"} }},
+		{name: "missing forbidden actions", mutate: func(pack *Pack) { pack.GUI.ForbiddenActions = nil }},
+		{name: "selector", mutate: func(pack *Pack) { pack.GUI.SelectorStrategy = "css-first" }},
+		{name: "raw headers", mutate: func(pack *Pack) { pack.GUI.NetworkPolicy.RetainHeaders = true }},
+		{name: "raw bodies", mutate: func(pack *Pack) { pack.GUI.NetworkPolicy.RetainBodies = true }},
+		{name: "raw artifacts", mutate: func(pack *Pack) { pack.GUI.ArtifactRetention.PublishRaw = true }},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			pack := base
+			tt.mutate(&pack)
+			err := Validate(pack, t.TempDir())
+			require.Error(t, err)
+			var validationErr *ValidationError
+			require.True(t, errors.As(err, &validationErr))
+			assert.Equal(t, "qa_journey_gui_policy_invalid", validationErr.Code)
 		})
 	}
 }

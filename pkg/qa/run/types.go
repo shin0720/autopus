@@ -28,7 +28,17 @@ type Plan struct {
 	ManifestOutputPreviewPaths []string           `json:"manifest_output_preview_paths"`
 	AdapterMetadata            []adapter.Metadata `json:"adapter_metadata,omitempty"`
 	CandidateJourneys          []CandidateJourney `json:"candidate_journeys,omitempty"`
+	ArtifactPreviewRefs        []ArtifactPreview  `json:"artifact_preview_refs,omitempty"`
 	DryRun                     bool               `json:"dry_run,omitempty"`
+}
+
+type ArtifactPreview struct {
+	JourneyID   string `json:"journey_id"`
+	Adapter     string `json:"adapter"`
+	Kind        string `json:"kind"`
+	Path        string `json:"path"`
+	Publishable bool   `json:"publishable"`
+	Redaction   string `json:"redaction"`
 }
 
 type CandidateJourney struct {
@@ -66,21 +76,25 @@ type AdapterResult struct {
 }
 
 type Result struct {
-	RunID               string          `json:"run_id"`
-	Status              string          `json:"status"`
-	DryRun              bool            `json:"dry_run,omitempty"`
-	SelectedJourneys    []string        `json:"selected_journeys"`
-	SelectedAdapters    []string        `json:"selected_adapters"`
-	OutputRoot          string          `json:"output_root"`
-	RunIndexPath        string          `json:"run_index_path,omitempty"`
-	ManifestPaths       []string        `json:"manifest_paths"`
-	FailedChecks        []string        `json:"failed_checks"`
-	Checks              []IndexCheck    `json:"checks,omitempty"`
-	AdapterResults      []AdapterResult `json:"adapter_results"`
-	SetupGaps           []SetupGap      `json:"setup_gaps"`
-	FeedbackAvailable   bool            `json:"feedback_available"`
-	FeedbackBundlePaths []string        `json:"feedback_bundle_paths"`
-	RedactionStatus     RedactionStatus `json:"redaction_status"`
+	RunID               string             `json:"run_id"`
+	Status              string             `json:"status"`
+	DryRun              bool               `json:"dry_run,omitempty"`
+	SelectedJourneys    []string           `json:"selected_journeys"`
+	SelectedAdapters    []string           `json:"selected_adapters"`
+	OutputRoot          string             `json:"output_root"`
+	RunIndexPreviewPath string             `json:"run_index_preview_path,omitempty"`
+	RunIndexPath        string             `json:"run_index_path,omitempty"`
+	ManifestPreviews    []string           `json:"manifest_output_preview_paths,omitempty"`
+	ArtifactPreviews    []ArtifactPreview  `json:"artifact_preview_refs,omitempty"`
+	CandidateJourneys   []CandidateJourney `json:"candidate_journeys,omitempty"`
+	ManifestPaths       []string           `json:"manifest_paths"`
+	FailedChecks        []string           `json:"failed_checks"`
+	Checks              []IndexCheck       `json:"checks,omitempty"`
+	AdapterResults      []AdapterResult    `json:"adapter_results"`
+	SetupGaps           []SetupGap         `json:"setup_gaps"`
+	FeedbackAvailable   bool               `json:"feedback_available"`
+	FeedbackBundlePaths []string           `json:"feedback_bundle_paths"`
+	RedactionStatus     RedactionStatus    `json:"redaction_status"`
 }
 
 type RedactionStatus struct {

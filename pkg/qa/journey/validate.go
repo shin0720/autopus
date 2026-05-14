@@ -24,6 +24,9 @@ func Validate(pack Pack, projectDir string) error {
 	if len(pack.Checks) == 0 {
 		return validationError("qa_journey_invalid", "missing checks")
 	}
+	if err := validateGUIPolicy(pack); err != nil {
+		return err
+	}
 	return ValidateCommand(pack.Adapter.ID, pack.Command, pack.Artifacts, projectDir, "qa_journey")
 }
 
@@ -90,6 +93,8 @@ func validateAdapterArgv(adapterID string, argv []string) error {
 	case "jest":
 		return validateJSRunnerArgv(argv, "jest")
 	case "playwright":
+		return validateJSRunnerArgv(argv, "playwright", "test")
+	case "gui-explore":
 		return validateJSRunnerArgv(argv, "playwright", "test")
 	case "pytest":
 		if executableIs(argv[0], "pytest") {

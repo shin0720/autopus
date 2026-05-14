@@ -51,6 +51,61 @@ func TestQARunCmd_DryRunDoesNotWriteRunIndex(t *testing.T) {
 	assert.NoDirExists(t, output)
 }
 
+func TestQAExploreCmd_DryRunSelectsGUIAdapter(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	journeyDir := filepath.Join(dir, ".autopus", "qa", "journeys")
+	require.NoError(t, os.MkdirAll(journeyDir, 0o755))
+	body := []byte(`id: gui-smoke
+title: GUI smoke
+surface: frontend
+lanes: [gui-explore]
+adapter:
+  id: gui-explore
+command:
+  run: npm exec playwright test
+  cwd: .
+  timeout: 60s
+checks:
+  - id: gui
+    type: gui_exploration
+artifacts:
+  - kind: journey_graph
+    path: .autopus/qa/gui/journey-graph.json
+  - kind: network_summary
+    path: .autopus/qa/gui/network-summary.json
+gui:
+  allowed_origins: ["http://127.0.0.1:4173"]
+  forbidden_actions: ["mutation", "payment", "email_send"]
+  selector_strategy: role-first
+  network_policy:
+    mode: summary-only
+  artifact_retention:
+    publish_raw: false
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(journeyDir, "gui-smoke.yaml"), body, 0o644))
+	output := filepath.Join(dir, "runs")
+
+	cmd := newQACmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"explore", "--project-dir", dir, "--output", output, "--dry-run", "--format", "json"})
+
+	require.NoError(t, cmd.Execute())
+	data := decodeJSONMap(t, out.Bytes())["data"].(map[string]any)
+	assert.Equal(t, true, data["dry_run"])
+	assert.Contains(t, stringSlice(data["selected_adapters"]), "gui-explore")
+	assert.Contains(t, stringSlice(data["selected_journeys"]), "gui-smoke")
+	assert.NotEmpty(t, data["run_index_preview_path"])
+	assert.NotEmpty(t, data["manifest_output_preview_paths"])
+	artifactRefs, ok := data["artifact_preview_refs"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, artifactRefs)
+	assert.Contains(t, artifactRefs[0].(map[string]any)["path"].(string), ".autopus/qa/gui/")
+	assert.NoDirExists(t, output)
+}
+
 func TestQACommandsRejectGeneratedSurfaceOutput(t *testing.T) {
 	t.Parallel()
 

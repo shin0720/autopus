@@ -32,7 +32,7 @@ func Execute(opts Options) (Result, error) {
 	}
 	result := initialResult(opts, plan, runID, runDir)
 	for _, pack := range packs {
-		adapterResult, manifestPath, check := executePack(opts, pack, filepath.Join(runDir, "_raw"), runDir)
+		adapterResult, manifestPath, checks := executePack(opts, pack, filepath.Join(runDir, "_raw"), runDir)
 		result.AdapterResults = append(result.AdapterResults, adapterResult)
 		if adapterResult.SetupGap != nil {
 			result.SetupGaps = append(result.SetupGaps, *adapterResult.SetupGap)
@@ -40,12 +40,18 @@ func Execute(opts Options) (Result, error) {
 		if manifestPath != "" {
 			result.ManifestPaths = append(result.ManifestPaths, manifestPath)
 		}
-		result.Checks = append(result.Checks, check)
-		if check.Status == "failed" || check.Status == "blocked" {
-			result.FailedChecks = append(result.FailedChecks, check.ID)
+		for _, check := range checks {
+			result.Checks = append(result.Checks, check)
+			if check.Status == "failed" || check.Status == "blocked" {
+				result.FailedChecks = append(result.FailedChecks, check.ID)
+			}
 		}
 	}
 	result.Status = aggregateStatus(result)
+	if hasBlockedAdapter(result.AdapterResults) {
+		result.Status = "blocked"
+	}
+	result = sanitizeResult(result)
 	if opts.FeedbackTo != "" {
 		paths, err := writeFeedbackBundles(opts, result.ManifestPaths)
 		if err != nil {
@@ -53,6 +59,7 @@ func Execute(opts Options) (Result, error) {
 		}
 		result.FeedbackBundlePaths = paths
 		result.FeedbackAvailable = len(result.FeedbackBundlePaths) > 0
+		result = sanitizeResult(result)
 	}
 	if err := writeIndex(result, opts, started, time.Now().UTC()); err != nil {
 		return result, err
@@ -74,17 +81,21 @@ func validFeedbackTarget(target string) bool {
 
 func dryRunResult(plan Plan) Result {
 	return Result{
-		Status:           "passed",
-		DryRun:           true,
-		SelectedJourneys: plan.SelectedJourneys,
-		SelectedAdapters: plan.SelectedAdapters,
-		OutputRoot:       plan.OutputRoot,
-		ManifestPaths:    []string{},
-		FailedChecks:     []string{},
-		Checks:           []IndexCheck{},
-		AdapterResults:   []AdapterResult{},
-		SetupGaps:        plan.SetupGaps,
-		RedactionStatus:  RedactionStatus{Status: "passed"},
+		Status:              "passed",
+		DryRun:              true,
+		SelectedJourneys:    plan.SelectedJourneys,
+		SelectedAdapters:    plan.SelectedAdapters,
+		OutputRoot:          plan.OutputRoot,
+		RunIndexPreviewPath: plan.RunIndexPreviewPath,
+		ManifestPreviews:    plan.ManifestOutputPreviewPaths,
+		ArtifactPreviews:    plan.ArtifactPreviewRefs,
+		CandidateJourneys:   plan.CandidateJourneys,
+		ManifestPaths:       []string{},
+		FailedChecks:        []string{},
+		Checks:              []IndexCheck{},
+		AdapterResults:      []AdapterResult{},
+		SetupGaps:           plan.SetupGaps,
+		RedactionStatus:     RedactionStatus{Status: "passed"},
 	}
 }
 
@@ -137,26 +148,38 @@ func selectedPacks(opts Options) ([]journey.Pack, error) {
 	return out, nil
 }
 
-func executePack(opts Options, pack journey.Pack, rawRoot, runDir string) (AdapterResult, string, IndexCheck) {
+func executePack(opts Options, pack journey.Pack, rawRoot, runDir string) (AdapterResult, string, []IndexCheck) {
 	check := IndexCheck{ID: firstCheckID(pack), JourneyID: pack.ID, Adapter: pack.Adapter.ID, Expected: "exit_code=0"}
 	if gap := setupGapFor(opts, pack); gap != nil {
 		check.Status = "skipped"
-		return AdapterResult{Adapter: pack.Adapter.ID, JourneyID: pack.ID, Status: "skipped", SetupGap: gap}, "", check
+		return AdapterResult{Adapter: pack.Adapter.ID, JourneyID: pack.ID, Status: "skipped", SetupGap: gap}, "", []IndexCheck{check}
 	}
 	cmdResult := runCommand(opts.ProjectDir, pack, filepath.Join(rawRoot, safeSegment(pack.ID)))
 	applyOracle(opts.ProjectDir, pack, &cmdResult, &check)
-	manifest := buildManifest(opts, pack, cmdResult, check)
+	checks := []IndexCheck{check}
+	if policyCheck, ok := applyGUIPolicyOracle(opts.ProjectDir, pack, &cmdResult); ok {
+		if policyCheck.Status == "blocked" && check.Status == "failed" {
+			check.Status = "blocked"
+			check.FailureSummary = policyCheck.FailureSummary
+			checks[0] = check
+		}
+		checks = append(checks, policyCheck)
+	}
+	if publicationCheck, ok := applyGUIArtifactPublicationOracle(opts.ProjectDir, pack, &cmdResult); ok {
+		checks = append(checks, publicationCheck)
+	}
+	manifest := buildManifest(opts, pack, cmdResult, checks)
 	manifestPath, err := qaevidence.WriteFinalManifest(manifest, manifestOutputDir(runDir, pack.ID))
 	if err != nil {
-		check.Status = "blocked"
-		check.FailureSummary = err.Error()
+		checks[0].Status = "blocked"
+		checks[0].FailureSummary = err.Error()
 		return AdapterResult{
 			Adapter:               pack.Adapter.ID,
 			JourneyID:             pack.ID,
 			Status:                "blocked",
 			RepairPromptAvailable: false,
 			FailureSummary:        err.Error(),
-		}, "", check
+		}, "", checks
 	}
 	return AdapterResult{
 		Adapter:               pack.Adapter.ID,
@@ -165,7 +188,16 @@ func executePack(opts Options, pack journey.Pack, rawRoot, runDir string) (Adapt
 		QAMESHManifestPath:    manifestPath,
 		RepairPromptAvailable: cmdResult.Status == "failed" || cmdResult.Status == "blocked",
 		FailureSummary:        cmdResult.FailureSummary,
-	}, manifestPath, check
+	}, manifestPath, checks
+}
+
+func hasBlockedAdapter(results []AdapterResult) bool {
+	for _, result := range results {
+		if result.Status == "blocked" {
+			return true
+		}
+	}
+	return false
 }
 
 func writeFeedbackBundles(opts Options, manifestPaths []string) ([]string, error) {
