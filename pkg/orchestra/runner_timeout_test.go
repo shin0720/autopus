@@ -45,6 +45,8 @@ func (f *fakeCommand) SetStderr(w io.Writer) {
 	f.stderr = w
 }
 
+func (f *fakeCommand) SetDir(_ string) {}
+
 func (f *fakeCommand) Start() error {
 	if f.startFn != nil {
 		return f.startFn(f)

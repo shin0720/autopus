@@ -35,6 +35,16 @@ func RunOrchestra(ctx context.Context, cfg OrchestraConfig) (*OrchestraResult, e
 		}
 	}
 
+	// Propagate WorkingDir to providers that have no explicit WorkDir set,
+	// so subprocess agents run in the user's registered project folder.
+	if cfg.WorkingDir != "" {
+		for i := range cfg.Providers {
+			if cfg.Providers[i].WorkDir == "" {
+				cfg.Providers[i].WorkDir = cfg.WorkingDir
+			}
+		}
+	}
+
 	start := time.Now()
 	var responses []ProviderResponse
 	var roundHistory [][]ProviderResponse

@@ -52,6 +52,9 @@ func (b *subprocessBackend) Execute(ctx context.Context, req ProviderRequest) (*
 	start := time.Now()
 
 	cmd := newCommand(ctx, req.Config.Binary, args...)
+	if req.Config.WorkDir != "" {
+		cmd.SetDir(req.Config.WorkDir)
+	}
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.SetStdout(&stdoutBuf)

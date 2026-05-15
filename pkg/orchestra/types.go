@@ -45,6 +45,7 @@ type ProviderConfig struct {
 	SchemaFlag          string        // subprocess: CLI flag for JSON schema (e.g., "--schema")
 	StdinMode           string        // subprocess: prompt delivery — "pipe" (default) or "file"
 	OutputFormat        string        // subprocess: expected output — "json" (default) or "text"
+	WorkDir             string        // subprocess: working directory for the child process
 }
 
 // ReliabilityFallbackMode defines deterministic degradation behavior.

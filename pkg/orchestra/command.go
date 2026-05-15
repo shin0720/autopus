@@ -13,6 +13,7 @@ type command interface {
 	SetStdin(r io.Reader)
 	SetStdout(w io.Writer)
 	SetStderr(w io.Writer)
+	SetDir(dir string)
 	Start() error
 	Wait() error
 	ExitCode() int
@@ -47,6 +48,10 @@ func (e *execCommand) SetStdout(w io.Writer) {
 
 func (e *execCommand) SetStderr(w io.Writer) {
 	e.cmd.Stderr = w
+}
+
+func (e *execCommand) SetDir(dir string) {
+	e.cmd.Dir = dir
 }
 
 func (e *execCommand) Start() error {

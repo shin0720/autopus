@@ -34,6 +34,9 @@ func runProvider(ctx context.Context, provider ProviderConfig, prompt string) (*
 	defer cleanupLastMessage()
 
 	cmd := newCommand(ctx, provider.Binary, args...)
+	if provider.WorkDir != "" {
+		cmd.SetDir(provider.WorkDir)
+	}
 
 	detector := &fastFailDetector{}
 	stdoutBuf := newFastFailBuffer(detector, func(reason string) {
