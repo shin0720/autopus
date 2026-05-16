@@ -1,0 +1,128 @@
+# Discovery Domain Extension — Naming Service
+
+> 이 템플릿은 universal 9 질문 다음에 추가로 실행됩니다.
+> 작명/네이밍 서비스 도메인 특유의 결정을 수집합니다.
+
+Domain match signals:
+- Keywords: 이름, 작명, naming, 네이밍, 사주, 만세력, 한자, 오행, baby name
+- File hints: name_master, hanja, manse, recommendation_engine
+
+---
+
+## D1: Name Type Composition
+
+- id: `name_types_allowed`
+- type: choice
+- required: true
+- question: "어떤 종류의 한국 이름을 추천 결과에 포함시킬 것인가?"
+- options:
+  - label: "한자 이름만"
+    value: "hanja_only"
+    description: "瑞允 같은 한자 표기 필수. 한자 풀과 element 매핑 데이터 필요"
+  - label: "한자 + 순우리말"
+    value: "hanja_plus_pure"
+    description: "한자 이름과 '다온', '하늘' 같은 순우리말 모두 추천"
+  - label: "한자 + 한글 + 순우리말 (3종)"
+    value: "all_three"
+    description: "한자 기반 / 한글 표기 우선 / 순우리말 — 3개 nameType 모두"
+  - label: "한글 표기만"
+    value: "hangul_only"
+    description: "한자 매핑 없이 한글 음운/의미 중심"
+
+## D2: Saju/Five-Element Depth
+
+- id: `saju_depth`
+- type: choice
+- required: true
+- question: "사주/오행 분석은 추천 결과에 어느 깊이까지 반영되는가?"
+- options:
+  - label: "오프 — 사주 미사용"
+    value: "off"
+    description: "이름 자체의 음운/의미만 사용. 만세력 엔진 불필요"
+  - label: "참고만 — 표시는 안 함"
+    value: "internal_only"
+    description: "랭킹에 영향을 주되 사용자에게 노출하지 않음"
+  - label: "요약 노출 — 부족 원소만 한 줄"
+    value: "summary"
+    description: "'수(水) 부족을 보완' 정도의 한 줄 설명"
+  - label: "심층 분석 — 4문단 설명 + 한자 element 매핑"
+    value: "deep"
+    description: "유료 리포트 수준. 천간/지지/오행 비율 모두 노출"
+- followup:
+  - prompt: "유료 모드에서 노출 깊이가 다르면 무료/유료 차이를 1줄로 명시."
+  - required_if: ["summary", "deep"]
+
+## D3: Explanation Language Strategy
+
+- id: `i18n_strategy`
+- type: choice
+- required: true
+- question: "외국인 사용자를 위한 설명 언어 전략은?"
+- options:
+  - label: "한국어 단일"
+    value: "ko_only"
+    description: "외국인 타겟이 아니거나 한국어 가능 사용자만"
+  - label: "한국어 + 영어 듀얼"
+    value: "ko_en"
+    description: "모든 결과 텍스트가 한/영 동시 제공"
+  - label: "한국어 기본 + 영어 옵션"
+    value: "ko_with_en_toggle"
+    description: "기본은 한국어, 토글로 영어 전환"
+  - label: "다국어 (한/영/일/중/불)"
+    value: "multi"
+    description: "글로벌 타겟. i18n 라이브러리 + 번역 큐레이션 필요"
+
+## D4: External Engine Reality
+
+- id: `external_engine_status`
+- type: choice
+- required: true
+- question: "사주/만세력 외부 엔진 (Prokeraia 등) 상태는?"
+- options:
+  - label: "실제 키 보유 + 즉시 연동"
+    value: "real_key_now"
+    description: "API 키가 있고 첫 구현부터 실제 호출"
+  - label: "스텁으로 시작 + 추후 교체"
+    value: "stub_then_real"
+    description: "ManseEngineStub으로 시작, 키 발급 후 ProkeraiaEngine으로 교체"
+  - label: "자체 구현 (외부 의존 없음)"
+    value: "self_implemented"
+    description: "오픈소스 만세력 라이브러리 또는 직접 계산"
+  - label: "사주 기능 자체 미사용"
+    value: "no_saju"
+    description: "사주 관련 코드/엔진 전체 생략"
+
+## D5: Admin Surface Scope
+
+- id: `admin_scope`
+- type: text
+- required: true
+- prompt: |
+    관리자 페이지에서 운영자가 직접 관리해야 하는 데이터/기능을 표로 적시.
+    형식 예:
+    ```
+    | 영역 | 작업 | 우선순위 |
+    |---|---|---|
+    | 이름 풀 | CRUD, 검수 상태 변경 | 필수 |
+    | 한자 매핑 | CRUD, element 지정 | 필수 |
+    | 결제 내역 | 조회, 환불 처리 | 필수 |
+    | 리포트 검수 | 텍스트 수동 수정 | 선택 |
+    | 사용자 | 차단, 로그 | 선택 |
+    ```
+- validation:
+  - require_table: true
+  - reject_reason: "관리자 영역이 정의되지 않으면 admin 페이지가 빈 껍데기로 만들어집니다."
+
+---
+
+## Quality Gate Additions (when this domain is active)
+
+D1-D5는 R3 마스터플랜 10항목과 별개로, 다음 게이트를 추가로 체크:
+
+| Gate | Check |
+|---|---|
+| D-G1 | PRD에 nameType enum 정의 (D1 답변 반영) |
+| D-G2 | 사주 깊이 = `summary` 또는 `deep`이면 PRD에 oh-haeng 설명 톤 가이드 포함 |
+| D-G3 | i18n 전략에 맞춰 응답 스키마에 locale 필드 존재 |
+| D-G4 | external_engine_status = `stub_then_real`이면 SPEC에 교체 마일스톤 명시 |
+| D-G5 | admin_scope 표의 '필수' 항목 모두 PRD의 Admin Surface 섹션에 반영 |

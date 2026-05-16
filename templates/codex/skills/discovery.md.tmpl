@@ -1,0 +1,133 @@
+# auto-discovery
+
+# Discovery Skill
+
+`/auto plan` 실행 직후, PRD 생성 전에 8개 범용 질문을 던지고 답변 품질을 검증합니다.
+LLM이 도메인 결정(수치 임계값, 등급 구조, 금기 톤, 시드 전략)을 추측해서 부실한 PRD를
+만드는 사고를 막는 게 유일한 목적입니다.
+
+## Why this skill exists
+
+지난 사례: 마스터플랜이 톤·페르소나는 충실했지만 다음이 비어 있었음.
+- 무료/유료 결과 수 (LLM이 임의로 5~10개 추측)
+- 점수 함수 임계값 (`traditional_fit = 0.5` 더미)
+- 응답 스키마 차이 (프론트/백 ID 불일치)
+- 금기 키워드 (학습 분포 평균 = 점술 톤이 새어 들어옴)
+- 시드 데이터 출처 (AI가 한자 풀을 추측)
+
+이 5개는 LLM이 첫 입력만으로는 채울 수 없는 정보입니다. 사용자가 한 번 박아줘야 합니다.
+
+## Question Bank
+
+질문 8개는 `templates/shared/discovery-universal.md.tmpl`에 정의되어 있습니다.
+도메인 불문 모든 프로젝트에 적용되는 범용 질문입니다.
+
+| ID | Type | Required | Purpose |
+|---|---|---|---|
+| problem_users | text | yes | 타겟 좁히기 ("모두" REJECT) |
+| tier_structure | choice + text | yes | 등급 구조 확정 |
+| core_mechanism | text | yes | 핵심 알고리즘 한 줄 ("AI가 해줍니다" REJECT) |
+| numeric_ac | text | yes | 수치 합격선 최소 3개 |
+| output_structure | text | yes | 등급별 응답 구조 표 |
+| tone_prohibited | text | yes | 톤 3개 + 금기 3개 |
+| data_strategy | choice + text | yes | 시드 데이터 출처 |
+| integration_ids | text | no | 외부 식별자 source-of-truth |
+
+## Procedure
+
+### Phase 1: Question Delivery
+
+WHEN `/auto plan` enters Step 1.4, THE SYSTEM SHALL:
+
+1. Load question bank from `templates/shared/discovery-universal.md.tmpl`
+2. Generate a slug from FEATURE_DESC (e.g., "korean-naming") for storage
+3. Deliver questions in 2 rounds (AskUserQuestion limits 4 per call):
+   - Round A: Q1, Q2, Q3, Q4 — problem framing + AC
+   - Round B: Q5, Q6, Q7, Q8 — output + tone + data + integrations
+4. For `type=choice` questions, use `AskUserQuestion`. For `type=text`, ask plainly.
+
+### Phase 2: Validation Gate
+
+After collecting answers, validate each against the rules in the template:
+
+| Check | Action on FAIL |
+|---|---|
+| Required answer empty | Re-ask same question |
+| `reject_if_contains` matched | Show `reject_reason` + re-ask |
+| `min_length` not met | Show "30자 이상 필요" + re-ask |
+| `min_items` not met (Q4) | "수치 합격선 3개 이상 필요" + re-ask |
+| `require_numbers` failed | "각 항목에 숫자가 필요합니다" + re-ask |
+| `require_table` failed (Q5) | "마크다운 표 형식으로 작성해주세요" + re-ask |
+| `require_tone_count`/`require_prohibited_count` not 3 | "각각 정확히 3개" + re-ask |
+
+Retry limit: 2 per question. After 2nd FAIL on the same question, STOP the pipeline
+and print structured report. Do NOT proceed to PRD with insufficient answers.
+
+### Phase 3: Persistence
+
+WHEN all answers pass validation, write to `.autopus/discovery/{slug}.json`:
+
+```json
+{
+  "slug": "korean-naming",
+  "feature_desc": "한국식 네이밍 서비스",
+  "created_at": "2026-05-13T10:00:00Z",
+  "answers": {
+    "problem_users": "...",
+    "tier_structure": { "choice": "freemium", "detail": "..." },
+    "core_mechanism": "...",
+    "numeric_ac": ["p95 < 200ms", "정확도 >= 0.85", "전환률 >= 5%"],
+    "output_structure": "| 필드 | 무료 | 유료 |\n|---|---|---|\n...",
+    "tone_prohibited": { "tone": ["절제","한국적","에디토리얼"], "prohibited": ["보라색","운세","신비주의"] },
+    "data_strategy": { "choice": "mixed", "detail": "..." },
+    "integration_ids": "..."
+  },
+  "validation_passed": true
+}
+```
+
+The file is the contract between Discovery → PRD → SPEC. Every downstream agent
+reads this file before generating output.
+
+## PRD Quality Gate (Step 1.6)
+
+After the planner generates a PRD, run a Quality Gate against the saved discovery answers:
+
+| Gate | Check | FAIL action |
+|---|---|---|
+| G1 | PRD's "Target Users" section mentions ≥1 user group from `problem_users` answer | Re-run planner with explicit fix |
+| G2 | PRD's "Success Metrics" section contains ALL numbers from `numeric_ac` answer | Re-run planner |
+| G3 | PRD's "Tone" or "Design" section lists tone keywords from `tone_prohibited.tone` | Re-run planner |
+| G4 | PRD's "Out of Scope" or "Prohibited" section lists ALL items from `tone_prohibited.prohibited` | Re-run planner |
+| G5 | PRD's "Tier" or "Pricing" section reflects `tier_structure.choice` | Re-run planner |
+| G6 | If `data_strategy.choice` is "manual" or "mixed", PRD has "Seed Data" section marked as human task | Re-run planner |
+
+Retry limit: 2. After 2nd FAIL, STOP and print which gates failed. The user must
+either edit the PRD manually or revise the discovery answers.
+
+## Autonomous Mode (`--auto`)
+
+WHEN `--auto` flag is set AND no prior `.autopus/discovery/{slug}.json` exists:
+
+- Option A (default): SKIP interview. Planner generates PRD with placeholder answers
+  and flags each section as `[AI-GUESSED — NEEDS CONFIRMATION]`. User must
+  re-run `/auto plan` without `--auto` to lock in real answers.
+- Option B (if `autopus.yaml → discovery.auto_skip = false`): FAIL with error
+  "Discovery answers required. Run /auto plan without --auto first."
+
+WHEN `--auto` AND prior discovery file exists: REUSE it.
+
+## Reuse Across Re-Plans
+
+When the user re-runs `/auto plan` for the same feature (same slug), the existing
+discovery file is reused automatically. To force a re-interview, the user passes
+`--rediscover` or deletes `.autopus/discovery/{slug}.json`.
+
+## Result Format
+
+```
+🐙 discovery ─────────────────────
+  질문: 8개 | 통과: N개 | 재질문: N회
+  저장: .autopus/discovery/{slug}.json
+  다음: PRD 생성 (Step 1.5)
+```
