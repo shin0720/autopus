@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="ko" data-theme="dark"><head><meta charset="UTF-8">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Autopus Studio (v5.0 Workflow State)</title>
     <link rel="stylesheet" as="style" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
     <style>
@@ -38,18 +38,18 @@
             transition: background-color .25s ease, color .25s ease, border-color .25s ease;
         }
         .node-role { font-weight:500; }
-        body { background:var(--bg); color:var(--fg); font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; margin:0; display:flex; height:100vh; overflow:hidden; -webkit-font-smoothing: antialiased; }
+        body { background:var(--bg); color:var(--fg); font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; margin:0; display:flex; height:100vh; overflow:hidden; -webkit-font-smoothing: antialiased; font-size:14px; }
         .sidebar-left { width:260px; min-width:260px; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; overflow:hidden; z-index:100; }
         .main-container { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; }
-        .sidebar-right { position:fixed; right:0; top:0; height:100vh; width:420px; background:var(--bg2); border-left:1px solid var(--border); padding:20px; display:none; flex-direction:column; overflow-y:auto; z-index:1000; box-shadow:-8px 0 32px rgba(0,0,0,.5); }
+        .sidebar-right { position:fixed; right:0; top:0; height:100vh; width:420px; background:var(--bg2); border-left:1px solid var(--border); padding:20px 20px 70px 20px; display:none; flex-direction:column; overflow-y:auto; z-index:1000; box-shadow:-8px 0 32px rgba(0,0,0,.5); }
 
         /* ═══ 사이드바 — 시안 스타일 ═══ */
         .drive-bar { padding:14px 14px 8px; display:flex; gap:4px; }
-        .btn-drive { flex:1; padding:5px 8px; font-size:11px; font-family:monospace; background:transparent; border:1px solid var(--line); color:var(--fg2); border-radius:5px; cursor:pointer; transition:all .15s ease; letter-spacing:0.04em; }
+        .btn-drive { flex:1; padding:5px 8px; font-size:12px; font-family:monospace; background:transparent; border:1px solid var(--line); color:var(--fg2); border-radius:5px; cursor:pointer; transition:all .15s ease; letter-spacing:0.04em; }
         .btn-drive:hover { background:var(--bg2); color:var(--fg); }
         .btn-drive.active { background:var(--bg-card); color:var(--fg); border-color:var(--line-2); }
 
-        .list-container { flex:1; overflow-y:auto; padding:6px 8px; font-size:12.5px; }
+        .list-container { flex:1; overflow-y:auto; padding:6px 8px; font-size:13.5px; }
         .item { padding:5px 10px; border-radius:5px; cursor:pointer; display:flex; align-items:center; gap:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--fg2); transition:background .12s ease; }
         .item:hover { background:var(--bg2); color:var(--fg); }
 
@@ -58,19 +58,19 @@
         .brand { display:flex; align-items:center; gap:10px; padding-right:18px; border-right:1px solid var(--line); height:100%; }
         .brand-mark { width:22px; height:22px; border-radius:6px; background:var(--accent); position:relative; box-shadow:0 0 12px rgba(255,159,112,0.16); }
         .brand-mark::after { content:""; position:absolute; inset:6px; background:var(--bg); border-radius:2px; }
-        .brand-name { font-size:13.5px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; }
-        .brand-path { display:flex; align-items:center; gap:8px; font-family:monospace; font-size:11.5px; color:var(--fg2); }
+        .brand-name { font-size:14px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; }
+        .brand-path { display:flex; align-items:center; gap:8px; font-family:monospace; font-size:12px; color:var(--fg2); }
         .brand-path .seg.last { color:var(--fg); }
         .brand-path .sep { color:var(--fg3); }
 
         .top-spacer { flex:1; }
 
         /* 모델 상태 — 시안처럼 dot만 표시 */
-        .provider-status { display:flex; align-items:center; gap:14px; font-family:monospace; font-size:11px; color:var(--fg2); }
+        .provider-status { display:flex; align-items:center; gap:14px; font-family:monospace; font-size:12px; color:var(--fg2); }
         .status-item { display:flex; align-items:center; gap:6px; padding:0; background:transparent; border:0; }
         .status-copy { display:flex; flex-direction:column; gap:0; }
-        .status-main { font-size:11px; font-weight:500; color:var(--fg); letter-spacing:-0.005em; }
-        .status-sub { font-size:9.5px; color:var(--fg3); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:monospace; }
+        .status-main { font-size:12px; font-weight:500; color:var(--fg); letter-spacing:-0.005em; }
+        .status-sub { font-size:10.5px; color:var(--fg3); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:monospace; }
         .status-btn { display:none; }   /* 시안처럼 연결 버튼 hover 시에만 */
         .status-item:hover .status-btn { display:inline-block; background:var(--bg-card); color:var(--fg); border:1px solid var(--line-2); border-radius:4px; padding:2px 6px; font-size:9.5px; cursor:pointer; margin-left:4px; }
         .dot { width:6px; height:6px; border-radius:50%; background:var(--fg3); flex-shrink:0; transition:background .3s, box-shadow .3s; }
@@ -79,7 +79,7 @@
 
         /* 액션 버튼 — 미니멀 */
         .top-actions { display:flex; gap:2px; align-items:center; }
-        .top-btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; background:transparent; border:0; border-radius:6px; color:var(--fg2); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:all .12s ease; letter-spacing:-0.005em; white-space:nowrap; }
+        .top-btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; background:transparent; border:0; border-radius:6px; color:var(--fg2); font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:all .12s ease; letter-spacing:-0.005em; white-space:nowrap; }
         .top-btn:hover { background:var(--bg-card); color:var(--fg); }
         .top-btn.primary { background:var(--accent); color:var(--bg); font-weight:600; }
         .top-btn.primary:hover { background:var(--accent); color:var(--bg); filter:brightness(1.06); }
@@ -88,7 +88,7 @@
 
         /* 모드 토글 (탭) */
         .mode-toggle { display:inline-flex; align-items:center; background:var(--bg-card); border:1px solid var(--line); border-radius:6px; padding:2px; }
-        .mode-toggle button { background:transparent; border:0; padding:4px 11px; font-size:11px; font-weight:500; color:var(--fg2); cursor:pointer; border-radius:4px; transition:all .15s ease; font-family:inherit; }
+        .mode-toggle button { background:transparent; border:0; padding:4px 11px; font-size:12px; font-weight:500; color:var(--fg2); cursor:pointer; border-radius:4px; transition:all .15s ease; font-family:inherit; }
         .mode-toggle button:hover { color:var(--fg); }
         .mode-toggle button.active { background:var(--accent); color:var(--bg); font-weight:600; }
 
@@ -124,16 +124,16 @@
         .node.rejected, .node.error { border-color:var(--err); border-width:2px; }
         .node.rejected::before, .node.error::before { background:var(--err); }
         .node.selected { box-shadow:0 0 0 2px var(--accent); }
-        .node-name { font-size:13px; font-weight:700; color:var(--fg); margin-bottom:2px; }
-        .node-role { font-size:10px; color:var(--fg2); }
+        .node-name { font-size:14px; font-weight:700; color:var(--fg); margin-bottom:2px; }
+        .node-role { font-size:11px; color:var(--fg2); }
         .port { width:12px; height:12px; background:var(--accent); border:2px solid var(--bg2); border-radius:50%; position:absolute; top:50%; transform:translateY(-50%); cursor:crosshair; }
         .port-in { left:-7px; }
         .port-out { right:-7px; }
         .flow-line { fill:none; stroke:var(--accent); stroke-width:2.5; stroke-dasharray:6; stroke-linecap:round; cursor:pointer; pointer-events:auto; opacity:.7; }
         .flow-line:hover { stroke:var(--err); stroke-width:4; opacity:1; }
-        .terminal { height:150px; background:var(--bg); border-top:1px solid var(--border); padding:15px; overflow-y:auto; font-family:monospace; font-size:12px; }
-        .overlay-panel { position:absolute; top:20px; left:20px; right:20px; bottom:20px; background:var(--bg); border:1px solid var(--border); border-radius:12px; z-index:200; display:none; flex-direction:column; box-shadow:0 24px 64px rgba(0,0,0,.6); user-select:text; }
-        .panel-body { flex:1; padding:25px; overflow:auto; white-space:pre-wrap; font-size:14px; line-height:1.6; color:var(--fg); }
+        .terminal { height:150px; background:var(--bg); border-top:1px solid var(--border); padding:15px; overflow-y:auto; font-family:monospace; font-size:13px; }
+        .overlay-panel { position:absolute; top:20px; left:20px; width:calc(100% - 40px); height:calc(100% - 40px); background:var(--bg); border:1px solid var(--border); border-radius:12px; z-index:200; display:none; flex-direction:column; box-shadow:0 24px 64px rgba(0,0,0,.6); user-select:text; min-width:300px; min-height:200px; overflow:hidden; }
+        .panel-body { flex:1; padding:25px; overflow:auto; white-space:pre-wrap; font-size:15px; line-height:1.6; color:var(--fg); }
         textarea { flex:1; width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--fg); padding:20px; margin:15px 0; resize:none; font-size:15px; box-sizing:border-box; }
         textarea:focus { outline:none; border-color:var(--accent); }
         .btn-run { background:var(--accent); color:#161A24; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; transition:opacity .2s; }
@@ -218,8 +218,8 @@
         .mon-node.s-active .mon-port.out { background:var(--accent); border-color:var(--accent); box-shadow:0 0 8px var(--accent); }
         .mon-node.s-completed .mon-port { border-color:var(--ok); }
 
-        .mon-node-title { font-size:13.5px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; margin-bottom:2px; }
-        .mon-node-ko { font-size:12px; font-weight:500; color:var(--fg2); margin-bottom:12px; }
+        .mon-node-title { font-size:14px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; margin-bottom:2px; }
+        .mon-node-ko { font-size:13px; font-weight:500; color:var(--fg2); margin-bottom:12px; }
         .mon-node-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .mon-status { display:inline-flex; align-items:center; gap:6px; font-family:monospace; font-size:10.5px; color:var(--fg2); font-weight:500; }
         .mon-status .dot { width:5px; height:5px; border-radius:50%; background:var(--fg3); box-shadow:none; }
@@ -232,11 +232,24 @@
         .mon-node.s-error .mon-status, .mon-node.s-rejected .mon-status { color:var(--err); }
         .mon-node.s-error .mon-status .dot, .mon-node.s-rejected .mon-status .dot { background:var(--err); }
         @keyframes monPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-        .mon-node-action { font-size:11px; color:var(--fg2); font-weight:500; }
+        .mon-node-action { font-size:12px; color:var(--fg2); font-weight:500; }
         .mon-node-action.cta { color:var(--accent); font-weight:600; }
         .mon-node-action.cta::after { content:" →"; }
 
         .mon-connections { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:1; }
+        .panel-drag-handle { cursor:grab; user-select:none; }
+        .panel-drag-handle:active { cursor:grabbing; }
+        .panel-resize-handle { position:absolute; z-index:210; }
+        .panel-resize-n  { top:-4px;    left:16px;  right:16px;  height:8px;  cursor:n-resize; }
+        .panel-resize-s  { bottom:-4px; left:16px;  right:16px;  height:8px;  cursor:s-resize; }
+        .panel-resize-e  { right:-4px;  top:16px;   bottom:16px; width:8px;   cursor:e-resize; }
+        .panel-resize-w  { left:-4px;   top:16px;   bottom:16px; width:8px;   cursor:w-resize; }
+        .panel-resize-nw { top:-4px;    left:-4px;  width:16px;  height:16px; cursor:nw-resize; }
+        .panel-resize-ne { top:-4px;    right:-4px; width:16px;  height:16px; cursor:ne-resize; }
+        .panel-resize-sw { bottom:-4px; left:-4px;  width:16px;  height:16px; cursor:sw-resize; }
+        .panel-resize-se { bottom:-4px; right:-4px; width:16px;  height:16px; cursor:se-resize; }
+        .node-timer { font-size:9px; color:var(--warn); font-family:monospace; display:none; margin-top:3px; }
+        .node.active .node-timer { display:block; }
         .mon-conn { fill:none; }
         .mon-conn.idle { stroke:var(--line-2); stroke-dasharray:3 4; stroke-width:1; opacity:0.7; }
         .mon-conn.done { stroke:var(--ok); stroke-width:1; opacity:0.5; }
@@ -599,15 +612,20 @@
             </div>
 
             <div id="overlay-panel" class="overlay-panel">
-                <div style="padding:10px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; background:var(--bg2); border-radius:12px 12px 0 0;">
+                <div id="panel-header" class="panel-drag-handle" style="padding:10px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--bg2); border-radius:12px 12px 0 0; flex-shrink:0;">
                     <span id="panel-title">분석 결과</span>
                     <button onclick="closePanel()" style="background:transparent; border:1px solid var(--border-color); color:var(--fg); padding:4px 10px; cursor:pointer;">닫기</button>
                 </div>
                 <div id="panel-content" class="panel-body"></div>
-                <div id="approval-footer" style="padding:15px; background:var(--bg2); display:flex; justify-content:center; gap:15px;">
-                    <button class="btn-run" style="background:var(--accent-green)" onclick="handleApprove()">✅ 승인 및 다음진행</button>
-                    <button class="btn-run" style="background:#6e40c9" onclick="saveApprovedDoc()">💾 저장</button>
-                    <button class="btn-run" style="background:var(--accent-red)" onclick="handleReject()">↩️ 반려 후 재지시</button>
+                <div id="approval-footer" style="padding:15px; background:var(--bg2); display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-run" style="background:var(--accent-green)" onclick="handleApproveOnly()">✅ 승인</button>
+                    <button class="btn-run" style="background:#3a7a3a" onclick="handleApprove()">▶️ 다음단계</button>
+                    <button class="btn-run" style="background:#6e40c9" onclick="handleReject()">✏️ 수정</button>
+                    <button class="btn-run" style="background:#666" onclick="closePanel()">❌ 취소</button>
+                </div>
+                <div id="view-footer" style="padding:15px; background:var(--bg2); display:none; justify-content:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-run" style="background:#6e40c9" onclick="rerunCompletedNode()">✏️ 수정 재실행</button>
+                    <button class="btn-run" style="background:#666" onclick="closePanel()">닫기</button>
                 </div>
                 <div id="followup-footer" style="padding:10px 15px 15px; background:var(--bg3); border-top:1px solid var(--border); border-bottom-left-radius:12px; border-bottom-right-radius:12px; display:none;">
                     <div style="font-size:11px; color:var(--text-dim); margin-bottom:6px;">💬 추가 질문으로 결과 수정 (같은 에이전트 재실행)</div>
@@ -709,6 +727,13 @@
         function setNodeStatus(id, status) {
             const node = getNodeState(id);
             node.status = status;
+            if (status === 'active') {
+                node.activeStartTime = Date.now();
+            } else {
+                node.activeStartTime = null;
+                const timerEl = document.getElementById('timer-' + id);
+                if (timerEl) timerEl.textContent = '';
+            }
             const el = document.getElementById('node-' + id);
             if (el) {
                 nodeStatusClasses.forEach((name) => el.classList.remove(name));
@@ -991,12 +1016,21 @@
             ns.lastPrompt = prompt;
             ns.originalRequest = originalRequest !== null ? originalRequest : prompt;
             const effectivePrompt = systemPrompts.has(agentId) ? systemPrompts.get(agentId) + '\n\n---\n\n' + prompt : prompt;
-            const res = await fetch('/api/workflow/run', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agentId, prompt: effectivePrompt, context: Array.from(agentFiles.get(agentId) || []), handoff, providers: selectedProviders.get(agentId)?.size > 0 ? Array.from(selectedProviders.get(agentId)) : ['claude'] })
-            });
-            const data = await res.json();
+            let data;
+            try {
+                const res = await fetch('/api/workflow/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId, prompt: effectivePrompt, context: Array.from(agentFiles.get(agentId) || []), handoff, providers: selectedProviders.get(agentId)?.size > 0 ? Array.from(selectedProviders.get(agentId)) : ['claude'] })
+                });
+                data = await res.json();
+            } catch (fetchErr) {
+                setNodeStatus(agentId, 'error');
+                appendTerminalLog('System', '❌ 네트워크 오류: ' + fetchErr.message + ' (백그라운드에서 작업 중일 수 있습니다 — 로그를 확인하세요)');
+                saveState();
+                openDrawer(agent, prompt);
+                return;
+            }
             if (data.status !== 'success') {
                 setNodeStatus(agentId, 'error');
                 appendTerminalLog('System', '❌ 에러: ' + data.message);
@@ -1029,6 +1063,18 @@
             closeDrawer();
             recoveryAttempts = 0;
             await runAgent(selectedAgent.id, prompt, null);
+        }
+
+        async function handleApproveOnly() {
+            const currentId = workflowState.approval.pendingNodeId;
+            if (!currentId || !lastResult) return;
+            closePanel();
+            workflowState.approval.lastDecision = 'approved';
+            workflowState.approval.pendingNodeId = '';
+            setNodeStatus(currentId, 'completed');
+            await publishWorkflowEvent('approved', currentId, '결과를 승인했습니다.');
+            appendTerminalLog('System', '✅ 승인됨. 다음단계 버튼으로 다음 에이전트를 실행할 수 있습니다.');
+            saveState();
         }
 
         async function handleApprove() {
@@ -1090,14 +1136,26 @@
             showPanel((agent ? agent.name : agentId) + ' 분석 결과', nodeState.output);
         }
 
+        let viewingCompletedAgentId = null;
+
         function viewCompletedOutput(agentId) {
             const nodeState = getNodeState(agentId);
             if (!nodeState.output) { openDrawer(agentMap[agentId]); return; }
+            viewingCompletedAgentId = agentId;
             const savedPendingId = workflowState.approval.pendingNodeId;
             workflowState.approval.pendingNodeId = '';
             const agent = agentMap[agentId];
             showPanel((agent ? agent.name : agentId) + ' 이전 결과 보기', nodeState.output);
             workflowState.approval.pendingNodeId = savedPendingId;
+            document.getElementById('view-footer').style.display = 'flex';
+        }
+
+        function rerunCompletedNode() {
+            const agentId = viewingCompletedAgentId;
+            closePanel();
+            if (!agentId) return;
+            const nodeState = getNodeState(agentId);
+            openDrawer(agentMap[agentId], nodeState.lastPrompt || '');
         }
 
         async function saveFileEdit() {
@@ -1167,7 +1225,7 @@
                 el.id = 'node-' + agent.id;
                 el.style.left = node.x || agent.x + 'px';
                 el.style.top = node.y || agent.y + 'px';
-                el.innerHTML = `<div class="node-name">${agent.name}</div><div class="node-role">${agent.role}</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError('${agent.id}')">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel('${agent.id}')">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, '${agent.id}')"></div><div class="port port-out" onmousedown="startConnection(event, '${agent.id}')"></div>`;
+                el.innerHTML = `<div class="node-name">${agent.name}</div><div class="node-role">${agent.role}</div><span class="node-timer" id="timer-${agent.id}"></span><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError('${agent.id}')">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel('${agent.id}')">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, '${agent.id}')"></div><div class="port port-out" onmousedown="startConnection(event, '${agent.id}')"></div>`;
                 el.onmousedown = (event) => {
                     const t = event.target;
                     if (!t.classList.contains('port') && !t.classList.contains('node-reset-btn') && !t.classList.contains('node-view-btn')) {
@@ -1180,6 +1238,8 @@
                     const nodeState = getNodeState(agent.id);
                     if (nodeState.status === 'error') {
                         openDrawer(agent, nodeState.lastPrompt || '');
+                    } else if (nodeState.status === 'completed') {
+                        viewCompletedOutput(agent.id);
                     } else {
                         selectNode(agent);
                     }
@@ -1666,6 +1726,7 @@
             const hasPending = !!pendingId;
             document.getElementById('approval-footer').style.display = hasPending ? 'flex' : 'none';
             document.getElementById('followup-footer').style.display = hasPending ? 'block' : 'none';
+            document.getElementById('view-footer').style.display = 'none';
             document.getElementById('overlay-panel').style.display = 'flex';
         }
 
@@ -1910,6 +1971,83 @@
             updateProviders();  // fire-and-forget: don't block page load on provider probe
             connectWorkflowStream();
             setInterval(updateProviders, 60000);  // 60s interval; server caches connected status for 5min
+
+            // ─── 작업 중 경과 시간 표시 (1초마다 갱신) ───
+            setInterval(() => {
+                agents.forEach((agent) => {
+                    const ns = getNodeState(agent.id);
+                    if (ns.status === 'active' && ns.activeStartTime) {
+                        const elapsed = Math.floor((Date.now() - ns.activeStartTime) / 1000);
+                        const m = Math.floor(elapsed / 60);
+                        const s = elapsed % 60;
+                        const timerEl = document.getElementById('timer-' + agent.id);
+                        if (timerEl) timerEl.textContent = `⏱ ${m > 0 ? m + 'm ' : ''}${s}s`;
+                    }
+                });
+            }, 1000);
+
+            // ─── overlay-panel 드래그 + 4방향 리사이즈 ───
+            (function initPanelInteraction() {
+                const panel = document.getElementById('overlay-panel');
+                const header = document.getElementById('panel-header');
+
+                // 드래그
+                let isDragging = false, dragStartX = 0, dragStartY = 0, origLeft = 0, origTop = 0;
+                header.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('button')) return;
+                    isDragging = true;
+                    dragStartX = e.clientX;
+                    dragStartY = e.clientY;
+                    origLeft = panel.offsetLeft;
+                    origTop = panel.offsetTop;
+                    e.preventDefault();
+                    function onDrag(ev) {
+                        if (!isDragging) return;
+                        panel.style.left = Math.max(0, origLeft + ev.clientX - dragStartX) + 'px';
+                        panel.style.top = Math.max(0, origTop + ev.clientY - dragStartY) + 'px';
+                    }
+                    function stopDrag() {
+                        isDragging = false;
+                        document.removeEventListener('mousemove', onDrag);
+                        document.removeEventListener('mouseup', stopDrag);
+                    }
+                    document.addEventListener('mousemove', onDrag);
+                    document.addEventListener('mouseup', stopDrag);
+                });
+
+                // 4방향 리사이즈 핸들
+                [
+                    { cls: 'n', cur: 'n-resize' },
+                    { cls: 's', cur: 's-resize' },
+                    { cls: 'e', cur: 'e-resize' },
+                    { cls: 'w', cur: 'w-resize' },
+                    { cls: 'nw', cur: 'nw-resize' },
+                    { cls: 'ne', cur: 'ne-resize' },
+                    { cls: 'sw', cur: 'sw-resize' },
+                    { cls: 'se', cur: 'se-resize' },
+                ].forEach(({ cls }) => {
+                    const h = document.createElement('div');
+                    h.className = 'panel-resize-handle panel-resize-' + cls;
+                    panel.appendChild(h);
+                    h.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const sx = e.clientX, sy = e.clientY;
+                        const ow = panel.offsetWidth, oh = panel.offsetHeight;
+                        const ol = panel.offsetLeft, ot = panel.offsetTop;
+                        function onResize(ev) {
+                            const dx = ev.clientX - sx, dy = ev.clientY - sy;
+                            if (cls.includes('e')) panel.style.width = Math.max(300, ow + dx) + 'px';
+                            if (cls.includes('s')) panel.style.height = Math.max(200, oh + dy) + 'px';
+                            if (cls.includes('w')) { const nw = Math.max(300, ow - dx); panel.style.width = nw + 'px'; panel.style.left = (ol + ow - nw) + 'px'; }
+                            if (cls.includes('n')) { const nh = Math.max(200, oh - dy); panel.style.height = nh + 'px'; panel.style.top = (ot + oh - nh) + 'px'; }
+                        }
+                        document.addEventListener('mousemove', onResize);
+                        document.addEventListener('mouseup', () => document.removeEventListener('mousemove', onResize), { once: true });
+                    });
+                });
+            })();
+
             document.getElementById('overlay-panel').addEventListener('wheel', (e) => {
                 e.stopPropagation();
             }, { passive: true });
