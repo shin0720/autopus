@@ -625,6 +625,8 @@
                 </div>
                 <div id="view-footer" style="padding:15px; background:var(--bg2); display:none; justify-content:center; gap:10px; flex-wrap:wrap;">
                     <button class="btn-run" style="background:#6e40c9" onclick="rerunCompletedNode()">✏️ 수정 재실행</button>
+                    <button class="btn-run" style="background:#3a7a3a" id="btn-rerun-direct" onclick="rerunCompletedNodeDirect()">🔄 이 작업자 다시 실행</button>
+                    <button class="btn-run" style="background:#1a5a8a" id="btn-resume-from" onclick="resumeFromCompletedNode()">⏩ 여기서부터 다시 진행</button>
                     <button class="btn-run" style="background:#666" onclick="closePanel()">닫기</button>
                 </div>
                 <div id="followup-footer" style="padding:10px 15px 15px; background:var(--bg3); border-top:1px solid var(--border); border-bottom-left-radius:12px; border-bottom-right-radius:12px; display:none;">
@@ -1156,6 +1158,71 @@
             if (!agentId) return;
             const nodeState = getNodeState(agentId);
             openDrawer(agentMap[agentId], nodeState.lastPrompt || '');
+        }
+
+        async function rerunCompletedNodeDirect() {
+            const agentId = viewingCompletedAgentId;
+            if (!agentId) return;
+            const nodeState = getNodeState(agentId);
+            const agent = agentMap[agentId];
+            if (nodeState.status === 'active') {
+                alert('현재 실행 중입니다. 완료 후 재실행하세요.');
+                return;
+            }
+            const confirmed = confirm('이 작업자를 같은 입력 기준으로 다시 실행합니다. 기존 결과는 보존됩니다.');
+            if (!confirmed) return;
+            if (nodeState.output) {
+                if (!nodeState.attemptHistory) nodeState.attemptHistory = [];
+                nodeState.attemptHistory.push({ attempt: nodeState.attemptHistory.length + 1, output: nodeState.output, timestamp: new Date().toISOString() });
+            }
+            closePanel();
+            const originalRequest = nodeState.originalRequest || nodeState.lastPrompt || '';
+            const prevConnection = workflowState.connections.find(c => c.to === agentId);
+            const prevStageOutput = prevConnection ? (() => { const ps = getNodeState(prevConnection.from); return ps.output ? (ps.output.output || '') : ''; })() : '';
+            const prevSelfOutput = nodeState.output ? (typeof nodeState.output === 'object' ? (nodeState.output.output || '') : String(nodeState.output)) : '';
+            const isArchitect = agentId === 'arch';
+            const taskInstructions = isArchitect
+                ? `[Architect 역할 지침]\nArchitect는 Planner/Spec Writer 산출물을 기반으로 시스템 구조, 모듈 경계, route/API/component/data flow, 유지/수정/삭제/대체 후보, 다음 작업자별 handoff ticket을 설계한다. Architect는 코드, 테스트, CI, env, 의존성 파일을 직접 수정하지 않는다. 테스트 인프라, pytest.ini, conftest.py, requirements, CI 변경은 Tester/DevOps/Executor에게 handoff로 위임한다. 금지 파일을 수정해야 한다고 판단되면 직접 수정하지 말고 WRONG_WORKER_WIP 또는 Handoff Ticket으로 기록한다. 완료 시 A1~A10 Architect Quality Gate와 PASS/PARTIAL/BLOCKED 판정을 보고한다.`
+                : `위 내용을 바탕으로 당신의 역할에 맞는 실제 작업을 직접 수행하세요.\n계획이나 요약이 아닌, 구체적인 파일 내용·코드·문서 등 실질적인 결과물을 만들어 주세요.`;
+            const rerunPrompt = [
+                originalRequest ? `[사용자 원래 요청]\n${originalRequest}` : '',
+                prevStageOutput ? `[이전 단계 결과]\n${prevStageOutput}` : '',
+                prevSelfOutput ? `[이 작업자의 이전 결과 — 참고용]\n${prevSelfOutput}` : '',
+                `[현재 역할: ${agent ? agent.name : agentId}]`,
+                `[재실행 사유: user_rerun_completed_node]`,
+                taskInstructions
+            ].filter(Boolean).join('\n\n');
+            const attemptNum = (nodeState.attemptHistory || []).length;
+            appendTerminalLog('System', `🔄 ${agent ? agent.name : agentId} 재실행 시작 (이전 결과 보존됨, attempt #${attemptNum})`);
+            await runAgent(agentId, rerunPrompt, null, originalRequest);
+        }
+
+        async function resumeFromCompletedNode() {
+            const agentId = viewingCompletedAgentId;
+            if (!agentId) return;
+            const next = workflowState.connections.find(c => c.from === agentId);
+            if (!next) { alert('연결된 다음 에이전트가 없습니다.'); return; }
+            const confirmed = confirm('여기서부터 다시 진행합니다. 다음 에이전트를 실행하시겠습니까?');
+            if (!confirmed) return;
+            closePanel();
+            const currentAgent = agentMap[agentId];
+            const nextAgent = agentMap[next.to];
+            const currentNodeState = getNodeState(agentId);
+            const originalRequest = currentNodeState.originalRequest || currentNodeState.lastPrompt || '';
+            const prevOutput = currentNodeState.output ? (typeof currentNodeState.output === 'object' ? (currentNodeState.output.output || '') : String(currentNodeState.output)) : '';
+            const isArchitect = next.to === 'arch';
+            const taskInstructions = isArchitect
+                ? [`[Architect 역할 지침]\nArchitect는 Planner/Spec Writer 산출물을 기반으로 시스템 구조, 모듈 경계, route/API/component/data flow, 유지/수정/삭제/대체 후보, 다음 작업자별 handoff ticket을 설계한다. Architect는 코드, 테스트, CI, env, 의존성 파일을 직접 수정하지 않는다. 테스트 인프라, pytest.ini, conftest.py, requirements, CI 변경은 Tester/DevOps/Executor에게 handoff로 위임한다. 금지 파일을 수정해야 한다고 판단되면 직접 수정하지 말고 WRONG_WORKER_WIP 또는 Handoff Ticket으로 기록한다. 완료 시 A1~A10 Architect Quality Gate와 PASS/PARTIAL/BLOCKED 판정을 보고한다.`]
+                : [`위 내용을 바탕으로 당신의 역할에 맞는 실제 작업을 직접 수행하세요.`, `계획이나 요약이 아닌, 구체적인 파일 내용·코드·문서 등 실질적인 결과물을 만들어 주세요.`];
+            const handoffPrompt = [
+                originalRequest ? `[사용자 원래 요청]\n${originalRequest}` : '',
+                `[이전 단계 완료: ${currentAgent ? currentAgent.name : agentId}]`,
+                prevOutput ? `이전 에이전트 작업 결과:\n${prevOutput}` : '',
+                `[현재 역할: ${nextAgent ? nextAgent.name : next.to}]`,
+                ...taskInstructions
+            ].filter(Boolean).join('\n\n');
+            appendTerminalLog('System', `⏩ 여기서부터 재진행: ${nextAgent ? nextAgent.name : next.to} 시작.`);
+            await runAgent(next.to, handoffPrompt, null, originalRequest);
         }
 
         async function saveFileEdit() {
