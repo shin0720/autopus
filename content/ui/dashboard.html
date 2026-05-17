@@ -1,0 +1,1944 @@
+﻿<!DOCTYPE html>
+<html lang="ko" data-theme="dark"><head><meta charset="UTF-8">
+    
+    <title>Autopus Studio (v5.0 Workflow State)</title>
+    <link rel="stylesheet" as="style" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <style>
+        /* ─── 다크 (기본) ─────────────────────────────── */
+        :root, [data-theme="dark"] {
+            --bg:#161A24; --bg2:#1E2330; --bg3:#252C3D; --border:#2D3548;
+            --bg-card:#232A3B; --bg-card-hi:#2A3245;
+            --accent:#FF9F70; --ok:#7DD8B0; --warn:#F5C97A; --err:#F08B7A;
+            --fg:#ECEAE0; --fg2:#A8A597; --fg3:#6B6859;
+            --line: rgba(255,255,255,0.06);
+            --line-2: rgba(255,255,255,0.11);
+            --shadow-card: inset 0 1px 0 rgba(255,255,255,0.025), 0 1px 0 rgba(0,0,0,0.20), 0 6px 14px -8px rgba(0,0,0,0.35);
+            /* backward-compat */
+            --bg-color:var(--bg); --sidebar-bg:var(--bg2); --border-color:var(--border);
+            --accent-blue:var(--accent); --accent-green:var(--ok); --accent-orange:var(--warn);
+            --accent-red:var(--err); --text-main:var(--fg); --text-dim:var(--fg2);
+            --bg-secondary:var(--bg3); --text-primary:var(--fg);
+        }
+        /* ─── 라이트 (워크북 미색) ───────────────────── */
+        [data-theme="light"] {
+            --bg:#F2EDE0; --bg2:#ECE6D4; --bg3:#FBF8EE; --border:rgba(35,30,22,0.13);
+            --bg-card:#FBF8EE; --bg-card-hi:#FFFCF3;
+            --accent:#D9532E; --ok:#3D7F5F; --warn:#9A6A28; --err:#B0492E;
+            --fg:#2A2620; --fg2:#5E594D; --fg3:#8A867A;
+            --line: rgba(35,30,22,0.08);
+            --line-2: rgba(35,30,22,0.13);
+            --shadow-card: 0 1px 0 rgba(35,30,22,0.04), 0 4px 10px -4px rgba(35,30,22,0.08);
+            --bg-color:var(--bg); --sidebar-bg:var(--bg2); --border-color:var(--border);
+            --accent-blue:var(--accent); --accent-green:var(--ok); --accent-orange:var(--warn);
+            --accent-red:var(--err); --text-main:var(--fg); --text-dim:var(--fg2);
+            --bg-secondary:var(--bg3); --text-primary:var(--fg);
+        }
+        body, .sidebar-left, .sidebar-right, .top-bar, .canvas-area, .terminal,
+        .node, .status-item, .btn-drive, .item, .overlay-panel, textarea {
+            transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+        }
+        .node-role { font-weight:500; }
+        body { background:var(--bg); color:var(--fg); font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; margin:0; display:flex; height:100vh; overflow:hidden; -webkit-font-smoothing: antialiased; }
+        .sidebar-left { width:260px; min-width:260px; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; overflow:hidden; z-index:100; }
+        .main-container { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+        .sidebar-right { position:fixed; right:0; top:0; height:100vh; width:420px; background:var(--bg2); border-left:1px solid var(--border); padding:20px; display:none; flex-direction:column; overflow-y:auto; z-index:1000; box-shadow:-8px 0 32px rgba(0,0,0,.5); }
+
+        /* ═══ 사이드바 — 시안 스타일 ═══ */
+        .drive-bar { padding:14px 14px 8px; display:flex; gap:4px; }
+        .btn-drive { flex:1; padding:5px 8px; font-size:11px; font-family:monospace; background:transparent; border:1px solid var(--line); color:var(--fg2); border-radius:5px; cursor:pointer; transition:all .15s ease; letter-spacing:0.04em; }
+        .btn-drive:hover { background:var(--bg2); color:var(--fg); }
+        .btn-drive.active { background:var(--bg-card); color:var(--fg); border-color:var(--line-2); }
+
+        .list-container { flex:1; overflow-y:auto; padding:6px 8px; font-size:12.5px; }
+        .item { padding:5px 10px; border-radius:5px; cursor:pointer; display:flex; align-items:center; gap:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--fg2); transition:background .12s ease; }
+        .item:hover { background:var(--bg2); color:var(--fg); }
+
+        /* ═══ 상단 헤더 — 시안 스타일 ═══ */
+        .top-bar { height:48px; background:var(--bg); border-bottom:1px solid var(--line); display:flex; align-items:center; padding:0 18px; gap:18px; overflow:hidden; }
+        .brand { display:flex; align-items:center; gap:10px; padding-right:18px; border-right:1px solid var(--line); height:100%; }
+        .brand-mark { width:22px; height:22px; border-radius:6px; background:var(--accent); position:relative; box-shadow:0 0 12px rgba(255,159,112,0.16); }
+        .brand-mark::after { content:""; position:absolute; inset:6px; background:var(--bg); border-radius:2px; }
+        .brand-name { font-size:13.5px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; }
+        .brand-path { display:flex; align-items:center; gap:8px; font-family:monospace; font-size:11.5px; color:var(--fg2); }
+        .brand-path .seg.last { color:var(--fg); }
+        .brand-path .sep { color:var(--fg3); }
+
+        .top-spacer { flex:1; }
+
+        /* 모델 상태 — 시안처럼 dot만 표시 */
+        .provider-status { display:flex; align-items:center; gap:14px; font-family:monospace; font-size:11px; color:var(--fg2); }
+        .status-item { display:flex; align-items:center; gap:6px; padding:0; background:transparent; border:0; }
+        .status-copy { display:flex; flex-direction:column; gap:0; }
+        .status-main { font-size:11px; font-weight:500; color:var(--fg); letter-spacing:-0.005em; }
+        .status-sub { font-size:9.5px; color:var(--fg3); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:monospace; }
+        .status-btn { display:none; }   /* 시안처럼 연결 버튼 hover 시에만 */
+        .status-item:hover .status-btn { display:inline-block; background:var(--bg-card); color:var(--fg); border:1px solid var(--line-2); border-radius:4px; padding:2px 6px; font-size:9.5px; cursor:pointer; margin-left:4px; }
+        .dot { width:6px; height:6px; border-radius:50%; background:var(--fg3); flex-shrink:0; transition:background .3s, box-shadow .3s; }
+        .dot.online { background:var(--ok); box-shadow:0 0 6px var(--ok); }
+        .dot.offline { background:var(--err); box-shadow:0 0 6px var(--err); }
+
+        /* 액션 버튼 — 미니멀 */
+        .top-actions { display:flex; gap:2px; align-items:center; }
+        .top-btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; background:transparent; border:0; border-radius:6px; color:var(--fg2); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:all .12s ease; letter-spacing:-0.005em; white-space:nowrap; }
+        .top-btn:hover { background:var(--bg-card); color:var(--fg); }
+        .top-btn.primary { background:var(--accent); color:var(--bg); font-weight:600; }
+        .top-btn.primary:hover { background:var(--accent); color:var(--bg); filter:brightness(1.06); }
+        .top-btn.danger { color:var(--err); }
+        .top-btn.danger:hover { background:rgba(240,139,122,0.08); color:var(--err); }
+
+        /* 모드 토글 (탭) */
+        .mode-toggle { display:inline-flex; align-items:center; background:var(--bg-card); border:1px solid var(--line); border-radius:6px; padding:2px; }
+        .mode-toggle button { background:transparent; border:0; padding:4px 11px; font-size:11px; font-weight:500; color:var(--fg2); cursor:pointer; border-radius:4px; transition:all .15s ease; font-family:inherit; }
+        .mode-toggle button:hover { color:var(--fg); }
+        .mode-toggle button.active { background:var(--accent); color:var(--bg); font-weight:600; }
+
+        /* 줌 컴팩트 */
+        .zoom-compact { display:flex; align-items:center; border:1px solid var(--line); border-radius:6px; height:28px; }
+        .zoom-compact .zoom-btn { background:transparent; border:0; width:24px; height:100%; color:var(--fg2); cursor:pointer; font-family:monospace; font-size:14px; }
+        .zoom-compact .zoom-btn:hover { color:var(--fg); background:var(--bg-card); }
+        .zoom-compact #zoom-label { font-family:monospace; font-size:10.5px; color:var(--fg2); padding:0 8px; min-width:42px; text-align:center; border-left:1px solid var(--line); border-right:1px solid var(--line); height:100%; display:flex; align-items:center; justify-content:center; }
+
+        /* 테마 토글 */
+        .theme-toggle { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; background:transparent; border:1px solid var(--line); border-radius:6px; color:var(--fg2); cursor:pointer; padding:0; transition:all .15s ease; }
+        .theme-toggle:hover { color:var(--fg); background:var(--bg-card); border-color:var(--line-2); }
+        .theme-toggle svg { width:14px; height:14px; }
+        [data-theme="dark"]  .theme-toggle .icon-sun  { display:block; }
+        [data-theme="dark"]  .theme-toggle .icon-moon { display:none; }
+        [data-theme="light"] .theme-toggle .icon-sun  { display:none; }
+        [data-theme="light"] .theme-toggle .icon-moon { display:block; }
+
+        /* ═══ 캔버스 (빌더 모드) ═══ */
+        .canvas-area { flex:1; position:relative; background-image:radial-gradient(var(--border) 1px, transparent 1px); background-size:40px 40px; overflow:hidden; cursor:grab; user-select:none; }
+        .canvas-area.panning { cursor:grabbing; }
+        #flow-svg { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5; }
+        .node { position:absolute; background:var(--bg-card); border:1px solid var(--line); border-radius:8px; width:155px; padding:12px 12px 12px 16px; cursor:move; z-index:20; box-shadow:var(--shadow-card); transition:border-color .15s ease, box-shadow .15s ease; }
+        .node::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:8px 0 0 8px; background:var(--border); transition:background .2s; }
+        .node:hover { border-color:var(--accent); }
+        .node:hover::before { background:var(--accent); }
+        .node.active { border-color:var(--warn); animation:pulse 1.5s infinite; }
+        .node.active::before { background:var(--warn); }
+        .node.completed { border-color:var(--ok); border-width:2px; }
+        .node.completed::before { background:var(--ok); }
+        .node.awaiting-approval { border-color:var(--accent); border-width:2px; }
+        .node.awaiting-approval::before { background:var(--accent); }
+        .node.rejected, .node.error { border-color:var(--err); border-width:2px; }
+        .node.rejected::before, .node.error::before { background:var(--err); }
+        .node.selected { box-shadow:0 0 0 2px var(--accent); }
+        .node-name { font-size:13px; font-weight:700; color:var(--fg); margin-bottom:2px; }
+        .node-role { font-size:10px; color:var(--fg2); }
+        .port { width:12px; height:12px; background:var(--accent); border:2px solid var(--bg2); border-radius:50%; position:absolute; top:50%; transform:translateY(-50%); cursor:crosshair; }
+        .port-in { left:-7px; }
+        .port-out { right:-7px; }
+        .flow-line { fill:none; stroke:var(--accent); stroke-width:2.5; stroke-dasharray:6; stroke-linecap:round; cursor:pointer; pointer-events:auto; opacity:.7; }
+        .flow-line:hover { stroke:var(--err); stroke-width:4; opacity:1; }
+        .terminal { height:150px; background:var(--bg); border-top:1px solid var(--border); padding:15px; overflow-y:auto; font-family:monospace; font-size:12px; }
+        .overlay-panel { position:absolute; top:20px; left:20px; right:20px; bottom:20px; background:var(--bg); border:1px solid var(--border); border-radius:12px; z-index:200; display:none; flex-direction:column; box-shadow:0 24px 64px rgba(0,0,0,.6); user-select:text; }
+        .panel-body { flex:1; padding:25px; overflow:auto; white-space:pre-wrap; font-size:14px; line-height:1.6; color:var(--fg); }
+        textarea { flex:1; width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--fg); padding:20px; margin:15px 0; resize:none; font-size:15px; box-sizing:border-box; }
+        textarea:focus { outline:none; border-color:var(--accent); }
+        .btn-run { background:var(--accent); color:#161A24; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; transition:opacity .2s; }
+        .btn-run:hover { opacity:.85; }
+        .save-label { font-size:11px; color:var(--fg2); }
+        .file-preview-link { cursor:pointer; flex:1; overflow:hidden; text-overflow:ellipsis; }
+        .file-preview-link:hover { color:var(--accent); text-decoration:underline; }
+        @keyframes pulse { 0% { opacity:1; } 50% { opacity:.6; } 100% { opacity:1; } }
+        .node-reset-btn { display:none; background:var(--err); color:white; border:none; border-radius:3px; padding:2px 6px; font-size:9px; cursor:pointer; margin-top:4px; width:100%; }
+        .node.error .node-reset-btn { display:block; }
+        .node-view-btn { display:none; background:var(--warn); color:#161A24; border:none; border-radius:3px; padding:2px 6px; font-size:9px; cursor:pointer; margin-top:4px; width:100%; }
+        .node.awaiting-approval .node-view-btn { display:block; }
+        .agent-files-hint { font-size:10px; color:var(--fg2); padding:4px 0 8px; }
+        .provider-select-section { margin:8px 0 12px; }
+        .provider-select-label { font-size:11px; color:var(--fg2); margin-bottom:6px; display:block; }
+        .provider-cb-row { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:4px; font-size:12px; cursor:pointer; }
+        .provider-cb-row:hover { background:var(--bg3); }
+        .provider-cb-row input { cursor:pointer; accent-color:var(--accent); }
+        .provider-cb-status { font-size:10px; margin-left:auto; padding:2px 5px; border-radius:3px; }
+        .provider-cb-status.online { background:rgba(125,216,176,.15); color:var(--ok); }
+        .provider-cb-status.offline { background:rgba(240,139,122,.15); color:var(--err); }
+        .sys-prompt-toggle { background:transparent; border:1px solid var(--border); color:var(--fg2); padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px; width:100%; text-align:left; }
+        .sys-prompt-toggle:hover { border-color:var(--accent); color:var(--accent); }
+        .upload-label { background:var(--bg3); color:var(--fg); border:1px solid var(--border); border-radius:4px; padding:5px 10px; font-size:11px; cursor:pointer; display:block; text-align:left; margin-bottom:8px; }
+        .upload-label:hover { border-color:var(--accent); }
+        #panel-content h1, #panel-content h2, #panel-content h3 { color:var(--accent); margin:16px 0 8px; }
+        #panel-content code:not(pre code) { background:var(--bg3); padding:2px 6px; border-radius:4px; font-size:12px; font-family:monospace; }
+        #panel-content pre { margin:12px 0; border-radius:6px; overflow:auto; }
+        #panel-content ul, #panel-content ol { padding-left:20px; }
+        #panel-content p { margin:8px 0; }
+        #panel-content table { border-collapse:collapse; width:100%; margin:12px 0; }
+        #panel-content th, #panel-content td { border:1px solid var(--border); padding:6px 10px; font-size:13px; }
+        #panel-content th { background:var(--bg3); }
+        #log-tab-bar button { transition:background .15s; white-space:nowrap; }
+        #canvas-inner { position:absolute; top:0; left:0; width:100%; height:100%; transform-origin:0 0; }
+        .zoom-btn { background:var(--bg3); color:var(--fg); border:1px solid var(--border); padding:3px 7px; border-radius:4px; font-size:11px; cursor:pointer; white-space:nowrap; }
+        .zoom-btn:hover { border-color:var(--accent); color:var(--accent); }
+        #zoom-label { font-size:11px; color:var(--fg2); min-width:38px; text-align:center; }
+
+        /* ═══════════════════════════════════════════════
+           모니터링 뷰 (5컬럼 가로 레이아웃)
+           ═══════════════════════════════════════════════ */
+        .monitor-view { position:absolute; inset:0; background:var(--bg); z-index:50; overflow:auto; display:none; }
+        .monitor-view.active { display:block; }
+        .monitor-inner { max-width:1400px; margin:0 auto; padding:40px 48px 64px; }
+
+        .mon-head { display:flex; align-items:flex-end; justify-content:space-between; gap:32px; margin-bottom:44px; }
+        .mon-head h1 { font-size:26px; font-weight:700; color:var(--fg); letter-spacing:-0.025em; margin:0 0 6px; }
+        .mon-head p { font-size:13px; color:var(--fg2); margin:0; }
+        .mon-head p strong { color:var(--fg); font-weight:600; }
+        .mon-stats { display:flex; gap:24px; }
+        .mon-stat { text-align:right; }
+        .mon-stat-num { font-family:monospace; font-size:22px; font-weight:600; color:var(--fg); line-height:1; margin-bottom:4px; }
+        .mon-stat-num.acc { color:var(--accent); }
+        .mon-stat-label { font-size:10.5px; color:var(--fg2); }
+
+        .mon-phases-wrap { position:relative; }
+        .mon-phases { display:grid; grid-template-columns:repeat(5, 1fr); gap:48px; position:relative; z-index:2; }
+        .mon-phase { display:flex; flex-direction:column; gap:14px; }
+        .mon-phase-head { margin-bottom:4px; }
+        .mon-phase-marker { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+        .mon-phase-num { font-family:monospace; font-size:11px; color:var(--fg2); font-weight:500; letter-spacing:0.02em; }
+        .mon-phase-bar { flex:1; height:1px; background:var(--line); position:relative; overflow:hidden; }
+        .mon-phase-bar::after { content:""; position:absolute; inset:0; background:var(--fg2); transform-origin:left; transform:scaleX(0); transition:transform .6s cubic-bezier(.2,.7,.3,1); }
+        .mon-phase.done .mon-phase-bar::after { transform:scaleX(1); }
+        .mon-phase.active .mon-phase-bar::after { transform:scaleX(0.4); background:var(--accent); box-shadow:0 0 8px var(--accent); }
+        .mon-phase-name { font-size:14px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; }
+        .mon-phase:not(.active):not(.done) .mon-phase-name { color:var(--fg2); }
+
+        .mon-node { position:relative; background:var(--bg-card); border:1px solid var(--line); border-radius:9px; padding:14px 14px 12px 18px; cursor:pointer; transition:all .15s cubic-bezier(.2,.7,.3,1); box-shadow:var(--shadow-card); }
+        .mon-node:hover { background:var(--bg-card-hi); border-color:var(--line-2); transform:translateY(-1px); }
+        .mon-node::before { content:""; position:absolute; left:0; top:12px; bottom:12px; width:2px; border-radius:2px; background:var(--fg3); transition:background .2s ease; }
+        .mon-node.s-completed::before { background:var(--ok); }
+        .mon-node.s-active::before { background:var(--accent); box-shadow:0 0 8px var(--accent); }
+        .mon-node.s-awaiting::before { background:var(--warn); }
+        .mon-node.s-error::before, .mon-node.s-rejected::before { background:var(--err); }
+        .mon-node.s-active { border-color:var(--accent); background:var(--bg-card-hi); box-shadow:0 0 0 1px rgba(255,159,112,0.16), 0 8px 24px -6px rgba(255,159,112,0.16), var(--shadow-card); }
+
+        .mon-port { position:absolute; width:8px; height:8px; border-radius:50%; background:var(--bg-card); border:1.5px solid var(--line-2); top:50%; transform:translateY(-50%); z-index:3; }
+        .mon-port.in  { left:-5px; }
+        .mon-port.out { right:-5px; }
+        .mon-node.s-active .mon-port.out { background:var(--accent); border-color:var(--accent); box-shadow:0 0 8px var(--accent); }
+        .mon-node.s-completed .mon-port { border-color:var(--ok); }
+
+        .mon-node-title { font-size:13.5px; font-weight:700; color:var(--fg); letter-spacing:-0.015em; margin-bottom:2px; }
+        .mon-node-ko { font-size:12px; font-weight:500; color:var(--fg2); margin-bottom:12px; }
+        .mon-node-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .mon-status { display:inline-flex; align-items:center; gap:6px; font-family:monospace; font-size:10.5px; color:var(--fg2); font-weight:500; }
+        .mon-status .dot { width:5px; height:5px; border-radius:50%; background:var(--fg3); box-shadow:none; }
+        .mon-node.s-completed .mon-status { color:var(--ok); }
+        .mon-node.s-completed .mon-status .dot { background:var(--ok); }
+        .mon-node.s-active .mon-status { color:var(--accent); }
+        .mon-node.s-active .mon-status .dot { background:var(--accent); box-shadow:0 0 8px var(--accent); animation:monPulse 1.6s infinite ease-in-out; }
+        .mon-node.s-awaiting .mon-status { color:var(--warn); }
+        .mon-node.s-awaiting .mon-status .dot { background:var(--warn); }
+        .mon-node.s-error .mon-status, .mon-node.s-rejected .mon-status { color:var(--err); }
+        .mon-node.s-error .mon-status .dot, .mon-node.s-rejected .mon-status .dot { background:var(--err); }
+        @keyframes monPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        .mon-node-action { font-size:11px; color:var(--fg2); font-weight:500; }
+        .mon-node-action.cta { color:var(--accent); font-weight:600; }
+        .mon-node-action.cta::after { content:" →"; }
+
+        .mon-connections { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:1; }
+        .mon-conn { fill:none; }
+        .mon-conn.idle { stroke:var(--line-2); stroke-dasharray:3 4; stroke-width:1; opacity:0.7; }
+        .mon-conn.done { stroke:var(--ok); stroke-width:1; opacity:0.5; }
+        .mon-conn.active { stroke:var(--accent); stroke-width:1.75; stroke-dasharray:5 4; animation:monFlow 1.4s linear infinite; filter:drop-shadow(0 0 4px var(--accent)); }
+        @keyframes monFlow { to { stroke-dashoffset:-18; } }
+        .mon-conn-port { fill:var(--bg-card); stroke:var(--line-2); stroke-width:1.5; }
+        .mon-conn-port.done { stroke:var(--ok); }
+        .mon-conn-port.active { fill:var(--accent); stroke:var(--accent); filter:drop-shadow(0 0 6px var(--accent)); }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="sidebar-left">
+        <div class="drive-bar">
+            <button class="btn-drive active" onclick="changeWorkspace(&#39;C:\\&#39;)">C:</button>
+            <button class="btn-drive" onclick="changeWorkspace(&#39;E:\\&#39;)">E:</button>
+            <button class="btn-drive" onclick="changeWorkspace(&#39;C:\\Users\\SAMSUNG\\Desktop&#39;)">Desktop</button>
+        </div>
+        <div id="dir-name" style="padding:14px 14px 8px; font-size:10.5px; font-weight:500; color:var(--fg3); letter-spacing:0.04em; text-transform:uppercase;">Folders</div>
+        <div class="list-container" id="folder-list"></div>
+        <div style="padding:14px 14px 8px; font-size:10.5px; font-weight:500; color:var(--fg3); letter-spacing:0.04em; text-transform:uppercase;">Files</div>
+        <div style="padding:0 14px 8px;"><input type="text" id="file-search-input" placeholder="🔍 파일 검색..." oninput="filterFileList(this.value)" style="width:100%; background:var(--bg-card); border:1px solid var(--line); color:var(--fg); padding:6px 10px; border-radius:6px; font-size:12px; box-sizing:border-box; outline:none; font-family:inherit;"></div>
+        <div class="list-container" id="file-list"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-bar">
+            <!-- 브랜드: 마크 + Autopus -->
+            <div class="brand">
+                <div class="brand-mark"></div>
+                <div class="brand-name">Autopus</div>
+            </div>
+
+            <!-- 경로 -->
+            <div class="brand-path" id="brand-path">
+                <span class="seg">C:</span>
+                <span class="sep">/</span>
+                <span class="seg">Users</span>
+                <span class="sep">/</span>
+                <span class="seg">SAMSUNG</span>
+                <span class="sep">/</span>
+                <span class="seg last">autopus</span>
+            </div>
+
+            <div class="top-spacer"></div>
+
+            <!-- 모델 상태: 시안처럼 dot+이름만 컴팩트하게 -->
+            <div class="provider-status">
+                <div class="status-item" title="Claude">
+                    <div id="dot-claude" class="dot"></div>
+                    <div class="status-copy">
+                        <span class="status-main">Claude</span>
+                        <span id="provider-claude" class="status-sub">확인 중...</span>
+                    </div>
+                    <button id="btn-claude" class="status-btn" onclick="connectProvider(&#39;claude&#39;)">연결</button>
+                </div>
+                <div class="status-item" title="Codex">
+                    <div id="dot-codex" class="dot"></div>
+                    <div class="status-copy">
+                        <span class="status-main">Codex</span>
+                        <span id="provider-codex" class="status-sub">확인 중...</span>
+                    </div>
+                    <button id="btn-codex" class="status-btn" onclick="connectProvider(&#39;codex&#39;)">연결</button>
+                </div>
+                <div class="status-item" title="Gemini">
+                    <div id="dot-gemini" class="dot"></div>
+                    <div class="status-copy">
+                        <span class="status-main">Gemini</span>
+                        <span id="provider-gemini" class="status-sub">확인 중...</span>
+                    </div>
+                    <button id="btn-gemini" class="status-btn" onclick="connectProvider(&#39;gemini&#39;)">연결</button>
+                </div>
+            </div>
+
+            <!-- 액션 버튼: 미니멀하게 -->
+            <div class="top-actions">
+                <button class="top-btn" onclick="document.getElementById(&#39;import-wf-input&#39;).click()" title="워크플로우 불러오기 (JSON)">불러오기</button>
+                <input type="file" id="import-wf-input" accept=".json" style="display:none" onchange="importWorkflow(event)">
+                <button class="top-btn" onclick="exportWorkflow()" title="워크플로우 내보내기 (JSON)">내보내기</button>
+                <button class="top-btn danger" onclick="clearConnections()" title="선 전체 삭제">선삭제</button>
+                <button id="btn-recent" class="top-btn" onclick="toggleRecentProjects(this)" title="최근 방문한 프로젝트">최근</button>
+                <div id="recent-projects-list" style="display:none; position:fixed; width:320px; background:var(--bg-card); border:1px solid var(--line-2); border-radius:6px; z-index:99999; max-height:300px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,.6);"><div style="padding:10px;font-size:11px;color:var(--text-dim);">최근 방문한 프로젝트 없음</div></div>
+                <button class="top-btn primary" onclick="saveState()" title="상태 저장 (.autopus/workflows/state.json)">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7l3 3v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path></svg>
+                    저장
+                </button>
+            </div>
+
+            <!-- 모드 토글 -->
+            <div class="mode-toggle" role="tablist" aria-label="뷰 모드 전환">
+                <button id="mode-builder" class="" onclick="switchMode(&#39;builder&#39;)" title="빌더 모드 (자유 배치)">빌더</button>
+                <button id="mode-monitor" onclick="switchMode(&#39;monitor&#39;)" title="모니터링 모드 (단계별 진행)" class="active">모니터링</button>
+            </div>
+
+            <!-- 줌 (빌더 모드 전용) -->
+            <div class="zoom-compact" id="zoom-control" style="opacity: 0.4;">
+                <button class="zoom-btn" onclick="zoomOut()" title="캔버스 축소">−</button>
+                <span id="zoom-label">100%</span>
+                <button class="zoom-btn" onclick="zoomIn()" title="캔버스 확대">+</button>
+            </div>
+
+            <!-- 테마 토글 -->
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="테마 전환 (다크/라이트)" aria-label="테마 전환">
+                <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="3"></circle>
+                    <path d="M8 1v2M8 13v2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M1 8h2M13 8h2M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4"></path>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M13 9.5A5.5 5.5 0 1 1 6.5 3a4.5 4.5 0 0 0 6.5 6.5z"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="canvas-area" id="canvas-area">
+            <div id="canvas-inner">
+                <svg id="flow-svg"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-blue)"></path></marker></defs></svg>
+                <div id="nodes-container"><div class="node" id="node-planner" style="left: 40px; top: 30px;"><div class="node-name">Planner</div><div class="node-role">기획자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;planner&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;planner&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;planner&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;planner&#39;)"></div></div><div class="node" id="node-spec" style="left: 210px; top: 30px;"><div class="node-name">Spec Writer</div><div class="node-role">명세서</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;spec&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;spec&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;spec&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;spec&#39;)"></div></div><div class="node" id="node-arch" style="left: 380px; top: 30px;"><div class="node-name">Architect</div><div class="node-role">설계자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;arch&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;arch&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;arch&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;arch&#39;)"></div></div><div class="node" id="node-expl" style="left: 550px; top: 30px;"><div class="node-name">Explorer</div><div class="node-role">탐험가</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;expl&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;expl&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;expl&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;expl&#39;)"></div></div><div class="node" id="node-exec" style="left: 40px; top: 170px;"><div class="node-name">Executor</div><div class="node-role">개발자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;exec&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;exec&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;exec&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;exec&#39;)"></div></div><div class="node" id="node-deep" style="left: 210px; top: 170px;"><div class="node-name">Deep Worker</div><div class="node-role">심층작업</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;deep&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;deep&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;deep&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;deep&#39;)"></div></div><div class="node" id="node-dbug" style="left: 380px; top: 170px;"><div class="node-name">Debugger</div><div class="node-role">해결사</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;dbug&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;dbug&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;dbug&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;dbug&#39;)"></div></div><div class="node" id="node-anno" style="left: 550px; top: 170px;"><div class="node-name">Annotator</div><div class="node-role">태그관리</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;anno&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;anno&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;anno&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;anno&#39;)"></div></div><div class="node" id="node-test" style="left: 40px; top: 310px;"><div class="node-name">Tester</div><div class="node-role">테스터</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;test&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;test&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;test&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;test&#39;)"></div></div><div class="node" id="node-val" style="left: 210px; top: 310px;"><div class="node-name">Validator</div><div class="node-role">품질검증</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;val&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;val&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;val&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;val&#39;)"></div></div><div class="node" id="node-fend" style="left: 380px; top: 310px;"><div class="node-name">Frontend</div><div class="node-role">UI전문가</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;fend&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;fend&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;fend&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;fend&#39;)"></div></div><div class="node" id="node-uxv" style="left: 550px; top: 310px;"><div class="node-name">UX Validator</div><div class="node-role">시각검증</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;uxv&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;uxv&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;uxv&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;uxv&#39;)"></div></div><div class="node" id="node-perf" style="left: 40px; top: 450px;"><div class="node-name">Perf Eng</div><div class="node-role">성능분석</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;perf&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;perf&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;perf&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;perf&#39;)"></div></div><div class="node" id="node-rev" style="left: 210px; top: 450px;"><div class="node-name">Reviewer</div><div class="node-role">리뷰어</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;rev&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;rev&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;rev&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;rev&#39;)"></div></div><div class="node" id="node-sec" style="left: 380px; top: 450px;"><div class="node-name">Security</div><div class="node-role">보안감사</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;sec&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;sec&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;sec&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;sec&#39;)"></div></div><div class="node" id="node-devops" style="left: 550px; top: 450px;"><div class="node-name">DevOps</div><div class="node-role">배포자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;devops&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;devops&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;devops&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;devops&#39;)"></div></div></div>
+            </div>
+
+            <!-- ═══ 모니터링 뷰 (overlay) ═══ -->
+            <div id="monitor-view" class="monitor-view active">
+                <div class="monitor-inner">
+                    <div class="mon-head">
+                        <div>
+                            <h1>Stateflow</h1>
+                            <p id="mon-summary">16개 에이전트의 협업 흐름</p>
+                        </div>
+                        <div class="mon-stats">
+                            <div class="mon-stat">
+                                <div class="mon-stat-num" id="mon-stat-done">0</div>
+                                <div class="mon-stat-label">완료</div>
+                            </div>
+                            <div class="mon-stat">
+                                <div class="mon-stat-num acc" id="mon-stat-active">0</div>
+                                <div class="mon-stat-label">진행 중</div>
+                            </div>
+                            <div class="mon-stat">
+                                <div class="mon-stat-num" id="mon-stat-idle">16</div>
+                                <div class="mon-stat-label">대기</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mon-phases-wrap">
+                        <div class="mon-phases" id="mon-phases">
+                    <div class="mon-phase ">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">01</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">기획</div>
+                        </div>
+                        
+                        <div class="mon-node " data-agent-id="planner" onclick="onMonitorNodeClick(&#39;planner&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Planner</div>
+                            <div class="mon-node-ko">기획자</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="spec" onclick="onMonitorNodeClick(&#39;spec&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Spec Writer</div>
+                            <div class="mon-node-ko">명세서</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="arch" onclick="onMonitorNodeClick(&#39;arch&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Architect</div>
+                            <div class="mon-node-ko">설계자</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mon-phase ">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">02</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">구현</div>
+                        </div>
+                        
+                        <div class="mon-node " data-agent-id="expl" onclick="onMonitorNodeClick(&#39;expl&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Explorer</div>
+                            <div class="mon-node-ko">탐험가</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="exec" onclick="onMonitorNodeClick(&#39;exec&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Executor</div>
+                            <div class="mon-node-ko">개발자</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="deep" onclick="onMonitorNodeClick(&#39;deep&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Deep Worker</div>
+                            <div class="mon-node-ko">심층작업</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mon-phase ">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">03</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">검증</div>
+                        </div>
+                        
+                        <div class="mon-node " data-agent-id="dbug" onclick="onMonitorNodeClick(&#39;dbug&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Debugger</div>
+                            <div class="mon-node-ko">해결사</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="anno" onclick="onMonitorNodeClick(&#39;anno&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Annotator</div>
+                            <div class="mon-node-ko">태그관리</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="test" onclick="onMonitorNodeClick(&#39;test&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Tester</div>
+                            <div class="mon-node-ko">테스터</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="val" onclick="onMonitorNodeClick(&#39;val&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Validator</div>
+                            <div class="mon-node-ko">품질검증</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mon-phase ">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">04</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">다듬기</div>
+                        </div>
+                        
+                        <div class="mon-node " data-agent-id="fend" onclick="onMonitorNodeClick(&#39;fend&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Frontend</div>
+                            <div class="mon-node-ko">UI전문가</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="uxv" onclick="onMonitorNodeClick(&#39;uxv&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">UX Validator</div>
+                            <div class="mon-node-ko">시각검증</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="perf" onclick="onMonitorNodeClick(&#39;perf&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Perf Eng</div>
+                            <div class="mon-node-ko">성능분석</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mon-phase ">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">05</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">배포</div>
+                        </div>
+                        
+                        <div class="mon-node " data-agent-id="rev" onclick="onMonitorNodeClick(&#39;rev&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Reviewer</div>
+                            <div class="mon-node-ko">리뷰어</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="sec" onclick="onMonitorNodeClick(&#39;sec&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Security</div>
+                            <div class="mon-node-ko">보안감사</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="devops" onclick="onMonitorNodeClick(&#39;devops&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">DevOps</div>
+                            <div class="mon-node-ko">배포자</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                    </div></div>
+                        <svg class="mon-connections" id="mon-connections"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div id="overlay-panel" class="overlay-panel">
+                <div style="padding:10px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; background:var(--bg2); border-radius:12px 12px 0 0;">
+                    <span id="panel-title">분석 결과</span>
+                    <button onclick="closePanel()" style="background:transparent; border:1px solid var(--border-color); color:var(--fg); padding:4px 10px; cursor:pointer;">닫기</button>
+                </div>
+                <div id="panel-content" class="panel-body"></div>
+                <div id="approval-footer" style="padding:15px; background:var(--bg2); display:flex; justify-content:center; gap:15px;">
+                    <button class="btn-run" style="background:var(--accent-green)" onclick="handleApprove()">✅ 승인 및 다음진행</button>
+                    <button class="btn-run" style="background:#6e40c9" onclick="saveApprovedDoc()">💾 저장</button>
+                    <button class="btn-run" style="background:var(--accent-red)" onclick="handleReject()">↩️ 반려 후 재지시</button>
+                </div>
+                <div id="followup-footer" style="padding:10px 15px 15px; background:var(--bg3); border-top:1px solid var(--border); border-bottom-left-radius:12px; border-bottom-right-radius:12px; display:none;">
+                    <div style="font-size:11px; color:var(--text-dim); margin-bottom:6px;">💬 추가 질문으로 결과 수정 (같은 에이전트 재실행)</div>
+                    <div style="display:flex; gap:8px; align-items:flex-end;">
+                        <textarea id="followup-input" placeholder="추가 질문을 입력하세요..." style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--fg); padding:8px; font-size:12px; resize:vertical; min-height:60px; font-family:inherit;"></textarea>
+                        <button onclick="sendFollowUp()" class="btn-run" style="white-space:nowrap;">보내기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="log-tab-bar" style="display:none; background:var(--bg); border-top:1px solid var(--border); padding:4px 8px; gap:4px; flex-wrap:nowrap; overflow-x:auto;"></div>
+        <div id="terminal" class="terminal"><div data-agent="System"><strong>[16시 31분 0초] [System]</strong> 16인 완전체 팀 소환 완료. 정식판 v5.0 가동.</div></div>
+    </div>
+
+    <div class="sidebar-right" id="sidebar-right">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <h3 id="drawer-title" style="color:var(--accent); margin:0;">에이전트 업무</h3>
+            <button onclick="closeDrawer()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-dim); padding:4px 10px; cursor:pointer; border-radius:4px; font-size:12px;">닫기</button>
+        </div>
+        <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin-top:5px;"></p>
+        <div id="drawer-output-btn-area" style="display:none; margin-bottom:8px;"></div>
+        <div id="drawer-files" style="display:none; margin-bottom:10px; background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:8px;"></div>
+        <textarea id="prompt-input" placeholder="지시사항을 상세히 입력하세요..."></textarea>
+        <div style="font-size:10px; color:var(--text-dim); text-align:right; margin-bottom:6px;">약 <span id="token-count">0</span> 토큰</div>
+        <div style="margin-bottom:10px;">
+            <button class="sys-prompt-toggle" onclick="toggleSysPrompt()">⚙️ 시스템 프롬프트 <span id="sys-prompt-badge" style="color:var(--accent-green);"></span></button>
+            <div id="sys-prompt-body" style="display:none; margin-top:6px;">
+                <textarea id="sys-prompt-input" oninput="saveSysPromptInMap()" placeholder="이 에이전트의 역할·제약·지침 (선택사항)" style="width:100%; height:80px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--fg); padding:8px; resize:vertical; font-size:12px; box-sizing:border-box; margin:0;"></textarea>
+            </div>
+        </div>
+        <label class="upload-label">📎 파일 업로드 (현재 작업 폴더로)
+            <input type="file" id="file-upload-input" multiple="" style="display:none" onchange="handleFileUploadToServer(event)">
+        </label>
+        <div id="provider-select-section" class="provider-select-section">
+            <span class="provider-select-label">실행할 AI (미선택 시 전체 실행)</span>
+            <div id="provider-checkboxes"></div>
+        </div>
+        <button class="btn-run" style="width:100%;" onclick="assignTask()">실전 분석 시작</button>
+        <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
+    </div>
+
+    <script>
+        let selectedAgent = null;
+        let isConnecting = false;
+        let tempLineFrom = null;
+        let lastResult = null;
+        let currentPreviewFile = null;
+        let sseController = null;
+        let sseRetryDelay = 2000;
+        let sseRetrying = false;
+        const agentFiles = new Map(); // agentId → Set of file paths
+        const seenEventIds = new Set();
+        let lastPromptTokens = 0;
+        let activeLogTab = 'all';
+        const logAgents = new Set();
+        const errorRecoveryMap = { 'exec': 'dbug', 'val': 'dbug', 'test': 'dbug' };
+        let recoveryAttempts = 0;
+        const MAX_RECOVERY = 2;
+        const nodeStatusClasses = ['active', 'completed', 'awaiting-approval', 'rejected', 'error'];
+        const workflowState = { version: 2, nodes: [], connections: [], logs: [], approval: {} };
+        let providerStatuses = [];
+        const selectedProviders = new Map();
+        const systemPrompts = new Map();
+        let zoomLevel = 1.0;
+        let panX = 0, panY = 0, isPanning = false;
+        try { const _af = sessionStorage.getItem('agentFiles'); if (_af) JSON.parse(_af).forEach(([k,v]) => agentFiles.set(k, new Set(v))); } catch(_) {}
+
+        const agents = [
+            { id: 'planner', name: 'Planner', role: '기획자', x: 40, y: 30 }, { id: 'spec', name: 'Spec Writer', role: '명세서', x: 210, y: 30 },
+            { id: 'arch', name: 'Architect', role: '설계자', x: 380, y: 30 }, { id: 'expl', name: 'Explorer', role: '탐험가', x: 550, y: 30 },
+            { id: 'exec', name: 'Executor', role: '개발자', x: 40, y: 170 }, { id: 'deep', name: 'Deep Worker', role: '심층작업', x: 210, y: 170 },
+            { id: 'dbug', name: 'Debugger', role: '해결사', x: 380, y: 170 }, { id: 'anno', name: 'Annotator', role: '태그관리', x: 550, y: 170 },
+            { id: 'test', name: 'Tester', role: '테스터', x: 40, y: 310 }, { id: 'val', name: 'Validator', role: '품질검증', x: 210, y: 310 },
+            { id: 'fend', name: 'Frontend', role: 'UI전문가', x: 380, y: 310 }, { id: 'uxv', name: 'UX Validator', role: '시각검증', x: 550, y: 310 },
+            { id: 'perf', name: 'Perf Eng', role: '성능분석', x: 40, y: 450 }, { id: 'rev', name: 'Reviewer', role: '리뷰어', x: 210, y: 450 },
+            { id: 'sec', name: 'Security', role: '보안감사', x: 380, y: 450 }, { id: 'devops', name: 'DevOps', role: '배포자', x: 550, y: 450 }
+        ];
+
+        // ───── 모니터링 뷰: 단계 매핑 ─────
+        const PHASES = [
+            { num: '01', name: '기획',   ids: ['planner', 'spec', 'arch'] },
+            { num: '02', name: '구현',   ids: ['expl', 'exec', 'deep'] },
+            { num: '03', name: '검증',   ids: ['dbug', 'anno', 'test', 'val'] },
+            { num: '04', name: '다듬기', ids: ['fend', 'uxv', 'perf'] },
+            { num: '05', name: '배포',   ids: ['rev', 'sec', 'devops'] }
+        ];
+
+        const agentMap = Object.fromEntries(agents.map((agent) => [agent.id, agent]));
+
+        function getNodeState(id) {
+            let node = workflowState.nodes.find((entry) => entry.id === id);
+            if (!node) {
+                node = { id, status: '', x: '', y: '', output: null };
+                workflowState.nodes.push(node);
+            }
+            return node;
+        }
+
+        function setNodeStatus(id, status) {
+            const node = getNodeState(id);
+            node.status = status;
+            const el = document.getElementById('node-' + id);
+            if (el) {
+                nodeStatusClasses.forEach((name) => el.classList.remove(name));
+                if (status) el.classList.add(status);
+            }
+            if (typeof refreshMonitorIfActive === 'function') refreshMonitorIfActive();
+        }
+
+        function resetNodeError(agentId) {
+            setNodeStatus(agentId, '');
+            if (workflowState.approval.pendingNodeId === agentId) {
+                workflowState.approval = {};
+                lastResult = null;
+            }
+            saveState();
+        }
+
+        function syncNodePositions() {
+            workflowState.nodes = agents.map((agent) => {
+                const current = getNodeState(agent.id);
+                const el = document.getElementById('node-' + agent.id);
+                return { ...current, id: agent.id, x: el ? el.style.left : (current.x || agent.x + 'px'), y: el ? el.style.top : (current.y || agent.y + 'px') };
+            });
+        }
+
+        function formatResult(result) {
+            if (!result) return '';
+            const files = (result.contextFiles || []).length ? '\n\n컨텍스트 파일:\n- ' + result.contextFiles.join('\n- ') : '';
+            return `요약: ${result.summary || ''}\n에이전트: ${result.fromAgent || ''}\n시각: ${result.timestamp || ''}${files}\n\n${result.output || ''}`;
+        }
+
+        function appendTerminalLog(agent, message, persist = true) {
+            const timestamp = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+            const entry = { agent, message, timestamp };
+            const terminal = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.dataset.agent = agent;
+            div.innerHTML = `<strong>[${entry.timestamp}] [${entry.agent}]</strong> ${entry.message}`;
+            if (activeLogTab !== 'all' && activeLogTab !== agent) div.style.display = 'none';
+            while (terminal.children.length > 300) terminal.removeChild(terminal.firstChild);
+            terminal.appendChild(div);
+            terminal.scrollTop = 9999;
+            if (persist) workflowState.logs.push(entry);
+            if (agent !== 'System') { logAgents.add(agent); renderLogTabs(); }
+        }
+
+        function appendStreamEvent(event, persist = true) {
+            if (!event || !event.id || seenEventIds.has(event.id)) return;
+            seenEventIds.add(event.id);
+            if (seenEventIds.size > 500) {
+                const iter = seenEventIds.values();
+                for (let i = 0; i < 100; i++) seenEventIds.delete(iter.next().value);
+            }
+            const entry = {
+                id: event.id,
+                type: event.type || '',
+                agentId: event.agentId || '',
+                agent: event.agentName || event.agentId || 'System',
+                message: event.message || '',
+                timestamp: event.timestamp || new Date().toISOString()
+            };
+            const displayTime = new Date(entry.timestamp).toLocaleTimeString('ko-KR', { hour12: false });
+            const div = document.createElement('div');
+            div.dataset.agent = entry.agent;
+            div.innerHTML = `<strong>[${displayTime}] [${entry.agent}]</strong> ${entry.message}`;
+            if (activeLogTab !== 'all' && activeLogTab !== entry.agent) div.style.display = 'none';
+            document.getElementById('terminal').appendChild(div);
+            document.getElementById('terminal').scrollTop = 9999;
+            if (persist) workflowState.logs.push(entry);
+            logAgents.add(entry.agent); renderLogTabs();
+            applyStreamStatus(entry);
+        }
+
+        function applyStreamStatus(entry) {
+            if (!entry.agentId) return;
+            if (entry.type === 'started') setNodeStatus(entry.agentId, 'active');
+            if (entry.type === 'completed') setNodeStatus(entry.agentId, 'completed');
+            if (entry.type === 'awaiting_approval') setNodeStatus(entry.agentId, 'awaiting-approval');
+            if (entry.type === 'approved') setNodeStatus(entry.agentId, 'completed');
+            if (entry.type === 'rejected') setNodeStatus(entry.agentId, 'rejected');
+            if (entry.type === 'error') setNodeStatus(entry.agentId, 'error');
+        }
+
+        function renderTerminalLogs() {
+            const terminal = document.getElementById('terminal');
+            terminal.innerHTML = '';
+            logAgents.clear();
+            activeLogTab = 'all';
+            renderLogTabs();
+            if (!workflowState.logs.length) appendTerminalLog('System', '16인 완전체 팀 소환 완료. 정식판 v5.0 가동.', true);
+            else workflowState.logs.forEach((entry) => {
+                if (entry.id) appendStreamEvent(entry, false);
+                else appendTerminalLog(entry.agent, entry.message, false);
+            });
+        }
+
+        async function changeWorkspace(path, skipSave = false) {
+            if (!skipSave && (workflowState.nodes.length > 0 || workflowState.connections.length > 0)) {
+                await saveState();
+            }
+            const res = await fetch('/api/workspace/change', { method: 'POST', body: JSON.stringify({ path }) });
+            const data = await res.json();
+            document.getElementById('dir-name').innerText = data.currentDir;
+            agentFiles.clear();
+            try { sessionStorage.removeItem('agentFiles'); } catch(_) {}
+            await Promise.all([loadWorkspaceList(), loadFiles()]);
+            await loadState();
+            if (!skipSave) {
+                pushRecentProject(data.currentDir);
+                renderRecentProjects();
+            }
+        }
+
+        function pushRecentProject(fullPath) {
+            let projects = [];
+            try { projects = JSON.parse(localStorage.getItem('recentProjects') || '[]'); } catch(_) {}
+            projects = projects.filter(p => p.path !== fullPath);
+            const label = fullPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || fullPath;
+            projects.unshift({ path: fullPath, label, time: new Date().toISOString() });
+            if (projects.length > 10) projects = projects.slice(0, 10);
+            localStorage.setItem('recentProjects', JSON.stringify(projects));
+        }
+
+        function toggleRecentProjects(btn) {
+            const el = document.getElementById('recent-projects-list');
+            if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+            const rect = btn.getBoundingClientRect();
+            el.style.top = (rect.bottom + 4) + 'px';
+            el.style.right = (window.innerWidth - rect.right) + 'px';
+            el.style.display = 'block';
+        }
+
+        document.addEventListener('click', e => {
+            const list = document.getElementById('recent-projects-list');
+            const btn = document.getElementById('btn-recent');
+            if (list && !list.contains(e.target) && e.target !== btn) {
+                list.style.display = 'none';
+            }
+        });
+
+        function removeRecentProject(path) {
+            let projects = [];
+            try { projects = JSON.parse(localStorage.getItem('recentProjects') || '[]'); } catch(_) {}
+            projects = projects.filter(p => p.path !== path);
+            localStorage.setItem('recentProjects', JSON.stringify(projects));
+            renderRecentProjects();
+        }
+
+        function renderRecentProjects() {
+            let projects = [];
+            try { projects = JSON.parse(localStorage.getItem('recentProjects') || '[]'); } catch(_) {}
+            const list = document.getElementById('recent-projects-list');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!projects.length) {
+                list.innerHTML = '<div style="padding:10px;font-size:11px;color:var(--text-dim);">최근 방문한 프로젝트 없음</div>';
+                return;
+            }
+            projects.forEach(p => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;gap:8px;';
+                const info = document.createElement('div');
+                info.style.cssText = 'flex:1;overflow:hidden;min-width:0;';
+                const lbl = document.createElement('div');
+                lbl.style.cssText = 'font-size:12px;font-weight:bold;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                lbl.textContent = '📁 ' + p.label;
+                const sub = document.createElement('div');
+                sub.style.cssText = 'font-size:10px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                sub.title = p.path;
+                sub.textContent = p.path;
+                info.appendChild(lbl);
+                info.appendChild(sub);
+                const xBtn = document.createElement('button');
+                xBtn.textContent = '×';
+                xBtn.title = '목록에서 제거';
+                xBtn.style.cssText = 'background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0;line-height:1;';
+                xBtn.onmouseenter = () => { xBtn.style.color = 'var(--err)'; };
+                xBtn.onmouseleave = () => { xBtn.style.color = 'var(--text-dim)'; };
+                xBtn.onclick = (e) => { e.stopPropagation(); removeRecentProject(p.path); };
+                item.appendChild(info);
+                item.appendChild(xBtn);
+                item.onmouseenter = () => item.style.background = '#1f242c';
+                item.onmouseleave = () => item.style.background = '';
+                item.onclick = () => {
+                    document.getElementById('recent-projects-list').style.display = 'none';
+                    changeWorkspace(p.path);
+                };
+                list.appendChild(item);
+            });
+        }
+
+        async function loadWorkspaceList() {
+            const res = await fetch('/api/workspace/list');
+            const data = await res.json();
+            document.getElementById('dir-name').innerText = data.current;
+            const list = document.getElementById('folder-list');
+            list.innerHTML = '';
+            if (data.parent && data.parent !== data.current) list.innerHTML += '<div class="item" onclick="changeWorkspace(\'..\')">⬆️ 상위 폴더로</div>';
+            data.folders.forEach((folder) => {
+                const item = document.createElement('div');
+                item.className = 'item';
+                item.innerHTML = '📁 ' + folder;
+                item.onclick = () => changeWorkspace(folder);
+                list.appendChild(item);
+            });
+        }
+
+        async function loadFiles() {
+            const res = await fetch('/api/files/list');
+            const data = await res.json();
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            const aid = selectedAgent?.id;
+            if (!aid) {
+                const hint = document.createElement('div');
+                hint.className = 'agent-files-hint';
+                hint.innerText = '작업자를 선택하면 파일을 배정할 수 있습니다';
+                list.appendChild(hint);
+            }
+            const fileSet = agentFiles.get(aid) || new Set();
+            data.forEach((file) => {
+                const item = document.createElement('div');
+                item.className = 'item';
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '6px';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = fileSet.has(file);
+                cb.disabled = !aid;
+                cb.onchange = (ev) => {
+                    if (!aid) return;
+                    if (!agentFiles.has(aid)) agentFiles.set(aid, new Set());
+                    ev.target.checked ? agentFiles.get(aid).add(file) : agentFiles.get(aid).delete(file);
+                    persistAgentFiles();
+                };
+                const label = document.createElement('span');
+                label.className = 'file-preview-link';
+                label.innerText = '📄 ' + file;
+                label.onclick = () => previewFile(file);
+                item.appendChild(cb);
+                item.appendChild(label);
+                list.appendChild(item);
+            });
+        }
+
+        async function previewFile(path) {
+            currentPreviewFile = path;
+            const res = await fetch('/api/files/read?path=' + encodeURIComponent(path));
+            const text = await res.text();
+            document.getElementById('panel-title').innerText = '✏️ ' + path;
+            const content = document.getElementById('panel-content');
+            content.style.padding = '0';
+            const ta = document.createElement('textarea');
+            ta.id = 'file-edit-area';
+            ta.value = text || '';
+            ta.style.cssText = 'width:100%;height:calc(100% - 44px);background:var(--bg);color:var(--fg);border:none;border-bottom:1px solid var(--border);padding:16px;font-family:monospace;font-size:13px;box-sizing:border-box;resize:none;outline:none;';
+            const saveBar = document.createElement('div');
+            saveBar.style.cssText = 'height:44px;padding:8px 16px;display:flex;justify-content:flex-end;background:var(--bg2);border-bottom-left-radius:0;border-bottom-right-radius:0;';
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn-run';
+            saveBtn.style.background = 'var(--accent-green)';
+            saveBtn.innerText = '💾 저장';
+            saveBtn.onclick = saveFileEdit;
+            saveBar.appendChild(saveBtn);
+            content.innerHTML = '';
+            content.appendChild(ta);
+            content.appendChild(saveBar);
+            document.getElementById('approval-footer').style.display = 'none';
+            document.getElementById('followup-footer').style.display = 'none';
+            document.getElementById('overlay-panel').style.display = 'flex';
+        }
+
+        async function runAgent(agentId, prompt, handoff, originalRequest = null) {
+            lastPromptTokens = Math.ceil(prompt.length / 3.5);
+            const agent = agentMap[agentId];
+            setNodeStatus(agentId, 'active');
+            appendTerminalLog(agent.name, handoff ? '이전 결과를 바탕으로 심층 분석 중...' : '분석 엔진을 가동합니다. 잠시만 기다려주세요...');
+            const ns = getNodeState(agentId);
+            ns.lastPrompt = prompt;
+            ns.originalRequest = originalRequest !== null ? originalRequest : prompt;
+            const effectivePrompt = systemPrompts.has(agentId) ? systemPrompts.get(agentId) + '\n\n---\n\n' + prompt : prompt;
+            const res = await fetch('/api/workflow/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agentId, prompt: effectivePrompt, context: Array.from(agentFiles.get(agentId) || []), handoff, providers: selectedProviders.get(agentId)?.size > 0 ? Array.from(selectedProviders.get(agentId)) : ['claude'] })
+            });
+            const data = await res.json();
+            if (data.status !== 'success') {
+                setNodeStatus(agentId, 'error');
+                appendTerminalLog('System', '❌ 에러: ' + data.message);
+                saveState();
+                const recoveryTarget = errorRecoveryMap[agentId];
+                if (recoveryTarget && recoveryAttempts < MAX_RECOVERY) {
+                    recoveryAttempts++;
+                    appendTerminalLog('System', `⚡ 에러 복구 루프 (${recoveryAttempts}/${MAX_RECOVERY}): ${recoveryTarget} 에이전트로 자동 재시도...`);
+                    await runAgent(recoveryTarget, prompt, null);
+                    return;
+                }
+                recoveryAttempts = 0;
+                openDrawer(agent, prompt);
+                return;
+            }
+            recoveryAttempts = 0;
+            lastResult = data.result;
+            const node = getNodeState(agentId);
+            node.output = data.result;
+            setNodeStatus(agentId, 'awaiting-approval');
+            workflowState.approval = { pendingNodeId: agentId, lastDecision: '' };
+            appendTerminalLog(agent.name, '결과 생성 완료. 승인 대기 상태로 전환합니다.');
+            showPanel(agent.name + ' 분석 결과', data.result);
+            saveState();
+        }
+
+        async function assignTask() {
+            const prompt = document.getElementById('prompt-input').value.trim();
+            if (!prompt || !selectedAgent) return;
+            closeDrawer();
+            recoveryAttempts = 0;
+            await runAgent(selectedAgent.id, prompt, null);
+        }
+
+        async function handleApprove() {
+            const currentId = workflowState.approval.pendingNodeId;
+            if (!currentId || !lastResult) return;
+            closePanel();
+            workflowState.approval.lastDecision = 'approved';
+            workflowState.approval.pendingNodeId = '';
+            setNodeStatus(currentId, 'completed');
+            await publishWorkflowEvent('approved', currentId, '결과를 승인했습니다.');
+            saveState();
+            const next = workflowState.connections.find((entry) => entry.from === currentId);
+            if (!next) {
+                appendTerminalLog('System', '✅ 승인됨. 연결된 다음 에이전트가 없어 워크플로우를 종료합니다.');
+                return;
+            }
+            const nextAgent = agentMap[next.to];
+            const currentAgent = agentMap[currentId];
+            const currentNodeState = getNodeState(currentId);
+            const originalRequest = currentNodeState.originalRequest || currentNodeState.lastPrompt || '';
+            const prevOutput = lastResult ? (lastResult.output || '') : '';
+            const isArchitect = next.to === 'arch';
+            const taskInstructions = isArchitect
+                ? [
+                    `[Architect 역할 지침]\nArchitect는 Planner/Spec Writer 산출물을 기반으로 시스템 구조, 모듈 경계, route/API/component/data flow, 유지/수정/삭제/대체 후보, 다음 작업자별 handoff ticket을 설계한다. Architect는 코드, 테스트, CI, env, 의존성 파일을 직접 수정하지 않는다. 테스트 인프라, pytest.ini, conftest.py, requirements, CI 변경은 Tester/DevOps/Executor에게 handoff로 위임한다. 금지 파일을 수정해야 한다고 판단되면 직접 수정하지 말고 WRONG_WORKER_WIP 또는 Handoff Ticket으로 기록한다. 완료 시 A1~A10 Architect Quality Gate와 PASS/PARTIAL/BLOCKED 판정을 보고한다.`
+                  ]
+                : [
+                    `위 내용을 바탕으로 당신의 역할에 맞는 실제 작업을 직접 수행하세요.`,
+                    `계획이나 요약이 아닌, 구체적인 파일 내용·코드·문서 등 실질적인 결과물을 만들어 주세요.`
+                  ];
+            const handoffPrompt = [
+                originalRequest ? `[사용자 원래 요청]\n${originalRequest}` : '',
+                `[이전 단계 완료: ${currentAgent ? currentAgent.name : currentId}]`,
+                prevOutput ? `이전 에이전트 작업 결과:\n${prevOutput}` : '',
+                `[현재 역할: ${nextAgent ? nextAgent.name : next.to}]`,
+                ...taskInstructions
+            ].filter(Boolean).join('\n\n');
+            appendTerminalLog('System', `✅ 승인됨. 다음 에이전트(${next.to}) 업무 시작.`);
+            await runAgent(next.to, handoffPrompt, null, originalRequest);
+        }
+
+        function handleReject() {
+            const currentId = workflowState.approval.pendingNodeId;
+            if (!currentId) return;
+            closePanel();
+            workflowState.approval.lastDecision = 'rejected';
+            setNodeStatus(currentId, 'rejected');
+            publishWorkflowEvent('rejected', currentId, '결과가 반려되었습니다. 수정 지시를 입력하세요.');
+            saveState();
+            openDrawer(agentMap[currentId], `다음 결과를 보완해서 다시 실행하세요.\n\n이전 결과:\n${lastResult ? lastResult.output : ''}`);
+        }
+
+        function reopenApprovalPanel(agentId) {
+            const nodeState = getNodeState(agentId);
+            if (!nodeState.output) { openDrawer(agentMap[agentId]); return; }
+            lastResult = nodeState.output;
+            workflowState.approval.pendingNodeId = agentId;
+            const agent = agentMap[agentId];
+            showPanel((agent ? agent.name : agentId) + ' 분석 결과', nodeState.output);
+        }
+
+        function viewCompletedOutput(agentId) {
+            const nodeState = getNodeState(agentId);
+            if (!nodeState.output) { openDrawer(agentMap[agentId]); return; }
+            const savedPendingId = workflowState.approval.pendingNodeId;
+            workflowState.approval.pendingNodeId = '';
+            const agent = agentMap[agentId];
+            showPanel((agent ? agent.name : agentId) + ' 이전 결과 보기', nodeState.output);
+            workflowState.approval.pendingNodeId = savedPendingId;
+        }
+
+        async function saveFileEdit() {
+            if (!currentPreviewFile) return;
+            const ta = document.getElementById('file-edit-area');
+            if (!ta) return;
+            const res = await fetch('/api/files/write', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: currentPreviewFile, content: ta.value })
+            });
+            if (res.ok) {
+                appendTerminalLog('System', `💾 ${currentPreviewFile} 저장 완료`);
+            } else {
+                const msg = await res.text();
+                alert('파일 저장 실패: ' + msg);
+            }
+        }
+
+        async function sendFollowUp() {
+            const followupText = document.getElementById('followup-input').value.trim();
+            if (!followupText) return;
+            const currentId = workflowState.approval.pendingNodeId;
+            if (!currentId || !lastResult) return;
+            document.getElementById('followup-input').value = '';
+            closePanel();
+            const maxPrevOutputLen = 8000;
+            const prevOutput = lastResult.output.length > maxPrevOutputLen
+                ? lastResult.output.slice(0, maxPrevOutputLen) + '\n...(이하 생략)'
+                : lastResult.output;
+            const followupPrompt = `이전 결과를 바탕으로 추가 질문에 답해주세요.\n\n이전 결과:\n${prevOutput}\n\n추가 질문:\n${followupText}`;
+            await runAgent(currentId, followupPrompt, null);
+        }
+
+        async function saveApprovedDoc() {
+            if (!lastResult) return;
+            const agentId = workflowState.approval.pendingNodeId || (lastResult.fromAgent || 'result');
+            const date = new Date().toISOString().slice(0, 10);
+            const defaultName = `${agentId}-${date}.md`;
+            const filename = prompt('저장할 파일명을 입력하세요:', defaultName);
+            if (!filename) return;
+            const content = lastResult.output || '';
+            try {
+                const res = await fetch('/api/files/write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, content })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    appendTerminalLog('System', `💾 저장 완료: ${data.path}`);
+                } else {
+                    appendTerminalLog('System', `저장 실패: ${data.message || '알 수 없는 오류'}`);
+                }
+            } catch(e) {
+                appendTerminalLog('System', `저장 실패: ${e.message}`);
+            }
+        }
+
+        function initNodes() {
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+            agents.forEach((agent) => {
+                const node = getNodeState(agent.id);
+                const el = document.createElement('div');
+                el.className = 'node';
+                el.id = 'node-' + agent.id;
+                el.style.left = node.x || agent.x + 'px';
+                el.style.top = node.y || agent.y + 'px';
+                el.innerHTML = `<div class="node-name">${agent.name}</div><div class="node-role">${agent.role}</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError('${agent.id}')">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel('${agent.id}')">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, '${agent.id}')"></div><div class="port port-out" onmousedown="startConnection(event, '${agent.id}')"></div>`;
+                el.onmousedown = (event) => {
+                    const t = event.target;
+                    if (!t.classList.contains('port') && !t.classList.contains('node-reset-btn') && !t.classList.contains('node-view-btn')) {
+                        startDragging(event, el);
+                    }
+                };
+                el.onclick = (event) => {
+                    const t = event.target;
+                    if (t.classList.contains('port') || t.classList.contains('node-reset-btn') || t.classList.contains('node-view-btn')) return;
+                    const nodeState = getNodeState(agent.id);
+                    if (nodeState.status === 'error') {
+                        openDrawer(agent, nodeState.lastPrompt || '');
+                    } else {
+                        selectNode(agent);
+                    }
+                };
+                el.ondblclick = (event) => {
+                    if (event.target.classList.contains('port')) return;
+                    const nodeState = getNodeState(agent.id);
+                    if (nodeState.status === 'awaiting-approval' && nodeState.output) {
+                        reopenApprovalPanel(agent.id);
+                    } else {
+                        openDrawer(agent, getNodeState(agent.id).lastPrompt || '');
+                    }
+                };
+                container.appendChild(el);
+                if (node.status) setNodeStatus(agent.id, node.status);
+            });
+        }
+
+        function applyZoom() {
+            const inner = document.getElementById('canvas-inner');
+            if (inner) inner.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+            const label = document.getElementById('zoom-label');
+            if (label) label.textContent = Math.round(zoomLevel * 100) + '%';
+            const area = document.querySelector('.canvas-area');
+            if (area) {
+                area.style.backgroundSize = (40 * zoomLevel) + 'px ' + (40 * zoomLevel) + 'px';
+                area.style.backgroundPosition = panX + 'px ' + panY + 'px';
+            }
+        }
+        function zoomIn() { zoomLevel = Math.min(Math.round((zoomLevel + 0.1) * 10) / 10, 3.0); applyZoom(); }
+        function zoomOut() { zoomLevel = Math.max(Math.round((zoomLevel - 0.1) * 10) / 10, 0.1); applyZoom(); }
+        function zoomReset() { zoomLevel = 1.0; panX = 0; panY = 0; applyZoom(); }
+
+        // ═══════════════════════════════════════════════
+        //  테마 토글 (다크 / 라이트)
+        // ═══════════════════════════════════════════════
+        function getInitialTheme() {
+            try {
+                const saved = localStorage.getItem('autopus-theme');
+                if (saved === 'light' || saved === 'dark') return saved;
+            } catch (_) {}
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+            return 'dark';
+        }
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            try { localStorage.setItem('autopus-theme', theme); } catch (_) {}
+            setTimeout(() => {
+                if (typeof drawConnections === 'function') drawConnections();
+                if (currentMode === 'monitor' && typeof drawMonitorConnections === 'function') drawMonitorConnections();
+            }, 280);
+        }
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(cur);
+        }
+        applyTheme(getInitialTheme());
+        if (window.matchMedia) {
+            const mq = window.matchMedia('(prefers-color-scheme: light)');
+            const onMqChange = (e) => {
+                try { if (localStorage.getItem('autopus-theme')) return; } catch (_) {}
+                applyTheme(e.matches ? 'light' : 'dark');
+            };
+            if (mq.addEventListener) mq.addEventListener('change', onMqChange);
+            else if (mq.addListener) mq.addListener(onMqChange);
+        }
+
+        // ═══════════════════════════════════════════════
+        //  뷰 모드 토글 (빌더 / 모니터링)
+        // ═══════════════════════════════════════════════
+        let currentMode = 'builder';
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const monitor = document.getElementById('monitor-view');
+            const builderBtn = document.getElementById('mode-builder');
+            const monitorBtn = document.getElementById('mode-monitor');
+            const zoomCtrl = document.getElementById('zoom-control');
+
+            if (mode === 'monitor') {
+                renderMonitorView();
+                monitor.classList.add('active');
+                monitorBtn.classList.add('active');
+                builderBtn.classList.remove('active');
+                if (zoomCtrl) zoomCtrl.style.opacity = '0.4';
+            } else {
+                monitor.classList.remove('active');
+                builderBtn.classList.add('active');
+                monitorBtn.classList.remove('active');
+                if (zoomCtrl) zoomCtrl.style.opacity = '1';
+            }
+            try { localStorage.setItem('autopus-mode', mode); } catch (_) {}
+        }
+
+        function getMonitorStatus(builderStatus) {
+            switch (builderStatus) {
+                case 'active': return { cls: 's-active', label: 'Running' };
+                case 'completed': return { cls: 's-completed', label: 'Done' };
+                case 'awaiting-approval': return { cls: 's-awaiting', label: 'Awaiting' };
+                case 'error': return { cls: 's-error', label: 'Error' };
+                case 'rejected': return { cls: 's-rejected', label: 'Rejected' };
+                default: return { cls: '', label: 'Idle' };
+            }
+        }
+
+        function renderMonitorView() {
+            const phasesEl = document.getElementById('mon-phases');
+            if (!phasesEl) return;
+            phasesEl.innerHTML = '';
+
+            let doneCount = 0, activeCount = 0;
+            let activeAgentName = null;
+
+            PHASES.forEach((phase) => {
+                let phaseHasActive = false;
+                let phaseAllDone = true;
+
+                const nodesHtml = phase.ids.map((agentId) => {
+                    const agent = agentMap[agentId];
+                    if (!agent) return '';
+                    const node = workflowState.nodes.find((n) => n.id === agentId) || { status: '' };
+                    const s = getMonitorStatus(node.status);
+
+                    if (s.cls === 's-completed') doneCount++;
+                    else if (s.cls === 's-active') {
+                        activeCount++;
+                        activeAgentName = agent.name;
+                    }
+                    if (s.cls === 's-active' || s.cls === 's-awaiting') phaseHasActive = true;
+                    if (s.cls !== 's-completed') phaseAllDone = false;
+
+                    const isAwaiting = node.status === 'awaiting-approval';
+                    const action = isAwaiting
+                        ? '<span class="mon-node-action cta">결과보기</span>'
+                        : (s.cls === 's-completed' ? '<span class="mon-node-action">view</span>' : '');
+
+                    return `
+                        <div class="mon-node ${s.cls}" data-agent-id="${agent.id}" onclick="onMonitorNodeClick('${agent.id}')">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">${agent.name}</div>
+                            <div class="mon-node-ko">${agent.role}</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>${s.label}</span>
+                                ${action}
+                            </div>
+                        </div>`;
+                }).join('');
+
+                const phaseClass = phaseHasActive ? 'active' : (phaseAllDone && phase.ids.length > 0 ? 'done' : '');
+
+                phasesEl.insertAdjacentHTML('beforeend', `
+                    <div class="mon-phase ${phaseClass}">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">${phase.num}</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">${phase.name}</div>
+                        </div>
+                        ${nodesHtml}
+                    </div>`);
+            });
+
+            const idleCount = Math.max(0, agents.length - doneCount - activeCount);
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setText('mon-stat-done', doneCount);
+            setText('mon-stat-active', activeCount);
+            setText('mon-stat-idle', idleCount);
+
+            const summary = activeAgentName
+                ? `16개 에이전트의 협업 흐름 — 현재 <strong>${activeAgentName}</strong> 작업 중`
+                : (doneCount === agents.length ? '모든 단계 완료' : '16개 에이전트의 협업 흐름');
+            const sumEl = document.getElementById('mon-summary');
+            if (sumEl) sumEl.innerHTML = summary;
+
+            requestAnimationFrame(drawMonitorConnections);
+        }
+
+        function drawMonitorConnections() {
+            const svg = document.getElementById('mon-connections');
+            const wrap = document.querySelector('.mon-phases-wrap');
+            if (!svg || !wrap) return;
+            svg.innerHTML = '';
+            const wrapRect = wrap.getBoundingClientRect();
+            const NS = 'http://www.w3.org/2000/svg';
+
+            const connections = workflowState.connections || [];
+            if (connections.length === 0) return;
+
+            const order = { idle: 0, done: 1, active: 2 };
+            const ports = new Map();
+
+            const links = connections.map(({ from, to }) => {
+                const fromNode = workflowState.nodes.find((n) => n.id === from);
+                const toNode = workflowState.nodes.find((n) => n.id === to);
+                const fromStatus = fromNode ? fromNode.status : '';
+                const toStatus = toNode ? toNode.status : '';
+                let kind = 'idle';
+                if (fromStatus === 'completed' && (toStatus === 'active' || toStatus === 'awaiting-approval')) kind = 'active';
+                else if (fromStatus === 'completed' && toStatus === 'completed') kind = 'done';
+                else if (fromStatus === 'completed') kind = 'active';
+                return { from, to, kind };
+            });
+
+            links.sort((a, b) => order[a.kind] - order[b.kind]);
+
+            function portXY(agentId, side) {
+                const el = document.querySelector(`.mon-node[data-agent-id="${agentId}"]`);
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                const x = (side === 'out' ? r.right : r.left) - wrapRect.left;
+                const y = r.top + r.height / 2 - wrapRect.top;
+                return { x, y };
+            }
+
+            links.forEach(({ from, to, kind }) => {
+                const p1 = portXY(from, 'out');
+                const p2 = portXY(to, 'in');
+                if (!p1 || !p2) return;
+                const dx = (p2.x - p1.x) * 0.5;
+                const path = document.createElementNS(NS, 'path');
+                path.setAttribute('d',
+                    `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`);
+                path.setAttribute('class', `mon-conn ${kind}`);
+                svg.appendChild(path);
+
+                const k1 = `${p1.x},${p1.y}`, k2 = `${p2.x},${p2.y}`;
+                if (!ports.has(k1) || order[kind] > order[ports.get(k1)]) ports.set(k1, kind);
+                if (!ports.has(k2) || order[kind] > order[ports.get(k2)]) ports.set(k2, kind);
+            });
+
+            ports.forEach((kind, key) => {
+                const [x, y] = key.split(',').map(Number);
+                const c = document.createElementNS(NS, 'circle');
+                c.setAttribute('cx', x);
+                c.setAttribute('cy', y);
+                c.setAttribute('r', kind === 'active' ? 3 : 2);
+                c.setAttribute('class', `mon-conn-port ${kind === 'active' ? 'active' : (kind === 'done' ? 'done' : '')}`);
+                svg.appendChild(c);
+            });
+        }
+
+        function onMonitorNodeClick(agentId) {
+            const node = workflowState.nodes.find((n) => n.id === agentId);
+            if (!node) return;
+            if (node.status === 'awaiting-approval' && typeof reopenApprovalPanel === 'function') {
+                reopenApprovalPanel(agentId);
+            }
+        }
+
+        function refreshMonitorIfActive() {
+            if (currentMode === 'monitor') renderMonitorView();
+        }
+
+        window.addEventListener('resize', () => {
+            if (currentMode === 'monitor') drawMonitorConnections();
+        });
+
+        // 페이지 로드 시 마지막 모드 복원 (모든 데이터 로드 후 약간 대기)
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const savedMode = localStorage.getItem('autopus-mode');
+                if (savedMode === 'monitor') setTimeout(() => switchMode('monitor'), 300);
+            } catch (_) {}
+        });
+
+        function startDragging(event, el) {
+            const canvasRect = document.getElementById('canvas-area').getBoundingClientRect();
+            const shiftX = event.clientX - el.getBoundingClientRect().left;
+            const shiftY = event.clientY - el.getBoundingClientRect().top;
+            document.onmousemove = (moveEvent) => {
+                el.style.left = (moveEvent.clientX - canvasRect.left - panX - shiftX) / zoomLevel + 'px';
+                el.style.top = (moveEvent.clientY - canvasRect.top - panY - shiftY) / zoomLevel + 'px';
+                drawConnections();
+            };
+            document.onmouseup = () => { document.onmousemove = null; saveState(); };
+        }
+
+        function startConnection(event, fromId) {
+            event.stopPropagation();
+            isConnecting = true;
+            tempLineFrom = fromId;
+            document.onmousemove = drawTempLine;
+            document.onmouseup = () => {
+                isConnecting = false;
+                document.onmousemove = null;
+                document.getElementById('flow-svg').querySelector('.temp-line')?.remove();
+            };
+        }
+
+        function endConnection(event, toId) {
+            if (!isConnecting || tempLineFrom === toId) return;
+            workflowState.connections.push({ from: tempLineFrom, to: toId });
+            drawConnections();
+            saveState();
+            if (typeof refreshMonitorIfActive === 'function') refreshMonitorIfActive();
+        }
+
+        function drawConnections() {
+            const svg = document.getElementById('flow-svg');
+            const defs = svg.querySelector('defs').outerHTML;
+            svg.innerHTML = defs;
+            const canvasRect = document.getElementById('canvas-area').getBoundingClientRect();
+            workflowState.connections.forEach((conn, index) => {
+                const from = document.getElementById('node-' + conn.from);
+                const to = document.getElementById('node-' + conn.to);
+                if (!from || !to) return;
+                const fromRect = from.getBoundingClientRect();
+                const toRect = to.getBoundingClientRect();
+                const x1 = (fromRect.right - canvasRect.left - panX) / zoomLevel;
+                const y1 = (fromRect.top + fromRect.height / 2 - canvasRect.top - panY) / zoomLevel;
+                const x2 = (toRect.left - canvasRect.left - panX) / zoomLevel;
+                const y2 = (toRect.top + toRect.height / 2 - canvasRect.top - panY) / zoomLevel;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${x1} ${y1} C ${x1 + 40} ${y1}, ${x2 - 40} ${y2}, ${x2} ${y2}`);
+                path.setAttribute('class', 'flow-line');
+                path.setAttribute('marker-end', 'url(#arrow)');
+                path.onclick = () => { workflowState.connections.splice(index, 1); drawConnections(); saveState(); if (typeof refreshMonitorIfActive === 'function') refreshMonitorIfActive(); };
+                svg.appendChild(path);
+            });
+        }
+
+        function drawTempLine(event) {
+            const svg = document.getElementById('flow-svg');
+            svg.querySelector('.temp-line')?.remove();
+            const from = document.getElementById('node-' + tempLineFrom).getBoundingClientRect();
+            const canvasRect = document.getElementById('canvas-area').getBoundingClientRect();
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            line.setAttribute('d', `M ${(from.right - canvasRect.left - panX) / zoomLevel} ${(from.top + from.height / 2 - canvasRect.top - panY) / zoomLevel} L ${(event.clientX - canvasRect.left - panX) / zoomLevel} ${(event.clientY - canvasRect.top - panY) / zoomLevel}`);
+            line.setAttribute('class', 'temp-line');
+            svg.appendChild(line);
+        }
+
+        function clearConnections() {
+            workflowState.connections = [];
+            drawConnections();
+            saveState();
+            if (typeof refreshMonitorIfActive === 'function') refreshMonitorIfActive();
+        }
+
+        async function updateProviders() {
+            try {
+                const controller = new AbortController();
+                const tid = setTimeout(() => controller.abort(), 8000);
+                const res = await fetch('/api/providers/status', { signal: controller.signal });
+                clearTimeout(tid);
+                if (!res.ok) return;
+                const providers = await res.json();
+                providerStatuses = providers;
+                if (selectedAgent) renderProviderCheckboxes(selectedAgent.id);
+                providers.forEach((provider) => {
+                    const dot = document.getElementById('dot-' + provider.id);
+                    const label = document.getElementById('provider-' + provider.id);
+                    const btn = document.getElementById('btn-' + provider.id);
+                    if (dot) dot.className = 'dot ' + (provider.connected ? 'online' : 'offline');
+                    if (label) label.innerText = provider.connected
+                        ? (provider.version || 'connected') + (lastPromptTokens > 0 ? ` · ~${lastPromptTokens.toLocaleString()}토큰` : '')
+                        : (provider.issue || 'CLI 실행 불가');
+                    if (btn) btn.style.display = provider.connected ? 'none' : '';
+                });
+            } catch (_) {}
+        }
+
+        function updateTokenCount() {
+            const text = document.getElementById('prompt-input').value;
+            document.getElementById('token-count').innerText = Math.ceil(text.length / 3.5).toLocaleString();
+        }
+
+        function renderProviderCheckboxes(agentId) {
+            const container = document.getElementById('provider-checkboxes');
+            if (!container) return;
+            const selected = selectedProviders.get(agentId) || new Set();
+            const useDefault = selected.size === 0;
+            container.innerHTML = '';
+            if (!providerStatuses.length) {
+                container.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0;">프로바이더 정보 로딩 중...</div>';
+                return;
+            }
+            providerStatuses.forEach((p) => {
+                const row = document.createElement('label');
+                row.className = 'provider-cb-row';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = useDefault ? p.id === 'claude' : selected.has(p.id);
+                cb.onchange = () => {
+                    if (!selectedProviders.has(agentId)) selectedProviders.set(agentId, new Set());
+                    cb.checked ? selectedProviders.get(agentId).add(p.id) : selectedProviders.get(agentId).delete(p.id);
+                };
+                const name = document.createElement('span');
+                name.innerText = p.name || p.id;
+                const badge = document.createElement('span');
+                badge.className = 'provider-cb-status ' + (p.connected ? 'online' : 'offline');
+                badge.innerText = p.connected ? '연결됨' : '오프라인';
+                row.appendChild(cb);
+                row.appendChild(name);
+                row.appendChild(badge);
+                container.appendChild(row);
+            });
+        }
+
+        function selectNode(agent) {
+            document.querySelectorAll('.node.selected').forEach(n => n.classList.remove('selected'));
+            const el = document.getElementById('node-' + agent.id);
+            if (el) el.classList.add('selected');
+            selectedAgent = agent;
+        }
+
+        function openDrawer(agent, presetPrompt = '') {
+            selectNode(agent);
+            document.getElementById('drawer-title').innerText = agent.name;
+            document.getElementById('drawer-desc').innerText = `${agent.role}에게 전달할 지시를 작성하세요.`;
+            const outputBtnArea = document.getElementById('drawer-output-btn-area');
+            if (outputBtnArea) {
+                const nodeState = getNodeState(agent.id);
+                if (nodeState.output) {
+                    outputBtnArea.style.display = 'block';
+                    outputBtnArea.innerHTML = '';
+                    const btn = document.createElement('button');
+                    btn.textContent = '📋 이전 결과 보기';
+                    btn.style.cssText = 'width:100%;padding:7px;background:transparent;border:1px solid var(--accent-blue);color:var(--accent-blue);border-radius:4px;font-size:12px;cursor:pointer;';
+                    btn.onmouseenter = () => { btn.style.background = 'rgba(88,166,255,0.08)'; };
+                    btn.onmouseleave = () => { btn.style.background = 'transparent'; };
+                    btn.onclick = () => viewCompletedOutput(agent.id);
+                    outputBtnArea.appendChild(btn);
+                } else {
+                    outputBtnArea.style.display = 'none';
+                    outputBtnArea.innerHTML = '';
+                }
+            }
+            const fileSet = agentFiles.get(agent.id) || new Set();
+            const drawerFiles = document.getElementById('drawer-files');
+            if (fileSet.size > 0) {
+                drawerFiles.style.display = 'block';
+                drawerFiles.innerHTML = `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:bold;">📎 배정된 파일 (${fileSet.size}개)</div>`;
+                fileSet.forEach(f => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;';
+                    const lbl = document.createElement('span');
+                    lbl.style.cssText = 'flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);';
+                    lbl.innerText = '📄 ' + f;
+                    const rmBtn = document.createElement('button');
+                    rmBtn.innerText = '✕';
+                    rmBtn.title = '파일 제거';
+                    rmBtn.style.cssText = 'background:transparent;border:none;color:var(--err);cursor:pointer;padding:2px 5px;font-size:12px;line-height:1;flex-shrink:0;';
+                    rmBtn.onclick = () => {
+                        agentFiles.get(agent.id).delete(f);
+                        persistAgentFiles();
+                        openDrawer(agent, document.getElementById('prompt-input').value);
+                    };
+                    row.appendChild(lbl);
+                    row.appendChild(rmBtn);
+                    drawerFiles.appendChild(row);
+                });
+            } else {
+                drawerFiles.style.display = 'none';
+                drawerFiles.innerHTML = '';
+            }
+            const ta = document.getElementById('prompt-input');
+            ta.value = presetPrompt;
+            ta.oninput = updateTokenCount;
+            updateTokenCount();
+            renderProviderCheckboxes(agent.id);
+            document.getElementById('sys-prompt-input').value = systemPrompts.get(agent.id) || '';
+            document.getElementById('sys-prompt-badge').innerText = systemPrompts.has(agent.id) ? ' ✓' : '';
+            document.getElementById('sys-prompt-body').style.display = 'none';
+            document.getElementById('sidebar-right').style.display = 'flex';
+            loadFiles(); // refresh checkboxes for this agent
+        }
+
+        function closeDrawer() { document.getElementById('sidebar-right').style.display = 'none'; }
+
+        function showPanel(title, result) {
+            currentPreviewFile = null;
+            const content = document.getElementById('panel-content');
+            content.style.padding = '';
+            content.style.whiteSpace = 'normal';
+            document.getElementById('panel-title').innerText = title;
+            const pendingId = workflowState.approval.pendingNodeId;
+            const sentPrompt = pendingId ? (getNodeState(pendingId).lastPrompt || '') : '';
+            const sentHtml = sentPrompt ? `<details style="margin-bottom:12px;border:1px solid var(--border-color);border-radius:6px;padding:6px 10px;background:var(--bg-secondary)"><summary style="cursor:pointer;font-size:12px;color:var(--text-dim);user-select:none">📨 보낸 메세지 보기</summary><pre style="margin:8px 0 0;white-space:pre-wrap;word-break:break-all;font-size:12px;color:var(--text-primary)">${sentPrompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></details>` : '';
+            content.innerHTML = sentHtml + renderMarkdown(formatResult(result));
+            if (typeof hljs !== 'undefined') content.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+            const hasPending = !!pendingId;
+            document.getElementById('approval-footer').style.display = hasPending ? 'flex' : 'none';
+            document.getElementById('followup-footer').style.display = hasPending ? 'block' : 'none';
+            document.getElementById('overlay-panel').style.display = 'flex';
+        }
+
+        function closePanel() {
+            document.getElementById('overlay-panel').style.display = 'none';
+            document.getElementById('followup-footer').style.display = 'none';
+            currentPreviewFile = null;
+        }
+
+        async function connectProvider(provider) {
+            const res = await fetch('/api/providers/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider })
+            });
+            if (!res.ok) {
+                const message = await res.text();
+                appendTerminalLog('System', `${provider} CLI 연결 실패: ${message}`);
+                alert(message);
+                return;
+            }
+            appendTerminalLog('System', `${provider} CLI 창을 열었습니다. 로그인 또는 연결 후 상태가 자동 갱신됩니다.`);
+            setTimeout(updateProviders, 2000);
+        }
+
+        async function saveState() {
+            syncNodePositions();
+            workflowState.version = 2;
+            workflowState.systemPrompts = Object.fromEntries(systemPrompts);
+            if (workflowState.logs.length > 300) workflowState.logs = workflowState.logs.slice(-200);
+            await fetch('/api/workflow/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(workflowState) });
+        }
+
+        async function loadState() {
+            const res = await fetch('/api/workflow/state');
+            const data = await res.json();
+            workflowState.version = data.version || 2;
+            workflowState.nodes = data.nodes || [];
+            workflowState.connections = data.connections || [];
+            workflowState.logs = data.logs || [];
+            workflowState.approval = data.approval || {};
+            if (data.systemPrompts) Object.entries(data.systemPrompts).forEach(([k, v]) => systemPrompts.set(k, v));
+            workflowState.logs.forEach((entry) => { if (entry.id) seenEventIds.add(entry.id); });
+            const pending = workflowState.approval.pendingNodeId;
+            if (pending) {
+                const node = getNodeState(pending);
+                lastResult = node.output || null;
+            }
+            initNodes();
+            drawConnections();
+            renderTerminalLogs();
+        }
+
+        async function publishWorkflowEvent(type, agentId, message) {
+            await fetch('/api/workflow/event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, agentId, message })
+            });
+        }
+
+        function connectWorkflowStream() {
+            if (sseController) sseController.abort();
+            sseController = new AbortController();
+            sseRetrying = false;
+
+            fetch('/api/workflow/stream', { signal: sseController.signal })
+                .then((res) => {
+                    if (!res.ok) throw new Error('SSE ' + res.status);
+                    sseRetryDelay = 2000;
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buf = '';
+                    function pump() {
+                        return reader.read().then(({ done, value }) => {
+                            if (done) throw new Error('ended');
+                            buf += decoder.decode(value, { stream: true });
+                            let i;
+                            while ((i = buf.indexOf('\n\n')) !== -1) {
+                                parseSSEChunk(buf.slice(0, i));
+                                buf = buf.slice(i + 2);
+                            }
+                            return pump();
+                        });
+                    }
+                    return pump();
+                })
+                .catch((e) => {
+                    if (e.name === 'AbortError') return;
+                    if (!sseRetrying) {
+                        appendTerminalLog('System', 'SSE 연결 끊김 — 자동 재연결 대기 중...', false);
+                        sseRetrying = true;
+                    }
+                    sseRetryDelay = Math.min(sseRetryDelay * 2, 30000);
+                    setTimeout(connectWorkflowStream, sseRetryDelay);
+                });
+        }
+
+        function parseSSEChunk(chunk) {
+            let data = '';
+            for (const line of chunk.split('\n')) {
+                if (line.startsWith('data:')) data = line.slice(5).trim();
+            }
+            if (!data) return;
+            try { appendStreamEvent(JSON.parse(data), true); } catch (_) {}
+        }
+
+        function persistAgentFiles() {
+            try { sessionStorage.setItem('agentFiles', JSON.stringify(Array.from(agentFiles.entries()).map(([k,v]) => [k, Array.from(v)]))); } catch(_) {}
+        }
+
+        function toggleSysPrompt() {
+            const body = document.getElementById('sys-prompt-body');
+            body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function saveSysPromptInMap() {
+            if (!selectedAgent) return;
+            const v = document.getElementById('sys-prompt-input').value;
+            v ? systemPrompts.set(selectedAgent.id, v) : systemPrompts.delete(selectedAgent.id);
+            document.getElementById('sys-prompt-badge').innerText = v ? ' ✓' : '';
+        }
+
+        async function handleFileUploadToServer(event) {
+            if (!selectedAgent) { event.target.value = ''; return; }
+            const files = event.target.files;
+            if (!files.length) return;
+            const fd = new FormData();
+            Array.from(files).forEach(f => fd.append('files', f));
+            try {
+                const res = await fetch('/api/files/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!agentFiles.has(selectedAgent.id)) agentFiles.set(selectedAgent.id, new Set());
+                data.uploaded.forEach(name => agentFiles.get(selectedAgent.id).add(name));
+                persistAgentFiles();
+                await loadFiles();
+                appendTerminalLog('System', `파일 업로드 완료: ${data.uploaded.join(', ')}`);
+            } catch(e) { appendTerminalLog('System', '파일 업로드 실패: ' + e.message); }
+            event.target.value = '';
+        }
+
+        function exportWorkflow() {
+            syncNodePositions();
+            workflowState.systemPrompts = Object.fromEntries(systemPrompts);
+            const blob = new Blob([JSON.stringify(workflowState, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'workflow-' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function importWorkflow(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                const data = JSON.parse(await file.text());
+                workflowState.nodes = data.nodes || [];
+                workflowState.connections = data.connections || [];
+                workflowState.logs = data.logs || [];
+                workflowState.approval = data.approval || {};
+                systemPrompts.clear();
+                if (data.systemPrompts) Object.entries(data.systemPrompts).forEach(([k,v]) => systemPrompts.set(k, v));
+                initNodes(); drawConnections(); renderTerminalLogs();
+                await saveState();
+                appendTerminalLog('System', `워크플로우 불러오기: ${file.name}`);
+            } catch(e) { alert('워크플로우 파일 오류: ' + e.message); }
+            event.target.value = '';
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return '';
+            try {
+                if (typeof DOMPurify !== 'undefined' && typeof marked !== 'undefined') {
+                    return DOMPurify.sanitize(marked.parse(text));
+                }
+            } catch(_) {}
+            const el = document.createElement('div');
+            el.textContent = text;
+            return '<pre style="white-space:pre-wrap">' + el.innerHTML + '</pre>';
+        }
+
+        function filterFileList(query) {
+            const q = (query || '').toLowerCase();
+            document.querySelectorAll('#file-list .item').forEach(item => {
+                item.style.display = (!q || item.textContent.toLowerCase().includes(q)) ? '' : 'none';
+            });
+        }
+
+        function renderLogTabs() {
+            const bar = document.getElementById('log-tab-bar');
+            if (!bar) return;
+            if (logAgents.size === 0) { bar.style.display = 'none'; return; }
+            bar.style.display = 'flex';
+            const btnStyle = (active) => `background:${active ? 'var(--accent-blue)' : 'transparent'};color:${active ? '#fff' : 'var(--text-dim)'};border:1px solid ${active ? 'var(--accent-blue)' : 'var(--border-color)'};padding:2px 10px;border-radius:12px;cursor:pointer;font-size:11px;`;
+            bar.innerHTML = '';
+            const makeBtn = (label, agentId) => {
+                const btn = document.createElement('button');
+                btn.style.cssText = btnStyle(activeLogTab === agentId);
+                btn.textContent = label;
+                btn.dataset.tabAgent = agentId;
+                btn.addEventListener('click', () => filterLogsByTab(agentId));
+                return btn;
+            };
+            bar.appendChild(makeBtn('전체', 'all'));
+            logAgents.forEach(agent => bar.appendChild(makeBtn(agent, agent)));
+        }
+
+        function filterLogsByTab(agentId) {
+            activeLogTab = agentId;
+            renderLogTabs();
+            document.querySelectorAll('#terminal > div').forEach(div => {
+                div.style.display = (agentId === 'all' || div.dataset.agent === agentId) ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('keydown', function(e) {
+            const tag = document.activeElement ? document.activeElement.tagName : '';
+            if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+            const panelVisible = document.getElementById('overlay-panel').style.display === 'flex';
+            const hasPending = !!workflowState.approval.pendingNodeId;
+            if ((e.key === 'Enter' || (e.ctrlKey && e.key === 'Enter')) && panelVisible && hasPending) {
+                e.preventDefault(); handleApprove();
+            } else if (e.key === 'Escape' && panelVisible) {
+                e.preventDefault(); closePanel();
+            } else if (e.ctrlKey && !e.shiftKey && e.key === 'r') {
+                e.preventDefault();
+                if (selectedAgent) openDrawer(selectedAgent);
+            } else if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                const fi = document.getElementById('file-search-input');
+                if (fi) fi.focus();
+            }
+        });
+
+        async function init() {
+            appendTerminalLog('System', '16인 완전체 팀 소환 완료. 정식판 v5.0 가동.', true);
+            initNodes();
+            renderRecentProjects();
+            await changeWorkspace('.', true);
+            updateProviders();  // fire-and-forget: don't block page load on provider probe
+            connectWorkflowStream();
+            setInterval(updateProviders, 60000);  // 60s interval; server caches connected status for 5min
+            document.getElementById('overlay-panel').addEventListener('wheel', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+            document.getElementById('canvas-area').addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (e.deltaY < 0) zoomIn(); else zoomOut();
+            }, { passive: false });
+            const canvasArea = document.getElementById('canvas-area');
+            let panStartX = 0, panStartY = 0;
+            canvasArea.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.node') || e.target.closest('.port') || e.target.closest('#overlay-panel')) return;
+                isPanning = true;
+                panStartX = e.clientX - panX;
+                panStartY = e.clientY - panY;
+                canvasArea.classList.add('panning');
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                panX = e.clientX - panStartX;
+                panY = e.clientY - panStartY;
+                applyZoom();
+            });
+            document.addEventListener('mouseup', () => {
+                if (isPanning) { isPanning = false; canvasArea.classList.remove('panning'); }
+            });
+        }
+
+        init();
+    </script>
+
+
+</body></html>
