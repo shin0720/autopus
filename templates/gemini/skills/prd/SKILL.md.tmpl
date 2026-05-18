@@ -19,18 +19,34 @@ Identify the four core dimensions from the user's request:
 
 Clarify any missing dimensions before proceeding.
 
-### Step 1.5: Discovery Q&A
+### Step 1.5: Discovery Inputs (from upstream Step 1.4)
 
-PRD 작성 전에 6개 핵심 질문으로 컨텍스트를 수집합니다. 사용자 입력이 불충분할 경우 AskUserQuestion으로 확인:
+PRD 작성 전 컨텍스트는 `/auto plan` 파이프라인 Step 1.4 (Discovery Interview)에서
+이미 수집되어 `.autopus/discovery/{slug}.json`에 저장되어 있습니다.
 
-1. **Problem**: 해결하려는 핵심 문제는 무엇인가? (증상이 아닌 근본 원인)
-2. **Target Users**: 누가 이것을 사용하는가? (역할, 빈도, 기대)
-3. **Success Metrics**: 성공을 어떻게 측정하는가? (정량적 지표 1개 이상)
-4. **Constraints**: 기술적/비즈니스적 제약은? (기한, 호환성, 예산)
-5. **Prior Art**: 이전에 시도된 접근이나 관련 기능이 있는가?
-6. **Scope Boundary**: 이번에 명확히 제외할 것은? (스코프 크리프 방지)
+The PRD generator MUST read this file and use the answers as authoritative input for:
 
-모든 질문에 답변이 있어야 Step 2로 진행. 불확실한 항목은 PRD의 Open Questions 섹션에 기록.
+| Discovery Answer | PRD Section |
+|---|---|
+| `problem_users` | Target Users (Section 3) |
+| `tier_structure` | Tier Structure / Pricing (Section 5 or new) |
+| `core_mechanism` | Core Mechanism / Algorithm (Section 1 or new) |
+| `numeric_ac` | Goals & Success Metrics (Section 2) — ALL numeric values must appear verbatim |
+| `output_structure` | Response Schema (new section) — table must be included |
+| `tone_prohibited.tone` | Design Tone (new section) — 3 keywords |
+| `tone_prohibited.prohibited` | Out of Scope / Prohibited (Section 8) — 3 items |
+| `data_strategy` | Data Sources (new section) — mark `[HUMAN TASK]` if manual/mixed |
+| `integration_ids` | External Dependencies (new section) — include SoT |
+| `definition_of_done` | Completion Criteria (new section) — 3+ verifiable items |
+
+**Rule**: The PRD MUST NOT introduce alternative values for these fields. Any deviation
+will be caught by the PRD Quality Gate (Step 1.6) and trigger re-generation.
+
+If the discovery file is absent (e.g., `--skip-prd` was used or pipeline was started
+without Step 1.4), the PRD generator MAY proceed with the legacy 6-question Q&A as
+fallback, BUT each gap-filled section MUST be marked `[AI-GUESSED — NEEDS CONFIRMATION]`.
+
+See `content/rules/automation-quality.md` R3 for the 10 mandatory PRD items.
 
 ### Step 2: Codebase Context Collection
 
