@@ -1306,7 +1306,7 @@
                     if (nodeState.status === 'error') {
                         openDrawer(agent, nodeState.lastPrompt || '');
                     } else if (nodeState.status === 'completed') {
-                        viewCompletedOutput(agent.id);
+                        openDrawer(agent, nodeState.lastPrompt || '');
                     } else {
                         selectNode(agent);
                     }
