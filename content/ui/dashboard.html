@@ -123,6 +123,8 @@
         .node.awaiting-approval::before { background:var(--accent); }
         .node.rejected, .node.error { border-color:var(--err); border-width:2px; }
         .node.rejected::before, .node.error::before { background:var(--err); }
+        .node.interrupted { border-color:#f0a500; border-width:2px; opacity:0.75; }
+        .node.interrupted::before { background:#f0a500; }
         .node.selected { box-shadow:0 0 0 2px var(--accent); }
         .node-name { font-size:14px; font-weight:700; color:var(--fg); margin-bottom:2px; }
         .node-role { font-size:11px; color:var(--fg2); }
@@ -231,6 +233,8 @@
         .mon-node.s-awaiting .mon-status .dot { background:var(--warn); }
         .mon-node.s-error .mon-status, .mon-node.s-rejected .mon-status { color:var(--err); }
         .mon-node.s-error .mon-status .dot, .mon-node.s-rejected .mon-status .dot { background:var(--err); }
+        .mon-node.s-interrupted .mon-status { color:#f0a500; }
+        .mon-node.s-interrupted .mon-status .dot { background:#f0a500; }
         @keyframes monPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
         .mon-node-action { font-size:12px; color:var(--fg2); font-weight:500; }
         .mon-node-action.cta { color:var(--accent); font-weight:600; }
@@ -343,12 +347,12 @@
 
             <!-- 모드 토글 -->
             <div class="mode-toggle" role="tablist" aria-label="뷰 모드 전환">
-                <button id="mode-builder" class="" onclick="switchMode(&#39;builder&#39;)" title="빌더 모드 (자유 배치)">빌더</button>
-                <button id="mode-monitor" onclick="switchMode(&#39;monitor&#39;)" title="모니터링 모드 (단계별 진행)" class="active">모니터링</button>
+                <button id="mode-builder" class="active" onclick="switchMode(&#39;builder&#39;)" title="빌더 모드 (자유 배치)">빌더</button>
+                <button id="mode-monitor" onclick="switchMode(&#39;monitor&#39;)" title="모니터링 모드 (단계별 진행)" class="">모니터링</button>
             </div>
 
             <!-- 줌 (빌더 모드 전용) -->
-            <div class="zoom-compact" id="zoom-control" style="opacity: 0.4;">
+            <div class="zoom-compact" id="zoom-control" style="opacity: 1;">
                 <button class="zoom-btn" onclick="zoomOut()" title="캔버스 축소">−</button>
                 <span id="zoom-label">100%</span>
                 <button class="zoom-btn" onclick="zoomIn()" title="캔버스 확대">+</button>
@@ -372,7 +376,7 @@
             </div>
 
             <!-- ═══ 모니터링 뷰 (overlay) ═══ -->
-            <div id="monitor-view" class="monitor-view active">
+            <div id="monitor-view" class="monitor-view">
                 <div class="monitor-inner">
                     <div class="mon-head">
                         <div>
@@ -617,16 +621,12 @@
                     <button onclick="closePanel()" style="background:transparent; border:1px solid var(--border-color); color:var(--fg); padding:4px 10px; cursor:pointer;">닫기</button>
                 </div>
                 <div id="panel-content" class="panel-body"></div>
-                <div id="approval-footer" style="padding:15px; background:var(--bg2); display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-                    <button class="btn-run" style="background:var(--accent-green)" onclick="handleApproveOnly()">✅ 승인</button>
-                    <button class="btn-run" style="background:#3a7a3a" onclick="handleApprove()">▶️ 다음단계</button>
-                    <button class="btn-run" style="background:#6e40c9" onclick="handleReject()">✏️ 수정</button>
-                    <button class="btn-run" style="background:#666" onclick="closePanel()">❌ 취소</button>
-                </div>
-                <div id="view-footer" style="padding:15px; background:var(--bg2); display:none; justify-content:center; gap:10px; flex-wrap:wrap;">
-                    <button class="btn-run" style="background:#6e40c9" onclick="rerunCompletedNode()">✏️ 수정 재실행</button>
-                    <button class="btn-run" style="background:#3a7a3a" id="btn-rerun-direct" onclick="rerunCompletedNodeDirect()">🔄 이 작업자 다시 실행</button>
-                    <button class="btn-run" style="background:#1a5a8a" id="btn-resume-from" onclick="resumeFromCompletedNode()">⏩ 여기서부터 다시 진행</button>
+                <div id="result-footer" style="padding:15px; background:var(--bg2); display:none; justify-content:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-run" id="btn-approve-next" style="background:#3a7a3a" onclick="resultApproveAndNext()">✅ 승인 후 다음 단계</button>
+                    <button class="btn-run" style="background:#6e40c9" onclick="resultRequestEdit()">✏️ 수정 요청</button>
+                    <button class="btn-run" style="background:#6e40c9" onclick="resultRerunModified()">🔁 수정 후 재분석</button>
+                    <button class="btn-run" id="btn-rerun-direct" style="background:#3a7a3a" onclick="rerunCompletedNodeDirect()">🔄 이 작업자만 다시 실행</button>
+                    <button class="btn-run" id="btn-resume-from" style="background:#1a5a8a" onclick="resumeFromCompletedNode()">⏩ 다음 작업자부터 다시 진행</button>
                     <button class="btn-run" style="background:#666" onclick="closePanel()">닫기</button>
                 </div>
                 <div id="followup-footer" style="padding:10px 15px 15px; background:var(--bg3); border-top:1px solid var(--border); border-bottom-left-radius:12px; border-bottom-right-radius:12px; display:none;">
@@ -686,7 +686,7 @@
         const errorRecoveryMap = { 'exec': 'dbug', 'val': 'dbug', 'test': 'dbug' };
         let recoveryAttempts = 0;
         const MAX_RECOVERY = 2;
-        const nodeStatusClasses = ['active', 'completed', 'awaiting-approval', 'rejected', 'error'];
+        const nodeStatusClasses = ['active', 'completed', 'awaiting-approval', 'rejected', 'error', 'interrupted'];
         const workflowState = { version: 2, nodes: [], connections: [], logs: [], approval: {} };
         let providerStatuses = [];
         const selectedProviders = new Map();
@@ -1004,7 +1004,7 @@
             content.innerHTML = '';
             content.appendChild(ta);
             content.appendChild(saveBar);
-            document.getElementById('approval-footer').style.display = 'none';
+            document.getElementById('result-footer').style.display = 'none';
             document.getElementById('followup-footer').style.display = 'none';
             document.getElementById('overlay-panel').style.display = 'flex';
         }
@@ -1149,7 +1149,88 @@
             const agent = agentMap[agentId];
             showPanel((agent ? agent.name : agentId) + ' 이전 결과 보기', nodeState.output);
             workflowState.approval.pendingNodeId = savedPendingId;
-            document.getElementById('view-footer').style.display = 'flex';
+            updateResultFooter(false, agentId);
+        }
+
+        function viewPrevStageOutput(agentId) {
+            const prevConn = workflowState.connections.find(c => c.to === agentId);
+            if (!prevConn) { alert('이전 단계 연결이 없습니다.'); return; }
+            const prevNS = getNodeState(prevConn.from);
+            if (!prevNS.output) { alert('이전 단계에 결과가 없습니다.'); return; }
+            closeDrawer();
+            viewingCompletedAgentId = agentId;
+            const prevAgent = agentMap[prevConn.from];
+            const savedPendingId = workflowState.approval.pendingNodeId;
+            workflowState.approval.pendingNodeId = '';
+            showPanel((prevAgent ? prevAgent.name : prevConn.from) + ' 결과 (이전 단계)', prevNS.output);
+            workflowState.approval.pendingNodeId = savedPendingId;
+            updateResultFooter(false, agentId);
+        }
+
+        async function rerunFromPrevStage(agentId) {
+            const prevConn = workflowState.connections.find(c => c.to === agentId);
+            if (!prevConn) { alert('이전 단계 연결이 없습니다.'); return; }
+            const prevNS = getNodeState(prevConn.from);
+            if (!prevNS.output) { alert('이전 단계에 결과가 없습니다.'); return; }
+            const confirmed = confirm('이전 단계 결과를 기준으로 이 작업자를 다시 실행합니다. 기존 결과는 보존됩니다.');
+            if (!confirmed) return;
+            const nodeState = getNodeState(agentId);
+            const agent = agentMap[agentId];
+            if (nodeState.output) {
+                if (!nodeState.attemptHistory) nodeState.attemptHistory = [];
+                nodeState.attemptHistory.push({ attempt: nodeState.attemptHistory.length + 1, output: nodeState.output, timestamp: new Date().toISOString() });
+            }
+            closeDrawer();
+            const originalRequest = nodeState.originalRequest || nodeState.lastPrompt || '';
+            const prevOutput = typeof prevNS.output === 'object' ? (prevNS.output.output || '') : String(prevNS.output);
+            const prevAgent = agentMap[prevConn.from];
+            const isArchitect = agentId === 'arch';
+            const taskInstructions = isArchitect
+                ? `[Architect 역할 지침]\nArchitect는 Planner/Spec Writer 산출물을 기반으로 시스템 구조, 모듈 경계, route/API/component/data flow, 유지/수정/삭제/대체 후보, 다음 작업자별 handoff ticket을 설계한다. Architect는 코드, 테스트, CI, env, 의존성 파일을 직접 수정하지 않는다. 테스트 인프라, pytest.ini, conftest.py, requirements, CI 변경은 Tester/DevOps/Executor에게 handoff로 위임한다. 금지 파일을 수정해야 한다고 판단되면 직접 수정하지 말고 WRONG_WORKER_WIP 또는 Handoff Ticket으로 기록한다. 완료 시 A1~A10 Architect Quality Gate와 PASS/PARTIAL/BLOCKED 판정을 보고한다.`
+                : `위 내용을 바탕으로 당신의 역할에 맞는 실제 작업을 직접 수행하세요.\n계획이나 요약이 아닌, 구체적인 파일 내용·코드·문서 등 실질적인 결과물을 만들어 주세요.`;
+            const rerunPrompt = [
+                originalRequest ? `[사용자 원래 요청]\n${originalRequest}` : '',
+                prevOutput ? `[이전 단계 결과 — ${prevAgent ? prevAgent.name : prevConn.from}]\n${prevOutput}` : '',
+                `[현재 역할: ${agent ? agent.name : agentId}]`,
+                `[재실행 사유: rerun_from_prev_stage]`,
+                taskInstructions
+            ].filter(Boolean).join('\n\n');
+            const attemptNum = (nodeState.attemptHistory || []).length;
+            appendTerminalLog('System', `↩️ ${agent ? agent.name : agentId} 이전 단계 기준 재실행 시작 (attempt #${attemptNum})`);
+            await runAgent(agentId, rerunPrompt, null, originalRequest);
+        }
+
+        function updateResultFooter(isPending, agentId) {
+            const footer = document.getElementById('result-footer');
+            footer.style.display = 'flex';
+            const hasNext = agentId ? !!workflowState.connections.find(c => c.from === agentId) : false;
+            const btnApprove = document.getElementById('btn-approve-next');
+            const btnResume = document.getElementById('btn-resume-from');
+            if (btnApprove) { btnApprove.disabled = !hasNext; btnApprove.style.opacity = hasNext ? '1' : '0.4'; }
+            if (btnResume) { btnResume.disabled = !hasNext; btnResume.style.opacity = hasNext ? '1' : '0.4'; }
+        }
+
+        function resultApproveAndNext() {
+            if (workflowState.approval.pendingNodeId) {
+                handleApprove();
+            } else {
+                resumeFromCompletedNode();
+            }
+        }
+
+        function resultRequestEdit() {
+            const agentId = workflowState.approval.pendingNodeId || viewingCompletedAgentId;
+            if (!agentId) return;
+            const nodeState = getNodeState(agentId);
+            closePanel();
+            openDrawer(agentMap[agentId], nodeState.lastPrompt || '');
+        }
+
+        function resultRerunModified() {
+            if (!viewingCompletedAgentId && workflowState.approval.pendingNodeId) {
+                viewingCompletedAgentId = workflowState.approval.pendingNodeId;
+            }
+            rerunCompletedNode();
         }
 
         function rerunCompletedNode() {
@@ -1202,7 +1283,7 @@
             if (!agentId) return;
             const next = workflowState.connections.find(c => c.from === agentId);
             if (!next) { alert('연결된 다음 에이전트가 없습니다.'); return; }
-            const confirmed = confirm('여기서부터 다시 진행합니다. 다음 에이전트를 실행하시겠습니까?');
+            const confirmed = confirm('다음 작업자부터 다시 진행합니다. 실행하시겠습니까?');
             if (!confirmed) return;
             closePanel();
             const currentAgent = agentMap[agentId];
@@ -1303,21 +1384,15 @@
                     const t = event.target;
                     if (t.classList.contains('port') || t.classList.contains('node-reset-btn') || t.classList.contains('node-view-btn')) return;
                     const nodeState = getNodeState(agent.id);
-                    if (nodeState.status === 'error') {
-                        openDrawer(agent, nodeState.lastPrompt || '');
-                    } else if (nodeState.status === 'completed') {
-                        openDrawer(agent, nodeState.lastPrompt || '');
-                    } else {
-                        selectNode(agent);
-                    }
+                    openDrawer(agent, nodeState.lastPrompt || '');
                 };
                 el.ondblclick = (event) => {
                     if (event.target.classList.contains('port')) return;
                     const nodeState = getNodeState(agent.id);
-                    if (nodeState.status === 'awaiting-approval' && nodeState.output) {
-                        reopenApprovalPanel(agent.id);
+                    if (nodeState.output) {
+                        viewCompletedOutput(agent.id);
                     } else {
-                        openDrawer(agent, getNodeState(agent.id).lastPrompt || '');
+                        alert('아직 실행 결과가 없습니다. 메시지창에서 실행하세요.');
                     }
                 };
                 container.appendChild(el);
@@ -1408,6 +1483,7 @@
                 case 'awaiting-approval': return { cls: 's-awaiting', label: 'Awaiting' };
                 case 'error': return { cls: 's-error', label: 'Error' };
                 case 'rejected': return { cls: 's-rejected', label: 'Rejected' };
+                case 'interrupted': return { cls: 's-interrupted', label: 'Interrupted' };
                 default: return { cls: '', label: 'Idle' };
             }
         }
@@ -1722,16 +1798,30 @@
             const outputBtnArea = document.getElementById('drawer-output-btn-area');
             if (outputBtnArea) {
                 const nodeState = getNodeState(agent.id);
-                if (nodeState.output) {
+                const prevConn = workflowState.connections.find(c => c.to === agent.id);
+                const prevNS = prevConn ? getNodeState(prevConn.from) : null;
+                const hasPrevOut = !!(prevNS && prevNS.output);
+                const hasCurOut = !!nodeState.output;
+                if (hasPrevOut || hasCurOut) {
                     outputBtnArea.style.display = 'block';
                     outputBtnArea.innerHTML = '';
-                    const btn = document.createElement('button');
-                    btn.textContent = '📋 이전 결과 보기';
-                    btn.style.cssText = 'width:100%;padding:7px;background:transparent;border:1px solid var(--accent-blue);color:var(--accent-blue);border-radius:4px;font-size:12px;cursor:pointer;';
-                    btn.onmouseenter = () => { btn.style.background = 'rgba(88,166,255,0.08)'; };
-                    btn.onmouseleave = () => { btn.style.background = 'transparent'; };
-                    btn.onclick = () => viewCompletedOutput(agent.id);
-                    outputBtnArea.appendChild(btn);
+                    const mkBtn = (text, color, onClick) => {
+                        const b = document.createElement('button');
+                        b.textContent = text;
+                        b.style.cssText = `width:100%;padding:7px;background:transparent;border:1px solid ${color};color:${color};border-radius:4px;font-size:12px;cursor:pointer;margin-bottom:4px;`;
+                        b.onmouseenter = () => { b.style.background = `${color}18`; };
+                        b.onmouseleave = () => { b.style.background = 'transparent'; };
+                        b.onclick = onClick;
+                        return b;
+                    };
+                    if (hasPrevOut) outputBtnArea.appendChild(mkBtn('📄 이전 단계 결과 보기', '#58a6ff', () => viewPrevStageOutput(agent.id)));
+                    if (hasCurOut) outputBtnArea.appendChild(mkBtn('📌 현재 작업 결과 보기', '#58a6ff', () => viewCompletedOutput(agent.id)));
+                    if (hasCurOut) outputBtnArea.appendChild(mkBtn('✏️ 현재 결과 기준 수정 요청', '#bb86fc', () => {
+                        closePanel();
+                        const ta = document.getElementById('prompt-input');
+                        if (ta) { if (!ta.value) ta.value = '[현재 결과 기준 수정 요청]\n'; ta.focus(); }
+                    }));
+                    if (hasPrevOut) outputBtnArea.appendChild(mkBtn('↩️ 이전 단계 결과 기준 다시 요청', '#f0a500', () => rerunFromPrevStage(agent.id)));
                 } else {
                     outputBtnArea.style.display = 'none';
                     outputBtnArea.innerHTML = '';
@@ -1791,9 +1881,12 @@
             content.innerHTML = sentHtml + renderMarkdown(formatResult(result));
             if (typeof hljs !== 'undefined') content.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
             const hasPending = !!pendingId;
-            document.getElementById('approval-footer').style.display = hasPending ? 'flex' : 'none';
             document.getElementById('followup-footer').style.display = hasPending ? 'block' : 'none';
-            document.getElementById('view-footer').style.display = 'none';
+            if (hasPending) {
+                updateResultFooter(true, pendingId);
+            } else {
+                document.getElementById('result-footer').style.display = 'none';
+            }
             document.getElementById('overlay-panel').style.display = 'flex';
         }
 
@@ -1828,23 +1921,40 @@
         }
 
         async function loadState() {
-            const res = await fetch('/api/workflow/state');
-            const data = await res.json();
-            workflowState.version = data.version || 2;
-            workflowState.nodes = data.nodes || [];
-            workflowState.connections = data.connections || [];
-            workflowState.logs = data.logs || [];
-            workflowState.approval = data.approval || {};
-            if (data.systemPrompts) Object.entries(data.systemPrompts).forEach(([k, v]) => systemPrompts.set(k, v));
-            workflowState.logs.forEach((entry) => { if (entry.id) seenEventIds.add(entry.id); });
-            const pending = workflowState.approval.pendingNodeId;
-            if (pending) {
-                const node = getNodeState(pending);
-                lastResult = node.output || null;
+            try {
+                const res = await fetch('/api/workflow/state');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                workflowState.version = data.version || 2;
+                workflowState.nodes = data.nodes || [];
+                workflowState.connections = data.connections || [];
+                workflowState.logs = data.logs || [];
+                workflowState.approval = data.approval || {};
+                if (data.systemPrompts) Object.entries(data.systemPrompts).forEach(([k, v]) => systemPrompts.set(k, v));
+                workflowState.logs.forEach((entry) => { if (entry.id) seenEventIds.add(entry.id); });
+                // REQ-12: interrupted로 표시 — 재시작 시 running 중이던 노드는 실행되지 않은 것으로 처리
+                workflowState.nodes.forEach((node) => {
+                    if (node.status === 'active') {
+                        node.status = 'interrupted';
+                    }
+                });
+                const pending = workflowState.approval.pendingNodeId;
+                if (pending) {
+                    const node = getNodeState(pending);
+                    lastResult = node.output || null;
+                }
+                initNodes();
+                drawConnections();
+                renderTerminalLogs();
+            } catch (err) {
+                appendTerminalLog('System', `이전 상태를 불러오지 못했습니다. 새로 시작합니다. (${err.message || err})`);
+                workflowState.nodes = [];
+                workflowState.connections = [];
+                workflowState.logs = [];
+                workflowState.approval = {};
+                initNodes();
+                drawConnections();
             }
-            initNodes();
-            drawConnections();
-            renderTerminalLogs();
         }
 
         async function publishWorkflowEvent(type, agentId, message) {
