@@ -41,7 +41,10 @@
         body { background:var(--bg); color:var(--fg); font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; margin:0; display:flex; height:100vh; overflow:hidden; -webkit-font-smoothing: antialiased; font-size:14px; }
         .sidebar-left { width:260px; min-width:260px; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; overflow:hidden; z-index:100; }
         .main-container { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; }
-        .sidebar-right { position:fixed; right:0; top:0; height:100vh; width:420px; background:var(--bg2); border-left:1px solid var(--border); padding:20px 20px 70px 20px; display:none; flex-direction:column; overflow-y:auto; z-index:1000; box-shadow:-8px 0 32px rgba(0,0,0,.5); }
+        .sidebar-right { position:fixed; right:0; top:0; height:100vh; width:420px; background:var(--bg2); border-left:1px solid var(--border); padding:0; display:none; flex-direction:column; overflow:hidden; z-index:1000; box-shadow:-8px 0 32px rgba(0,0,0,.5); }
+        .drawer-scroll-body { flex:1; overflow-y:auto; padding:20px 20px 8px 20px; }
+        .drawer-sticky-footer { flex-shrink:0; padding:12px 20px 20px 20px; background:var(--bg2); border-top:1px solid var(--border); }
+        #prompt-input { flex:none; min-height:280px; height:clamp(280px, 42vh, 520px); resize:vertical; margin:0 0 6px 0; padding:12px; font-size:13px; }
 
         /* ═══ 사이드바 — 시안 스타일 ═══ */
         .drive-bar { padding:14px 14px 8px; display:flex; gap:4px; }
@@ -643,30 +646,34 @@
     </div>
 
     <div class="sidebar-right" id="sidebar-right">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <h3 id="drawer-title" style="color:var(--accent); margin:0;">에이전트 업무</h3>
-            <button onclick="closeDrawer()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-dim); padding:4px 10px; cursor:pointer; border-radius:4px; font-size:12px;">닫기</button>
-        </div>
-        <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin-top:5px;"></p>
-        <div id="drawer-output-btn-area" style="display:none; margin-bottom:8px;"></div>
-        <div id="drawer-files" style="display:none; margin-bottom:10px; background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:8px;"></div>
-        <textarea id="prompt-input" placeholder="지시사항을 상세히 입력하세요..."></textarea>
-        <div style="font-size:10px; color:var(--text-dim); text-align:right; margin-bottom:6px;">약 <span id="token-count">0</span> 토큰</div>
-        <div style="margin-bottom:10px;">
-            <button class="sys-prompt-toggle" onclick="toggleSysPrompt()">⚙️ 시스템 프롬프트 <span id="sys-prompt-badge" style="color:var(--accent-green);"></span></button>
-            <div id="sys-prompt-body" style="display:none; margin-top:6px;">
-                <textarea id="sys-prompt-input" oninput="saveSysPromptInMap()" placeholder="이 에이전트의 역할·제약·지침 (선택사항)" style="width:100%; height:80px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--fg); padding:8px; resize:vertical; font-size:12px; box-sizing:border-box; margin:0;"></textarea>
+        <div class="drawer-scroll-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <h3 id="drawer-title" style="color:var(--accent); margin:0;">에이전트 업무</h3>
+                <button onclick="closeDrawer()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-dim); padding:4px 10px; cursor:pointer; border-radius:4px; font-size:12px;">닫기</button>
             </div>
+            <p id="drawer-desc" style="font-size:11px; color:var(--text-dim); margin-top:5px;"></p>
+            <div id="drawer-output-btn-area" style="display:none; margin-bottom:8px;"></div>
+            <div id="drawer-files" style="display:none; margin-bottom:10px; background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:8px;"></div>
+            <textarea id="prompt-input" placeholder="지시사항을 상세히 입력하세요..."></textarea>
+            <div style="font-size:10px; color:var(--text-dim); text-align:right; margin-bottom:6px;">약 <span id="token-count">0</span> 토큰</div>
+            <div style="margin-bottom:10px;">
+                <button class="sys-prompt-toggle" onclick="toggleSysPrompt()">⚙️ 시스템 프롬프트 <span id="sys-prompt-badge" style="color:var(--accent-green);"></span></button>
+                <div id="sys-prompt-body" style="display:none; margin-top:6px;">
+                    <textarea id="sys-prompt-input" oninput="saveSysPromptInMap()" placeholder="이 에이전트의 역할·제약·지침 (선택사항)" style="width:100%; height:80px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--fg); padding:8px; resize:vertical; font-size:12px; box-sizing:border-box; margin:0;"></textarea>
+                </div>
+            </div>
+            <label class="upload-label">📎 파일 업로드 (현재 작업 폴더로)
+                <input type="file" id="file-upload-input" multiple="" style="display:none" onchange="handleFileUploadToServer(event)">
+            </label>
+            <div id="provider-select-section" class="provider-select-section">
+                <span class="provider-select-label">실행할 AI (미선택 시 전체 실행)</span>
+                <div id="provider-checkboxes"></div>
+            </div>
+            <button class="btn-run" style="width:100%;" onclick="assignTask()">실전 분석 시작</button>
         </div>
-        <label class="upload-label">📎 파일 업로드 (현재 작업 폴더로)
-            <input type="file" id="file-upload-input" multiple="" style="display:none" onchange="handleFileUploadToServer(event)">
-        </label>
-        <div id="provider-select-section" class="provider-select-section">
-            <span class="provider-select-label">실행할 AI (미선택 시 전체 실행)</span>
-            <div id="provider-checkboxes"></div>
+        <div class="drawer-sticky-footer">
+            <button onclick="closeDrawer()" style="width:100%; height:44px; background:#4b5563; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; letter-spacing:0.3px; transition:opacity .2s;" onmouseenter="this.style.opacity='.82'" onmouseleave="this.style.opacity='1'">✖ 닫기</button>
         </div>
-        <button class="btn-run" style="width:100%;" onclick="assignTask()">실전 분석 시작</button>
-        <button class="btn-run" style="background:transparent; color:var(--text-dim); width:100%; margin-top:10px;" onclick="closeDrawer()">취소</button>
     </div>
 
     <script>
@@ -1006,6 +1013,7 @@
             content.appendChild(saveBar);
             document.getElementById('result-footer').style.display = 'none';
             document.getElementById('followup-footer').style.display = 'none';
+            (function() { try { const ps = JSON.parse(localStorage.getItem('autopus-panel-size') || '{}'); const p = document.getElementById('overlay-panel'); if (ps.width) p.style.width = ps.width; if (ps.height) p.style.height = ps.height; } catch(_) {} })();
             document.getElementById('overlay-panel').style.display = 'flex';
         }
 
@@ -1648,6 +1656,16 @@
                 const savedMode = localStorage.getItem('autopus-mode');
                 if (savedMode === 'monitor') setTimeout(() => switchMode('monitor'), 300);
             } catch (_) {}
+            try {
+                const projects = JSON.parse(localStorage.getItem('recentProjects') || '[]');
+                if (projects.length > 0 && projects[0].path) {
+                    setTimeout(() => {
+                        changeWorkspace(projects[0].path, true).catch(err => {
+                            appendTerminalLog('System', `마지막 워크스페이스 복원 실패: ${err.message}`);
+                        });
+                    }, 500);
+                }
+            } catch (_) {}
         });
 
         function startDragging(event, el) {
@@ -1805,23 +1823,25 @@
                 if (hasPrevOut || hasCurOut) {
                     outputBtnArea.style.display = 'block';
                     outputBtnArea.innerHTML = '';
-                    const mkBtn = (text, color, onClick) => {
+                    const mkBtn = (text, bgColor, textColor, onClick) => {
                         const b = document.createElement('button');
                         b.textContent = text;
-                        b.style.cssText = `width:100%;padding:7px;background:transparent;border:1px solid ${color};color:${color};border-radius:4px;font-size:12px;cursor:pointer;margin-bottom:4px;`;
-                        b.onmouseenter = () => { b.style.background = `${color}18`; };
-                        b.onmouseleave = () => { b.style.background = 'transparent'; };
+                        b.style.cssText = `width:100%;padding:9px 12px;background:${bgColor};border:2px solid ${bgColor};color:${textColor};border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:6px;min-height:40px;text-align:left;transition:filter .15s;`;
+                        b.onmouseenter = () => { b.style.filter = 'brightness(1.18)'; };
+                        b.onmouseleave = () => { b.style.filter = 'brightness(1)'; };
+                        b.onfocus = () => { b.style.outline = '2px solid #fff'; b.style.outlineOffset = '2px'; };
+                        b.onblur = () => { b.style.outline = 'none'; };
                         b.onclick = onClick;
                         return b;
                     };
-                    if (hasPrevOut) outputBtnArea.appendChild(mkBtn('📄 이전 단계 결과 보기', '#58a6ff', () => viewPrevStageOutput(agent.id)));
-                    if (hasCurOut) outputBtnArea.appendChild(mkBtn('📌 현재 작업 결과 보기', '#58a6ff', () => viewCompletedOutput(agent.id)));
-                    if (hasCurOut) outputBtnArea.appendChild(mkBtn('✏️ 현재 결과 기준 수정 요청', '#bb86fc', () => {
+                    if (hasPrevOut) outputBtnArea.appendChild(mkBtn('📄 이전 단계 결과 보기', '#1d4ed8', '#fff', () => viewPrevStageOutput(agent.id)));
+                    if (hasCurOut) outputBtnArea.appendChild(mkBtn('📌 현재 작업 결과 보기', '#0d9488', '#fff', () => viewCompletedOutput(agent.id)));
+                    if (hasCurOut) outputBtnArea.appendChild(mkBtn('✏️ 현재 결과 기준 수정 요청', '#7c3aed', '#fff', () => {
                         closePanel();
                         const ta = document.getElementById('prompt-input');
                         if (ta) { if (!ta.value) ta.value = '[현재 결과 기준 수정 요청]\n'; ta.focus(); }
                     }));
-                    if (hasPrevOut) outputBtnArea.appendChild(mkBtn('↩️ 이전 단계 결과 기준 다시 요청', '#f0a500', () => rerunFromPrevStage(agent.id)));
+                    if (hasPrevOut) outputBtnArea.appendChild(mkBtn('↩️ 이전 단계 결과 기준 다시 요청', '#b45309', '#fff', () => rerunFromPrevStage(agent.id)));
                 } else {
                     outputBtnArea.style.display = 'none';
                     outputBtnArea.innerHTML = '';
@@ -1887,6 +1907,7 @@
             } else {
                 document.getElementById('result-footer').style.display = 'none';
             }
+            (function() { try { const ps = JSON.parse(localStorage.getItem('autopus-panel-size') || '{}'); const p = document.getElementById('overlay-panel'); if (ps.width) p.style.width = ps.width; if (ps.height) p.style.height = ps.height; } catch(_) {} })();
             document.getElementById('overlay-panel').style.display = 'flex';
         }
 
@@ -2220,7 +2241,12 @@
                             if (cls.includes('n')) { const nh = Math.max(200, oh - dy); panel.style.height = nh + 'px'; panel.style.top = (ot + oh - nh) + 'px'; }
                         }
                         document.addEventListener('mousemove', onResize);
-                        document.addEventListener('mouseup', () => document.removeEventListener('mousemove', onResize), { once: true });
+                        document.addEventListener('mouseup', () => {
+                            document.removeEventListener('mousemove', onResize);
+                            try {
+                                localStorage.setItem('autopus-panel-size', JSON.stringify({ width: panel.style.width, height: panel.style.height }));
+                            } catch(_) {}
+                        }, { once: true });
                     });
                 });
             })();
