@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const signOff = "🐙 Autopus <noreply@autopus.co>"
+const signOff = "🐙 Autopus <sinmihyeon@gmail.com>"
 
 // BuildCommit는 LoreEntry와 메시지로 git commit 메시지를 생성한다.
 func BuildCommit(entry *LoreEntry, message string) (string, error) {

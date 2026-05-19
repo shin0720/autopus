@@ -28,7 +28,7 @@ var loreValidTypes = []string{
 }
 
 // loreSignOff is the required Lore sign-off line.
-const loreSignOff = "🐙 Autopus <noreply@autopus.co>"
+const loreSignOff = "🐙 Autopus <sinmihyeon@gmail.com>"
 
 // skipDirs contains directory names that should be skipped during arch walk.
 // These include version control, tooling worktrees, and dependency directories.

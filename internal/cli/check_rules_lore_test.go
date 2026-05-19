@@ -64,7 +64,7 @@ func TestCheckLore_ValidLoreCommit(t *testing.T) {
 		dir,
 		"commit",
 		"-m",
-		"feat(cli): add feature\n\nConstraint: keep cli contract stable\n\n🐙 Autopus <noreply@autopus.co>",
+		"feat(cli): add feature\n\nConstraint: keep cli contract stable\n\n🐙 Autopus <sinmihyeon@gmail.com>",
 	)
 
 	var buf bytes.Buffer
@@ -129,7 +129,7 @@ func TestCheckLoreFromFile_ValidMessage(t *testing.T) {
 		t,
 		dir,
 		"COMMIT_EDITMSG",
-		"feat(cli): add feature\n\nConstraint: keep cli stable\n\n🐙 Autopus <noreply@autopus.co>",
+		"feat(cli): add feature\n\nConstraint: keep cli stable\n\n🐙 Autopus <sinmihyeon@gmail.com>",
 	)
 
 	var buf bytes.Buffer
@@ -145,7 +145,7 @@ func TestCheckLoreFromFile_MissingRequiredTrailer(t *testing.T) {
 		t,
 		dir,
 		"COMMIT_EDITMSG",
-		"feat(cli): add feature\n\n🐙 Autopus <noreply@autopus.co>",
+		"feat(cli): add feature\n\n🐙 Autopus <sinmihyeon@gmail.com>",
 	)
 
 	var buf bytes.Buffer
