@@ -24,7 +24,7 @@ Tested: <what was verified>
 Not-tested: <what remains unverified>
 Related: <SPEC-ID, issue, or related change>
 
-🐙 Autopus <noreply@autopus.co>
+🐙 Autopus <sinmihyeon@gmail.com>
 ```
 
 ## Types
@@ -45,6 +45,6 @@ Related: <SPEC-ID, issue, or related change>
 - Structured Lore trailers use the `Constraint` / `Rejected` / `Confidence` / `Scope-risk` / `Reversibility` / `Directive` / `Tested` / `Not-tested` / `Related` protocol.
 - Default `autopus.yaml` requires `Constraint` when Lore trailer validation is enabled.
 - `Why` / `Decision` / `Alternatives` trailers are legacy guidance and are no longer the source of truth.
-- Sign with `🐙 Autopus <noreply@autopus.co>`
+- Sign with `🐙 Autopus <sinmihyeon@gmail.com>`
 - NEVER add `Co-Authored-By` trailers
 - When committing from Codex, build the full Lore message first and use `git commit -F <message-file>` so trailers and sign-off are preserved exactly.
