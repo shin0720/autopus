@@ -43,6 +43,10 @@ internal/cli/test-results/
 .autopus/docs/
 .autopus/telemetry/
 .autopus/audit.jsonl
+.autopus/canary/
+.autopus/react/
+.autopus/results/
+.autopus/workflows/
 **/.autopus/specs/**/review.md
 **/.autopus/specs/**/review-findings.json
 **/.autopus/specs/**/.self-verify.log
