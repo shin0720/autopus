@@ -73,7 +73,7 @@ func (a *Adapter) renderPluginManifestJSON() (string, error) {
 		Name:        "auto",
 		Version:     "1.0.0",
 		Description: "Autopus workflow router for Codex: setup, status, plan, go, fix, review, sync, idea, map, why, verify, secure, test, dev, canary, and doctor.",
-		Author:      pluginAuthor{Name: "Autopus", Email: "noreply@autopus.co", URL: "https://autopus.co"},
+		Author:      pluginAuthor{Name: "Autopus", Email: "sinmihyeon@gmail.com", URL: "https://autopus.co"},
 		Homepage:    "https://autopus.co",
 		Repository:  "https://github.com/insajin/autopus-adk",
 		License:     "Apache-2.0",
