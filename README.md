@@ -306,7 +306,7 @@ Decision: Interface-based abstraction over direct SDK usage
 Alternatives: Direct SDK calls (rejected: too coupled)
 Ref: SPEC-AUTH-001
 
-🐙 Autopus <noreply@autopus.co>
+🐙 Autopus <sinmihyeon@gmail.com>
 ```
 
 9 structured trailers. Query with `auto lore query "why interface?"`. Stale decisions auto-detected after 90 days.

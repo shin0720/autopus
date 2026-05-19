@@ -276,7 +276,7 @@ Decision: 직접 SDK 사용 대신 인터페이스 기반 추상화
 Alternatives: 직접 SDK 호출 (거부: 결합도 높음)
 Ref: SPEC-AUTH-001
 
-🐙 Autopus <noreply@autopus.co>
+🐙 Autopus <sinmihyeon@gmail.com>
 ```
 
 9개 구조화된 트레일러. `auto lore query "왜 인터페이스?"`로 조회. 90일 지난 결정은 자동 감지.
