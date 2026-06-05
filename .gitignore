@@ -41,6 +41,9 @@ internal/cli/test-results/
 .worktrees/
 setup.test
 
+# Private pipeline configs (never commit)
+.autopus/private/
+
 # Security-sensitive files
 credentials.json
 credentials.enc
