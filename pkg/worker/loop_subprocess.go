@@ -89,6 +89,12 @@ func (wl *WorkerLoop) executeSubprocess(ctx context.Context, taskCfg adapter.Tas
 // @WARN: When budget is exhausted, EmergencyStop.Stop() is called.
 func (wl *WorkerLoop) executeWithBudget(ctx context.Context, taskCfg adapter.TaskConfig, bc *BudgetConfig) (adapter.TaskResult, error) {
 	cmd := wl.config.Provider.BuildCommand(ctx, taskCfg)
+	// P8b worker-path guard hook (default disabled): blocks a denied command
+	// before Start. Disjoint from the orchestra newCommand hook. See
+	// command_guard_hook.go for scope (M5/M6 only) and context limits.
+	if err := workerCommandGuardCheck(cmd, taskCfg.ProfileID, wl.config.Provider.Name()); err != nil {
+		return adapter.TaskResult{}, err
+	}
 	prepareCommandProcessGroup(cmd)
 
 	stdinPipe, err := cmd.StdinPipe()

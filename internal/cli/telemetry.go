@@ -22,6 +22,7 @@ func newTelemetryCmd() *cobra.Command {
 	cmd.AddCommand(newTelemetrySummaryCmd())
 	cmd.AddCommand(newTelemetryCostCmd())
 	cmd.AddCommand(newTelemetryCompareCmd())
+	cmd.AddCommand(newTelemetryDryRunProbeCmd())
 
 	return cmd
 }

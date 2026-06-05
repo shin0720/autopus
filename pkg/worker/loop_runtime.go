@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/insajin/autopus-adk/pkg/guard/telemetry"
 	"github.com/insajin/autopus-adk/pkg/worker/a2a"
 	"github.com/insajin/autopus-adk/pkg/worker/adapter"
 	"github.com/insajin/autopus-adk/pkg/worker/parallel"
@@ -33,6 +34,7 @@ func (wl *WorkerLoop) configureExecutionConcurrency() {
 // @AX:ANCHOR[AUTO]: public lifecycle entry point — Start/Close are the primary WorkerLoop API; callers (CLI, tests) depend on error contract
 // @AX:REASON: Startup order wires PID lock, A2A server, services, semaphore, and worktree manager before task dispatch.
 func (wl *WorkerLoop) Start(ctx context.Context) error {
+	telemetry.EnsureDefault()
 	wl.pidLock = pidlock.New(pidlock.DefaultPath())
 	if err := wl.pidLock.Acquire(); err != nil {
 		return fmt.Errorf("acquire PID lock: %w", err)

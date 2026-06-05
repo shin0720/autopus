@@ -26,7 +26,12 @@ type execCommand struct {
 }
 
 // newCommand는 컨텍스트 기반 커맨드를 생성한다.
+// P8b step1: the command guard hook (default disabled) may block here before any
+// process is created. See command_guard_hook.go for scope and coverage limits.
 var newCommand = func(ctx context.Context, name string, args ...string) command {
+	if denied, blocked := commandGuardCheck(name, args); denied {
+		return blocked
+	}
 	cmd := exec.CommandContext(ctx, name, args...)
 	configureCommand(cmd)
 	return &execCommand{cmd: cmd}

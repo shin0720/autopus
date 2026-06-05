@@ -29,6 +29,7 @@ type TaskConfig struct {
 	EnvVars     map[string]string // additional env vars
 	Model       string            // provider-specific model override
 	ComputerUse bool              // enable computer use for this task
+	ProfileID   string            // SB8: cli_command_profile_ref for the command guard (empty = no M3/M4)
 }
 
 // StreamEvent represents a parsed event from subprocess output.

@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/insajin/autopus-adk/pkg/detect"
+	"github.com/insajin/autopus-adk/pkg/guard/telemetry"
 )
 
 // RunOrchestra executes orchestration according to the given config.
 // @AX:ANCHOR: [AUTO] public API — 4 callers; do not change signature
 // @AX:REASON: CLI, pane fallback, spec-review loop, and tests rely on the result/error contract and degraded-provider propagation.
 func RunOrchestra(ctx context.Context, cfg OrchestraConfig) (*OrchestraResult, error) {
+	telemetry.EnsureDefault()
 	if len(cfg.Providers) == 0 {
 		return nil, fmt.Errorf("providers 목록이 비어있습니다")
 	}
