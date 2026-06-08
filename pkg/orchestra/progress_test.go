@@ -45,7 +45,7 @@ func TestProgressTracker_MarkFailed(t *testing.T) {
 	pt.writer = &buf
 
 	pt.MarkRunning("gemini")
-	pt.MarkFailed("gemini")
+	pt.MarkFailed("gemini", "boom")
 
 	s := pt.providers["gemini"]
 	assert.Equal(t, StatusFailed, s.status)
