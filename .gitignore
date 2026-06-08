@@ -37,6 +37,7 @@ internal/cli/test-results/
 .claude/statusline.sh
 .autopus/orchestra/
 .autopus/cache/docs/
+.autopus/telemetry/
 .autopus/audit.jsonl
 .worktrees/
 setup.test
