@@ -8,6 +8,13 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+  exclusions:
+    rules:
+      # Test files: cleanup error returns are intentionally ignored.
+      # Keep errcheck active for production code.
+      - path: '(.+)_test\.go'
+        linters:
+          - errcheck
   settings:
     errcheck:
       exclude-functions:
