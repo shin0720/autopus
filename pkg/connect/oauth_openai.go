@@ -153,7 +153,11 @@ func WaitForCallback(ctx context.Context, cfg OAuthConfig) (*OAuthResult, error)
 			errCh <- fmt.Errorf("callback server: %w", sErr)
 		}
 	}()
-	defer server.Close()
+	defer func() {
+		if closeErr := server.Close(); closeErr != nil {
+			_ = closeErr
+		}
+	}()
 
 	authorizeURL := buildAuthorizeURL(cfg, flow)
 	_ = setup.OpenBrowser(authorizeURL)
@@ -233,7 +237,7 @@ func ExchangeAuthCode(ctx context.Context, req CallbackRequest) (*OAuthResult, e
 
 func buildAuthorizeURL(cfg OAuthConfig, flow *OAuthFlowResult) string {
 	params := url.Values{
-		"client_id":                  {cfg.clientID()},
+		"client_id":                 {cfg.clientID()},
 		"redirect_uri":              {flow.RedirectURI},
 		"response_type":             {"code"},
 		"code_challenge":            {flow.Challenge},
