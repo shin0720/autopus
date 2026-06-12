@@ -116,7 +116,7 @@ func (wl *WorkerLoop) executeWithParallel(ctx context.Context, taskCfg adapter.T
 
 	// Record task start in the audit log.
 	if wl.auditWriter != nil {
-		writeResilientAuditEvent(wl.auditWriter, newAuditStartedEvent(taskID, taskCfg.ComputerUse), wl.auditLogger)
+		_ = writeResilientAuditEvent(wl.auditWriter, newAuditStartedEvent(taskID, taskCfg.ComputerUse), wl.auditLogger)
 	}
 
 	// Acquire a semaphore slot when parallel execution is configured.
@@ -166,7 +166,7 @@ func (wl *WorkerLoop) executeWithParallel(ctx context.Context, taskCfg adapter.T
 	// Record completion or failure in the audit log.
 	if err != nil {
 		if wl.auditWriter != nil {
-			writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
+			_ = writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
 		}
 		return result, err
 	}
@@ -176,7 +176,7 @@ func (wl *WorkerLoop) executeWithParallel(ctx context.Context, taskCfg adapter.T
 	}
 	if verifyErr != nil {
 		if wl.auditWriter != nil {
-			writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
+			_ = writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
 		}
 		return result, verifyErr
 	}

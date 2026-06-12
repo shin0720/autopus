@@ -3,8 +3,6 @@ package claude
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -47,9 +45,9 @@ func NewWithRoot(root string) *Adapter {
 	}
 }
 
-func (a *Adapter) Name() string       { return adapterName }
-func (a *Adapter) Version() string    { return adapterVer }
-func (a *Adapter) CLIBinary() string  { return cliBinary }
+func (a *Adapter) Name() string        { return adapterName }
+func (a *Adapter) Version() string     { return adapterVer }
+func (a *Adapter) CLIBinary() string   { return cliBinary }
 func (a *Adapter) SupportsHooks() bool { return true }
 
 // Detect는 PATH에서 claude 바이너리 설치 여부를 확인한다.
@@ -84,7 +82,7 @@ func (a *Adapter) Generate(ctx context.Context, cfg *config.HarnessConfig) (*ada
 	// Clean up legacy .claude/commands/auto.md (v2 → v3 migration: commands → skills)
 	legacyAutoMD := filepath.Join(a.root, ".claude", "commands", "auto.md")
 	if _, err := os.Stat(legacyAutoMD); err == nil {
-		os.Remove(legacyAutoMD)
+		_ = os.Remove(legacyAutoMD)
 	}
 
 	var files []adapter.FileMapping
@@ -297,10 +295,4 @@ func (a *Adapter) Update(ctx context.Context, cfg *config.HarnessConfig) (*adapt
 	}
 
 	return pf, nil
-}
-
-// checksum은 문자열의 SHA256 체크섬을 반환한다.
-func checksum(s string) string {
-	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:])
 }
