@@ -203,7 +203,7 @@ func runSelfUpdate(cmd *cobra.Command, checkOnly, force bool, targetVersion stri
 	archiveName := selfupdate.ArchiveName(runtime.GOOS, runtime.GOARCH, ver)
 	dl := selfupdate.NewDownloader()
 	tmpDir, _ := os.MkdirTemp("", "autopus-update-*")
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// R3: Download and verify checksum
 	binaryPath, err := dl.DownloadAndVerify(info.ArchiveURL, info.ChecksumURL, archiveName, tmpDir)

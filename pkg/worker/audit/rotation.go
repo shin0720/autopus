@@ -108,12 +108,12 @@ func (w *RotatingWriter) rotate() error {
 	for i := maxRotatedFiles; i >= 1; i-- {
 		src := w.rotatedName(i)
 		if i == maxRotatedFiles {
-			os.Remove(src)
+			_ = os.Remove(src)
 			continue
 		}
 		dst := w.rotatedName(i + 1)
 		// Ignore errors — file may not exist yet.
-		os.Rename(src, dst)
+		_ = os.Rename(src, dst)
 	}
 	if err := os.Rename(w.path, w.rotatedName(1)); err != nil && !os.IsNotExist(err) {
 		// Best-effort: if rename fails, truncate instead.
@@ -145,7 +145,7 @@ func (w *RotatingWriter) cleanup() {
 			continue
 		}
 		if info.ModTime().Before(cutoff) {
-			os.Remove(name)
+			_ = os.Remove(name)
 		}
 	}
 }

@@ -116,7 +116,7 @@ func (wl *WorkerLoop) executeWithParallel(ctx context.Context, taskCfg adapter.T
 
 	// Record task start in the audit log.
 	if wl.auditWriter != nil {
-		writeResilientAuditEvent(wl.auditWriter, newAuditStartedEvent(taskID, taskCfg.ComputerUse), wl.auditLogger)
+		_ = writeResilientAuditEvent(wl.auditWriter, newAuditStartedEvent(taskID, taskCfg.ComputerUse), wl.auditLogger)
 	}
 
 	// Acquire a semaphore slot when parallel execution is configured.
@@ -166,7 +166,7 @@ func (wl *WorkerLoop) executeWithParallel(ctx context.Context, taskCfg adapter.T
 	// Record completion or failure in the audit log.
 	if err != nil {
 		if wl.auditWriter != nil {
-			writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
+			_ = writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
 		}
 		return result, err
 	}
@@ -176,12 +176,12 @@ func (wl *WorkerLoop) executeWithParallel(ctx context.Context, taskCfg adapter.T
 	}
 	if verifyErr != nil {
 		if wl.auditWriter != nil {
-			writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
+			_ = writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, taskCfg.ComputerUse), wl.auditLogger)
 		}
 		return result, verifyErr
 	}
 	if wl.auditWriter != nil {
-		writeResilientAuditEvent(wl.auditWriter, newAuditCompletedEvent(taskID, durationMS, result.CostUSD, taskCfg.ComputerUse), wl.auditLogger)
+		_ = writeResilientAuditEvent(wl.auditWriter, newAuditCompletedEvent(taskID, durationMS, result.CostUSD, taskCfg.ComputerUse), wl.auditLogger)
 	}
 
 	return result, nil
@@ -191,7 +191,7 @@ func (wl *WorkerLoop) executePipelineWithParallel(ctx context.Context, taskID, p
 	startTime := time.Now()
 
 	if wl.auditWriter != nil {
-		writeResilientAuditEvent(wl.auditWriter, newAuditStartedEvent(taskID, false), wl.auditLogger)
+		_ = writeResilientAuditEvent(wl.auditWriter, newAuditStartedEvent(taskID, false), wl.auditLogger)
 	}
 
 	if wl.semaphore != nil {
@@ -248,7 +248,7 @@ func (wl *WorkerLoop) executePipelineWithParallel(ctx context.Context, taskID, p
 
 	if err != nil {
 		if wl.auditWriter != nil {
-			writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, false), wl.auditLogger)
+			_ = writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, false), wl.auditLogger)
 		}
 		return adapter.TaskResult{}, err
 	}
@@ -258,12 +258,12 @@ func (wl *WorkerLoop) executePipelineWithParallel(ctx context.Context, taskID, p
 	}
 	if verifyErr != nil {
 		if wl.auditWriter != nil {
-			writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, false), wl.auditLogger)
+			_ = writeResilientAuditEvent(wl.auditWriter, newAuditFailedEvent(taskID, durationMS, false), wl.auditLogger)
 		}
 		return result, verifyErr
 	}
 	if wl.auditWriter != nil {
-		writeResilientAuditEvent(wl.auditWriter, newAuditCompletedEvent(taskID, durationMS, result.CostUSD, false), wl.auditLogger)
+		_ = writeResilientAuditEvent(wl.auditWriter, newAuditCompletedEvent(taskID, durationMS, result.CostUSD, false), wl.auditLogger)
 	}
 
 	return result, nil
