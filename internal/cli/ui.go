@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/spf13/cobra"
-	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/content"
+	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/pkg/orchestra"
+	"github.com/spf13/cobra"
 )
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
@@ -28,29 +28,42 @@ func newUICmd() *cobra.Command {
 
 			// API: 작업 디렉토리 강제 전환 (C:, E: 완벽 지원)
 			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { Path string `json:"path"` }
-				json.NewDecoder(r.Body).Decode(&req)
+				var req struct {
+					Path string `json:"path"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 				target := req.Path
-				if strings.Contains(target, ":") { 
+				if strings.Contains(target, ":") {
 					drive := strings.ToLower(target[:1])
 					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
 				}
 				absPath, _ := filepath.Abs(target)
 				if err := os.Chdir(absPath); err != nil {
-					http.Error(w, err.Error(), 500); return
+					http.Error(w, err.Error(), 500)
+					return
 				}
 				dir, _ := os.Getwd()
-				json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
 			})
 
 			// API: 실전 AI 업무 수행
 			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { AgentID string `json:"agentId"`; Prompt string `json:"prompt"`; Context []string `json:"context"` }
-				json.NewDecoder(r.Body).Decode(&req)
+				var req struct {
+					AgentID string   `json:"agentId"`
+					Prompt  string   `json:"prompt"`
+					Context []string `json:"context"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 
 				cfg, err := config.Load(".")
 				if err != nil {
-					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "Config load failed: " + err.Error()})
+					_ = json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "Config load failed: " + err.Error()})
 					return
 				}
 
@@ -66,17 +79,20 @@ func newUICmd() *cobra.Command {
 				}
 
 				orchCfg := orchestra.OrchestraConfig{
-					Prompt: fmt.Sprintf("역할: %s\n지시: %s\n코드: %s", req.AgentID, req.Prompt, ctxFiles.String()),
-					Strategy: orchestra.StrategyFastest, Providers: providers, TimeoutSeconds: 180, SubprocessMode: true,
+					Prompt:         fmt.Sprintf("역할: %s\n지시: %s\n코드: %s", req.AgentID, req.Prompt, ctxFiles.String()),
+					Strategy:       orchestra.StrategyFastest,
+					Providers:      providers,
+					TimeoutSeconds: 180,
+					SubprocessMode: true,
 				}
 
 				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
 				if err != nil {
-					json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
+					_ = json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
 					return
 				}
 
-				json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "output": result.Merged})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "output": result.Merged})
 			})
 
 			// API: 폴더/파일 목록
@@ -84,37 +100,61 @@ func newUICmd() *cobra.Command {
 				dir, _ := os.Getwd()
 				entries, _ := os.ReadDir(".")
 				var folders []string
-				for _, e := range entries { if e.IsDir() && !strings.HasPrefix(e.Name(), ".") { folders = append(folders, e.Name()) } }
-				json.NewEncoder(w).Encode(map[string]interface{}{"current": dir, "folders": folders, "parent": filepath.Dir(dir)})
+				for _, e := range entries {
+					if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
+						folders = append(folders, e.Name())
+					}
+				}
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"current": dir, "folders": folders, "parent": filepath.Dir(dir)})
 			})
 			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
 				var files []string
-				filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(p, ".") && !strings.Contains(p, "node_modules") { files = append(files, p) }
+				_ = filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
+					if err == nil && !info.IsDir() && !strings.HasPrefix(p, ".") && !strings.Contains(p, "node_modules") {
+						files = append(files, p)
+					}
 					return nil
 				})
-				json.NewEncoder(w).Encode(files)
+				_ = json.NewEncoder(w).Encode(files)
 			})
 			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
-				path := r.URL.Query().Get("path"); content, _ := os.ReadFile(path); w.Write(content)
+				path := r.URL.Query().Get("path")
+				fileContent, _ := os.ReadFile(path)
+				_, _ = w.Write(fileContent)
 			})
 
 			// API: 헬스체크 및 키 등록
 			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				h := map[string]bool{"claude": os.Getenv("CLAUDE_API_KEY")!="" || os.Getenv("ANTHROPIC_API_KEY")!="", "gemini": os.Getenv("GEMINI_API_KEY")!="", "codex": true}
-				json.NewEncoder(w).Encode(h)
+				h := map[string]bool{
+					"claude": os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "",
+					"gemini": os.Getenv("GEMINI_API_KEY") != "",
+					"codex":  true,
+				}
+				_ = json.NewEncoder(w).Encode(h)
 			})
 			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
-				var req struct { Provider string `json:"provider"`; Key string `json:"key"` }
-				json.NewDecoder(r.Body).Decode(&req)
-				if req.Provider == "claude" { os.Setenv("CLAUDE_API_KEY", req.Key); os.Setenv("ANTHROPIC_API_KEY", req.Key) }
-				if req.Provider == "gemini" { os.Setenv("GEMINI_API_KEY", req.Key) }
+				var req struct {
+					Provider string `json:"provider"`
+					Key      string `json:"key"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if req.Provider == "claude" {
+					_ = os.Setenv("CLAUDE_API_KEY", req.Key)
+					_ = os.Setenv("ANTHROPIC_API_KEY", req.Key)
+				}
+				if req.Provider == "gemini" {
+					_ = os.Setenv("GEMINI_API_KEY", req.Key)
+				}
 				w.WriteHeader(http.StatusOK)
 			})
 
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				data, _ := content.FS.ReadFile("ui/dashboard.html"); w.Write(data)
+				data, _ := content.FS.ReadFile("ui/dashboard.html")
+				_, _ = w.Write(data)
 			})
 
 			go openBrowser("http://" + addr)
@@ -128,11 +168,17 @@ func newUICmd() *cobra.Command {
 func openBrowser(url string) {
 	var err error
 	switch runtime.GOOS {
-	case "linux": err = exec.Command("xdg-open", url).Start()
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
 	case "windows":
 		err = exec.Command("cmd", "/c", "start", "chrome", "--app="+url).Start()
-		if err != nil { err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start() }
-	case "darwin": err = exec.Command("open", url).Start()
+		if err != nil {
+			err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+		}
+	case "darwin":
+		err = exec.Command("open", url).Start()
 	}
-	if err != nil { fmt.Printf("브라우저 열기 실패: %v\n", err) }
+	if err != nil {
+		fmt.Printf("브라우저 열기 실패: %v\n", err)
+	}
 }
