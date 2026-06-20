@@ -145,7 +145,9 @@ func (a *TmuxAdapter) SendLongText(_ context.Context, paneID PaneID, text string
 		return fmt.Errorf("tmux: create temp file: %w", err)
 	}
 	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath)
+	defer func() {
+		_ = os.Remove(tmpPath)
+	}()
 
 	if _, err := tmpFile.WriteString(text); err != nil {
 		tmpFile.Close()

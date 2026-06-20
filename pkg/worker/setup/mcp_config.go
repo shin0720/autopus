@@ -81,13 +81,13 @@ func WriteMCPConfig(config *MCPConfig, path string) error {
 
 	if err := tmp.Chmod(0600); err != nil {
 		tmp.Close()
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("chmod temp file: %w", err)
 	}
 
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("write mcp config: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
