@@ -91,12 +91,12 @@ func WriteMCPConfig(config *MCPConfig, path string) error {
 		return fmt.Errorf("write mcp config: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("close temp file: %w", err)
 	}
 
 	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("rename mcp config: %w", err)
 	}
 
