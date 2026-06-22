@@ -38,17 +38,17 @@ func cacheSecurityPolicy(taskID string, policy SecurityPolicy, signature string)
 
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("write policy: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("close policy file: %w", err)
 	}
 
 	target := filepath.Join(dir, fmt.Sprintf("autopus-policy-%s.json", taskID))
 	if err := os.Rename(tmpPath, target); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("rename policy file: %w", err)
 	}
 	if err := writePolicySignature(target, signature); err != nil {
