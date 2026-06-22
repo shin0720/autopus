@@ -163,7 +163,7 @@ func startWithFileInput(cmd command, req ProviderRequest) error {
 	if err != nil {
 		return fmt.Errorf("subprocess %s: create temp prompt file: %w", req.Provider, err)
 	}
-	defer os.Remove(f.Name())
+	defer func(path string) { _ = os.Remove(path) }(f.Name())
 
 	if _, err := f.WriteString(req.Prompt); err != nil {
 		f.Close()
