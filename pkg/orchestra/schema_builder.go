@@ -46,11 +46,11 @@ func (sb *SchemaBuilder) WriteToFile(role string) (path string, cleanup func(), 
 	fpath := f.Name()
 	if _, err := f.WriteString(schema); err != nil {
 		f.Close()
-		os.Remove(fpath)
+		_ = os.Remove(fpath)
 		return "", nil, fmt.Errorf("write schema: %w", err)
 	}
 	f.Close()
-	return fpath, func() { os.Remove(fpath) }, nil
+	return fpath, func() { _ = os.Remove(fpath) }, nil
 }
 
 // EmbedInPrompt returns the schema as a compact JSON string for prompt embedding.
