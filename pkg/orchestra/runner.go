@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/shin0720/auto-adk/pkg/detect"
+	"github.com/shin0720/auto-adk/pkg/guard/telemetry"
 )
 
 // RunOrchestra executes orchestration according to the given config.
 // @AX:ANCHOR: [AUTO] public API — 4 callers; do not change signature
 func RunOrchestra(ctx context.Context, cfg OrchestraConfig) (*OrchestraResult, error) {
+	telemetry.EnsureDefault()
 	if len(cfg.Providers) == 0 {
 		return nil, fmt.Errorf("providers 목록이 비어있습니다")
 	}
