@@ -127,7 +127,7 @@ func (wl *WorkerLoop) executeWithBudget(ctx context.Context, taskCfg adapter.Tas
 	if err := sw.WritePrompt(taskCfg.Prompt); err != nil {
 		log.Printf("[worker] task %s: failed to write prompt: %v", taskID, err)
 	}
-	sw.Close()
+	_ = sw.Close()
 
 	result, parseErr := wl.parseStreamWithBudget(stdout, taskID, nil, bc)
 	waitErr := cmd.Wait()
