@@ -9,12 +9,108 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/shin0720/auto-adk/content"
 	"github.com/shin0720/auto-adk/pkg/config"
 	"github.com/shin0720/auto-adk/pkg/orchestra"
 	"github.com/spf13/cobra"
 )
+
+const workflowStatePath = ".autopus/workflows/state.json"
+
+// WorkflowState holds the persistent UI workflow state.
+type WorkflowState struct {
+	ProjectName string       `json:"projectName"`
+	LastUpdated time.Time    `json:"lastUpdated"`
+	Nodes       []NodeState  `json:"nodes"`
+	Connections []Connection `json:"connections"`
+	Logs        []LogEntry   `json:"logs"`
+}
+
+// NodeState holds per-node position and execution state.
+// X and Y use RawMessage to accept both numeric (100) and string ("100px") JSON values.
+type NodeState struct {
+	ID     string          `json:"id"`
+	X      json.RawMessage `json:"x,omitempty"`
+	Y      json.RawMessage `json:"y,omitempty"`
+	Status string          `json:"status,omitempty"`
+	Output string          `json:"output,omitempty"`
+}
+
+// Connection represents a directed edge between two nodes.
+type Connection struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+// LogEntry records a single terminal log line.
+type LogEntry struct {
+	Agent string `json:"agent"`
+	Msg   string `json:"msg"`
+	Time  string `json:"time"`
+}
+
+// workflowStateHandler handles GET and POST /api/workflow/state.
+func workflowStateHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		data, err := os.ReadFile(workflowStatePath)
+		if os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "application/json")
+			empty := WorkflowState{
+				Nodes:       []NodeState{},
+				Connections: []Connection{},
+				Logs:        []LogEntry{},
+			}
+			_ = json.NewEncoder(w).Encode(empty)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		var state WorkflowState
+		if err := json.Unmarshal(data, &state); err != nil {
+			http.Error(w, "invalid state file: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(state)
+	case http.MethodPost:
+		var state WorkflowState
+		if err := json.NewDecoder(r.Body).Decode(&state); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		state.LastUpdated = time.Now().UTC()
+		if state.ProjectName == "" {
+			if cwd, err := os.Getwd(); err == nil {
+				state.ProjectName = filepath.Base(cwd)
+			}
+		}
+		if err := os.MkdirAll(filepath.Dir(workflowStatePath), 0o755); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		out, err := json.MarshalIndent(state, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := os.WriteFile(workflowStatePath, out, 0o644); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status": "saved",
+			"path":   workflowStatePath,
+		})
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
 func newUICmd() *cobra.Command {
@@ -24,7 +120,7 @@ func newUICmd() *cobra.Command {
 		Short: "Autopus 시각적 대시보드 실행",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			addr := fmt.Sprintf("localhost:%d", port)
-			fmt.Printf("🐙 Autopus Studio v4.8 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v4.9 시작 중... http://%s\n", addr)
 
 			// API: 작업 디렉토리 강제 전환 (C:, E: 완벽 지원)
 			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +190,9 @@ func newUICmd() *cobra.Command {
 
 				_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "output": result.Merged})
 			})
+
+			// API: 워크플로우 상태 저장 / 로드
+			http.HandleFunc("/api/workflow/state", workflowStateHandler)
 
 			// API: 폴더/파일 목록
 			http.HandleFunc("/api/workspace/list", func(w http.ResponseWriter, r *http.Request) {
