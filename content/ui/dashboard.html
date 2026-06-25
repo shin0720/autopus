@@ -75,6 +75,7 @@
     <div class="main-container">
         <div class="top-bar">
             <div class="logo">🐙 STUDIO v4.9 FINAL</div>
+            <span style="font-size:10px; color:var(--text-dim)">💾 .autopus/workflows/state.json</span>
             <div class="provider-status">
                 <div class="status-item" onclick="openKeyModal('claude')"><div id="dot-claude" class="dot"></div> Claude</div>
                 <div class="status-item" onclick="openKeyModal('gemini')"><div id="dot-gemini" class="dot"></div> Gemini</div>
@@ -94,6 +95,7 @@
                 <div id="panel-content" class="panel-body"></div>
                 <div id="approval-footer" style="padding:15px; background:#161b22; display:flex; justify-content:center; gap:15px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
                     <button class="btn-run" style="background:var(--accent-green)" onclick="handleApprove()">✅ 승인 및 다음진행</button>
+                    <button class="btn-run" style="background:var(--accent-red)" onclick="handleReject()">❌ 반려 및 재지시</button>
                 </div>
             </div>
         </div>
@@ -122,6 +124,7 @@
     <script>
         let connections = []; let selectedFiles = new Set(); let isConnecting = false; let tempLineFrom = null;
         let lastOutput = ""; let nextId = "";
+        let nodeOutputs = {};
 
         const agents = [
             { id: "planner", name: "Planner", role: "기획자", x: 40, y: 30 },
@@ -193,6 +196,7 @@
             if(data.status === 'success') {
                 showPanel(agent.name + " 분석 결과", data.output, true);
                 lastOutput = data.output;
+                nodeOutputs[agent.id] = data.output; node.classList.add('completed');
                 const conn = connections.find(c => c.from === agent.id); nextId = conn ? conn.to : null;
             } else {
                 addLog("System", "❌ 에러: " + data.message);
@@ -208,6 +212,7 @@
                 assignTaskWithPrompt(nextId, lastOutput);
             }
         }
+        function handleReject() { closePanel(); nextId = null; addLog("System", "❌ 반려됨. 수동 재지시 필요."); }
 
         async function assignTaskWithPrompt(id, p) {
             const node = document.getElementById('node-' + id);
@@ -304,12 +309,12 @@
         }
 
         async function saveState() {
-            const state = { nodes: agents.map(a => ({ id: a.id, x: document.getElementById('node-'+a.id).style.left, y: document.getElementById('node-'+a.id).style.top })), connections };
+            const state = { nodes: agents.map(a => { const el = document.getElementById('node-'+a.id); return {id:a.id, x:el.style.left, y:el.style.top, status:el.classList.contains('completed')?'completed':el.classList.contains('active')?'active':'pending', output:nodeOutputs[a.id]||''}; }), connections };
             await fetch('/api/workflow/state', { method: 'POST', body: JSON.stringify(state) });
         }
         async function loadState() {
             const res = await fetch('/api/workflow/state'); const data = await res.json();
-            if(data.nodes) { data.nodes.forEach(n => { const el = document.getElementById('node-'+n.id); if(el){ el.style.left = n.x; el.style.top = n.y; } }); connections = data.connections || []; drawConnections(); }
+            if(data.nodes) { data.nodes.forEach(n => { const el = document.getElementById('node-'+n.id); if(el){ el.style.left = typeof n.x==='number'?n.x+'px':n.x; el.style.top = typeof n.y==='number'?n.y+'px':n.y; if(n.status==='completed') el.classList.add('completed'); if(n.output) nodeOutputs[n.id]=n.output; } }); connections = data.connections || []; drawConnections(); }
         }
 
         function init() { initNodes(); changeWorkspace('.'); updateHealth(); setInterval(updateHealth, 5000); setTimeout(loadState, 500); }
