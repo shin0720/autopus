@@ -9,259 +9,184 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/shin0720/auto-adk/content"
-	"github.com/shin0720/auto-adk/pkg/config"
-	"github.com/shin0720/auto-adk/pkg/orchestra"
 	"github.com/spf13/cobra"
+
+	"github.com/shin0720/auto-adk/content"
 )
 
-const workflowStatePath = ".autopus/workflows/state.json"
-
-// WorkflowState holds the persistent UI workflow state.
-type WorkflowState struct {
-	ProjectName string       `json:"projectName"`
-	LastUpdated time.Time    `json:"lastUpdated"`
-	Nodes       []NodeState  `json:"nodes"`
-	Connections []Connection `json:"connections"`
-	Logs        []LogEntry   `json:"logs"`
+type fileEntry struct {
+	Path string `json:"path"`
+	Mod  int64  `json:"mod"`
 }
 
-// NodeState holds per-node position and execution state.
-// X and Y use RawMessage to accept both numeric (100) and string ("100px") JSON values.
-type NodeState struct {
-	ID     string          `json:"id"`
-	X      json.RawMessage `json:"x,omitempty"`
-	Y      json.RawMessage `json:"y,omitempty"`
-	Status string          `json:"status,omitempty"`
-	Output string          `json:"output,omitempty"`
-}
+// uiProjectRoot holds the working directory at server startup.
+var uiProjectRoot string
 
-// Connection represents a directed edge between two nodes.
-type Connection struct {
-	From string `json:"from"`
-	To   string `json:"to"`
-}
-
-// LogEntry records a single terminal log line.
-type LogEntry struct {
-	Agent string `json:"agent"`
-	Msg   string `json:"msg"`
-	Time  string `json:"time"`
-}
-
-// workflowStateHandler handles GET and POST /api/workflow/state.
-func workflowStateHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		data, err := os.ReadFile(workflowStatePath)
-		if os.IsNotExist(err) {
-			w.Header().Set("Content-Type", "application/json")
-			empty := WorkflowState{
-				Nodes:       []NodeState{},
-				Connections: []Connection{},
-				Logs:        []LogEntry{},
-			}
-			_ = json.NewEncoder(w).Encode(empty)
-			return
-		}
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		var state WorkflowState
-		if err := json.Unmarshal(data, &state); err != nil {
-			http.Error(w, "invalid state file: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(state)
-	case http.MethodPost:
-		var state WorkflowState
-		if err := json.NewDecoder(r.Body).Decode(&state); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		state.LastUpdated = time.Now().UTC()
-		if state.ProjectName == "" {
-			if cwd, err := os.Getwd(); err == nil {
-				state.ProjectName = filepath.Base(cwd)
-			}
-		}
-		if err := os.MkdirAll(filepath.Dir(workflowStatePath), 0o755); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		out, err := json.MarshalIndent(state, "", "  ")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if err := os.WriteFile(workflowStatePath, out, 0o644); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"status": "saved",
-			"path":   workflowStatePath,
-		})
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
-}
+// currentWorkspace tracks the active workspace directory, updated when the user
+// navigates via the browser. Protected by a mutex to avoid races with concurrent requests.
+var (
+	currentWorkspaceMu   sync.RWMutex
+	currentWorkspaceDir  string
+)
 
 // newUICmd는 웹 UI 서버를 실행하는 ui 서브커맨드를 생성한다.
 func newUICmd() *cobra.Command {
 	var port int
+
 	cmd := &cobra.Command{
 		Use:   "ui",
 		Short: "Autopus 시각적 대시보드 실행",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			root, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			uiProjectRoot = root
+			currentWorkspaceMu.Lock()
+			currentWorkspaceDir = root
+			currentWorkspaceMu.Unlock()
+
 			addr := fmt.Sprintf("localhost:%d", port)
-			fmt.Printf("🐙 Autopus Studio v4.9 시작 중... http://%s\n", addr)
+			fmt.Printf("🐙 Autopus Studio v5.0 시작 중... http://%s\n", addr)
 
-			// API: 작업 디렉토리 강제 전환 (C:, E: 완벽 지원)
-			http.HandleFunc("/api/workspace/change", func(w http.ResponseWriter, r *http.Request) {
-				var req struct {
-					Path string `json:"path"`
-				}
-				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				target := req.Path
-				if strings.Contains(target, ":") {
-					drive := strings.ToLower(target[:1])
-					target = "/mnt/" + drive + strings.ReplaceAll(target[2:], "\\", "/")
-				}
-				absPath, _ := filepath.Abs(target)
-				if err := os.Chdir(absPath); err != nil {
-					http.Error(w, err.Error(), 500)
-					return
-				}
-				dir, _ := os.Getwd()
-				_ = json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": dir})
-			})
-
-			// API: 실전 AI 업무 수행
-			http.HandleFunc("/api/workflow/run", func(w http.ResponseWriter, r *http.Request) {
-				var req struct {
-					AgentID string   `json:"agentId"`
-					Prompt  string   `json:"prompt"`
-					Context []string `json:"context"`
-				}
-				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-
-				cfg, err := config.Load(".")
-				if err != nil {
-					_ = json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": "Config load failed: " + err.Error()})
-					return
-				}
-
-				var ctxFiles strings.Builder
-				for _, p := range req.Context {
-					data, _ := os.ReadFile(p)
-					ctxFiles.WriteString(fmt.Sprintf("\n--- FILE: %s ---\n%s\n", p, string(data)))
-				}
-
-				var providers []orchestra.ProviderConfig
-				for name, p := range cfg.Orchestra.Providers {
-					providers = append(providers, orchestra.ProviderConfig{Name: name, Binary: p.Binary, Args: p.Args})
-				}
-
-				orchCfg := orchestra.OrchestraConfig{
-					Prompt:         fmt.Sprintf("역할: %s\n지시: %s\n코드: %s", req.AgentID, req.Prompt, ctxFiles.String()),
-					Strategy:       orchestra.StrategyFastest,
-					Providers:      providers,
-					TimeoutSeconds: 180,
-					SubprocessMode: true,
-				}
-
-				result, err := orchestra.RunOrchestra(r.Context(), orchCfg)
-				if err != nil {
-					_ = json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
-					return
-				}
-
-				_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "output": result.Merged})
-			})
-
-			// API: 워크플로우 상태 저장 / 로드
-			http.HandleFunc("/api/workflow/state", workflowStateHandler)
-
-			// API: 폴더/파일 목록
-			http.HandleFunc("/api/workspace/list", func(w http.ResponseWriter, r *http.Request) {
-				dir, _ := os.Getwd()
-				entries, _ := os.ReadDir(".")
-				var folders []string
-				for _, e := range entries {
-					if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
-						folders = append(folders, e.Name())
-					}
-				}
-				_ = json.NewEncoder(w).Encode(map[string]interface{}{"current": dir, "folders": folders, "parent": filepath.Dir(dir)})
-			})
-			http.HandleFunc("/api/files/list", func(w http.ResponseWriter, r *http.Request) {
-				var files []string
-				_ = filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
-					if err == nil && !info.IsDir() && !strings.HasPrefix(p, ".") && !strings.Contains(p, "node_modules") {
-						files = append(files, p)
-					}
-					return nil
-				})
-				_ = json.NewEncoder(w).Encode(files)
-			})
-			http.HandleFunc("/api/files/read", func(w http.ResponseWriter, r *http.Request) {
-				path := r.URL.Query().Get("path")
-				fileContent, _ := os.ReadFile(path)
-				_, _ = w.Write(fileContent)
-			})
-
-			// API: 헬스체크 및 키 등록
-			http.HandleFunc("/api/providers/health", func(w http.ResponseWriter, r *http.Request) {
-				h := map[string]bool{
-					"claude": os.Getenv("CLAUDE_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != "",
-					"gemini": os.Getenv("GEMINI_API_KEY") != "",
-					"codex":  true,
-				}
-				_ = json.NewEncoder(w).Encode(h)
-			})
-			http.HandleFunc("/api/providers/keys", func(w http.ResponseWriter, r *http.Request) {
-				var req struct {
-					Provider string `json:"provider"`
-					Key      string `json:"key"`
-				}
-				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				if req.Provider == "claude" {
-					_ = os.Setenv("CLAUDE_API_KEY", req.Key)
-					_ = os.Setenv("ANTHROPIC_API_KEY", req.Key)
-				}
-				if req.Provider == "gemini" {
-					_ = os.Setenv("GEMINI_API_KEY", req.Key)
-				}
-				w.WriteHeader(http.StatusOK)
-			})
-
-			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				data, _ := content.FS.ReadFile("ui/dashboard.html")
-				_, _ = w.Write(data)
-			})
+			http.HandleFunc("/api/workspace/change", handleWorkspaceChange)
+			http.HandleFunc("/api/workflow/state", handleWorkflowState)
+			http.HandleFunc("/api/workflow/stream", handleWorkflowStream)
+			http.HandleFunc("/api/workflow/event", handleWorkflowEvent)
+			http.HandleFunc("/api/workflow/run", handleWorkflowRun)
+			http.HandleFunc("/api/workflow/cancel", handleWorkflowCancel)
+			http.HandleFunc("/api/workflow/running", handleWorkflowRunning)
+			http.HandleFunc("/api/workspace/list", handleWorkspaceList)
+			http.HandleFunc("/api/files/list", handleFileList)
+			http.HandleFunc("/api/files/read", handleFileRead)
+			http.HandleFunc("/api/files/write", handleFileWrite)
+			http.HandleFunc("/api/files/upload", handleFileUpload)
+			http.HandleFunc("/api/providers/status", handleProviderStatus)
+			http.HandleFunc("/api/providers/connect", handleProviderConnect)
+			http.HandleFunc("/api/shutdown", handleShutdown)
+			http.HandleFunc("/", handleDashboard)
 
 			go openBrowser("http://" + addr)
 			return http.ListenAndServe(addr, nil)
 		},
 	}
+
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "서버 포트 번호")
 	return cmd
+}
+
+func handleWorkspaceChange(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	resolved, err := resolveWorkspacePath(req.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	currentWorkspaceMu.Lock()
+	currentWorkspaceDir = resolved
+	currentWorkspaceMu.Unlock()
+
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "success", "currentDir": resolved})
+}
+
+// getWorkspaceDir returns the current active workspace directory.
+func getWorkspaceDir() string {
+	currentWorkspaceMu.RLock()
+	defer currentWorkspaceMu.RUnlock()
+	return currentWorkspaceDir
+}
+
+func handleWorkspaceList(w http.ResponseWriter, r *http.Request) {
+	dir := getWorkspaceDir()
+	payload, err := workspaceListPayload(dir)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func handleFileList(w http.ResponseWriter, r *http.Request) {
+	root := getWorkspaceDir()
+	entries, err := os.ReadDir(root)
+	var files []fileEntry
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				var mod int64
+				if info, e2 := entry.Info(); e2 == nil {
+					mod = info.ModTime().Unix()
+				}
+				files = append(files, fileEntry{Path: entry.Name(), Mod: mod})
+			}
+		}
+	}
+	if files == nil {
+		files = []fileEntry{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(files)
+}
+
+func handleFileRead(w http.ResponseWriter, r *http.Request) {
+	root := getWorkspaceDir()
+	path := r.URL.Query().Get("path")
+	content, _ := readWorkspaceFile(root, path)
+	_, _ = w.Write(content)
+}
+
+func handleFileWrite(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Filename string `json:"filename"`
+		Content  string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if req.Filename == "" || strings.ContainsAny(req.Filename, "/\\") {
+		http.Error(w, "invalid filename", http.StatusBadRequest)
+		return
+	}
+	root := getWorkspaceDir()
+	path := filepath.Join(root, req.Filename)
+	if err := os.WriteFile(path, []byte(req.Content), 0o644); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "success", "path": path})
+}
+
+func handleDashboard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	data, _ := content.FS.ReadFile("ui/dashboard.html")
+	_, _ = w.Write(data)
+}
+
+func handleShutdown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+	go func() {
+		time.Sleep(150 * time.Millisecond)
+		os.Exit(0)
+	}()
 }
 
 func openBrowser(url string) {
@@ -281,3 +206,4 @@ func openBrowser(url string) {
 		fmt.Printf("브라우저 열기 실패: %v\n", err)
 	}
 }
+
