@@ -1,0 +1,176 @@
+    <div class="sidebar-left">
+        <div class="drive-bar">
+            <button class="btn-drive active" onclick="changeWorkspace(&#39;C:\\&#39;)">C:</button>
+            <button class="btn-drive" onclick="changeWorkspace(&#39;E:\\&#39;)">E:</button>
+            <button class="btn-drive" onclick="changeWorkspace(&#39;C:\\Users\\SAMSUNG\\Desktop&#39;)">Desktop</button>
+            <button class="btn-drive" onclick="shutdownServer()" title="서버 종료" style="flex:0;padding:5px 8px;color:#e05c5c;">✕</button>
+        </div>
+        <div id="dir-name" style="padding:14px 14px 8px; font-size:10.5px; font-weight:500; color:var(--fg3); letter-spacing:0.04em; text-transform:uppercase;">Folders</div>
+        <div class="list-container" id="folder-list"></div>
+        <div style="padding:14px 14px 8px; font-size:10.5px; font-weight:500; color:var(--fg3); letter-spacing:0.04em; text-transform:uppercase; display:flex; align-items:center; justify-content:space-between;">
+            <span>Files</span>
+            <button onclick="loadFiles()" title="파일 목록 새로고침" style="background:transparent; border:none; color:var(--fg3); cursor:pointer; padding:0; font-size:13px; line-height:1; transition:color .15s;" onmouseover="this.style.color='var(--fg)'" onmouseout="this.style.color='var(--fg3)'">↻</button>
+        </div>
+        <div style="padding:0 14px 8px;"><input type="text" id="file-search-input" placeholder="🔍 파일 검색..." oninput="filterFileList(this.value)" style="width:100%; background:var(--bg-card); border:1px solid var(--line); color:var(--fg); padding:6px 10px; border-radius:6px; font-size:12px; box-sizing:border-box; outline:none; font-family:inherit;"></div>
+        <div class="list-container" id="file-list"></div>
+    </div>
+
+    <div class="main-container">
+        <div class="top-bar">
+            <!-- 브랜드: 마크 + Autopus -->
+            <div class="brand">
+                <div class="brand-mark"></div>
+                <div class="brand-name">Autopus</div>
+            </div>
+
+            <!-- 경로 -->
+            <div class="brand-path" id="brand-path">
+                <span class="seg">C:</span>
+                <span class="sep">/</span>
+                <span class="seg">Users</span>
+                <span class="sep">/</span>
+                <span class="seg">SAMSUNG</span>
+                <span class="sep">/</span>
+                <span class="seg last">autopus</span>
+            </div>
+
+            <div class="top-spacer"></div>
+
+            <!-- 모델 상태: 시안처럼 dot+이름만 컴팩트하게 -->
+            <div class="provider-status">
+                <div class="status-item" title="Claude">
+                    <div id="dot-claude" class="dot"></div>
+                    <div class="status-copy">
+                        <span class="status-main">Claude</span>
+                        <span id="provider-claude" class="status-sub">확인 중...</span>
+                    </div>
+                    <button id="btn-claude" class="status-btn" onclick="connectProvider(&#39;claude&#39;)">연결</button>
+                </div>
+                <div class="status-item" title="Codex">
+                    <div id="dot-codex" class="dot"></div>
+                    <div class="status-copy">
+                        <span class="status-main">Codex</span>
+                        <span id="provider-codex" class="status-sub">확인 중...</span>
+                    </div>
+                    <button id="btn-codex" class="status-btn" onclick="connectProvider(&#39;codex&#39;)">연결</button>
+                </div>
+                <div class="status-item" title="Gemini">
+                    <div id="dot-gemini" class="dot"></div>
+                    <div class="status-copy">
+                        <span class="status-main">Gemini</span>
+                        <span id="provider-gemini" class="status-sub">확인 중...</span>
+                    </div>
+                    <button id="btn-gemini" class="status-btn" onclick="connectProvider(&#39;gemini&#39;)">연결</button>
+                </div>
+            </div>
+
+            <!-- 액션 버튼: 미니멀하게 -->
+            <div class="top-actions">
+                <button id="btn-pipeline-mode" class="top-btn" onclick="togglePipelineMode()" title="파이프라인 모드 전환">🤖 자동</button>
+                <button class="top-btn" onclick="document.getElementById(&#39;import-wf-input&#39;).click()" title="워크플로우 불러오기 (JSON)">불러오기</button>
+                <input type="file" id="import-wf-input" accept=".json" style="display:none" onchange="importWorkflow(event)">
+                <button class="top-btn" onclick="exportWorkflow()" title="워크플로우 내보내기 (JSON)">내보내기</button>
+                <button class="top-btn danger" onclick="clearConnections()" title="선 전체 삭제">선삭제</button>
+                <button id="btn-recent" class="top-btn" onclick="toggleRecentProjects(this)" title="최근 방문한 프로젝트">최근</button>
+                <div id="recent-projects-list" style="display:none; position:fixed; width:320px; background:var(--bg-card); border:1px solid var(--line-2); border-radius:6px; z-index:99999; max-height:300px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,.6);"><div style="padding:10px;font-size:11px;color:var(--text-dim);">최근 방문한 프로젝트 없음</div></div>
+                <button class="top-btn primary" onclick="saveState()" title="상태 저장 (.autopus/workflows/state.json)">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7l3 3v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path></svg>
+                    저장
+                </button>
+            </div>
+
+            <!-- 모드 토글 -->
+            <div class="mode-toggle" role="tablist" aria-label="뷰 모드 전환">
+                <button id="mode-builder" class="" onclick="switchMode(&#39;builder&#39;)" title="빌더 모드 (자유 배치)">빌더</button>
+                <button id="mode-monitor" onclick="switchMode(&#39;monitor&#39;)" title="모니터링 모드 (단계별 진행)" class="active">모니터링</button>
+            </div>
+
+            <!-- 줌 (빌더 모드 전용) -->
+            <div class="zoom-compact" id="zoom-control" style="opacity: 0.4;">
+                <button class="zoom-btn" onclick="zoomOut()" title="캔버스 축소">−</button>
+                <span id="zoom-label">100%</span>
+                <button class="zoom-btn" onclick="zoomIn()" title="캔버스 확대">+</button>
+            </div>
+
+            <!-- 테마 토글 -->
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="테마 전환 (다크/라이트)" aria-label="테마 전환">
+                <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="3"></circle>
+                    <path d="M8 1v2M8 13v2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M1 8h2M13 8h2M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4"></path>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M13 9.5A5.5 5.5 0 1 1 6.5 3a4.5 4.5 0 0 0 6.5 6.5z"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="canvas-area" id="canvas-area">
+            <div id="canvas-inner">
+                <svg id="flow-svg"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-blue)"></path></marker></defs></svg>
+                <div id="nodes-container"><div class="node" id="node-planner" style="left: 40px; top: 30px;"><div class="node-name">Planner</div><div class="node-role">기획자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;planner&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;planner&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;planner&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;planner&#39;)"></div></div><div class="node" id="node-spec" style="left: 210px; top: 30px;"><div class="node-name">Spec Writer</div><div class="node-role">명세서</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;spec&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;spec&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;spec&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;spec&#39;)"></div></div><div class="node" id="node-arch" style="left: 380px; top: 30px;"><div class="node-name">Architect</div><div class="node-role">설계자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;arch&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;arch&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;arch&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;arch&#39;)"></div></div><div class="node" id="node-expl" style="left: 550px; top: 30px;"><div class="node-name">Explorer</div><div class="node-role">탐험가</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;expl&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;expl&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;expl&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;expl&#39;)"></div></div><div class="node" id="node-exec" style="left: 40px; top: 170px;"><div class="node-name">Executor</div><div class="node-role">개발자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;exec&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;exec&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;exec&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;exec&#39;)"></div></div><div class="node" id="node-deep" style="left: 210px; top: 170px;"><div class="node-name">Deep Worker</div><div class="node-role">심층작업</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;deep&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;deep&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;deep&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;deep&#39;)"></div></div><div class="node" id="node-dbug" style="left: 380px; top: 170px;"><div class="node-name">Debugger</div><div class="node-role">해결사</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;dbug&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;dbug&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;dbug&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;dbug&#39;)"></div></div><div class="node" id="node-anno" style="left: 550px; top: 170px;"><div class="node-name">Annotator</div><div class="node-role">태그관리</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;anno&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;anno&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;anno&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;anno&#39;)"></div></div><div class="node" id="node-test" style="left: 40px; top: 310px;"><div class="node-name">Tester</div><div class="node-role">테스터</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;test&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;test&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;test&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;test&#39;)"></div></div><div class="node" id="node-val" style="left: 210px; top: 310px;"><div class="node-name">Validator</div><div class="node-role">품질검증</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;val&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;val&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;val&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;val&#39;)"></div></div><div class="node" id="node-fend" style="left: 380px; top: 310px;"><div class="node-name">Frontend</div><div class="node-role">UI전문가</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;fend&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;fend&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;fend&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;fend&#39;)"></div></div><div class="node" id="node-uxv" style="left: 550px; top: 310px;"><div class="node-name">UX Validator</div><div class="node-role">시각검증</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;uxv&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;uxv&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;uxv&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;uxv&#39;)"></div></div><div class="node" id="node-perf" style="left: 40px; top: 450px;"><div class="node-name">Perf Eng</div><div class="node-role">성능분석</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;perf&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;perf&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;perf&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;perf&#39;)"></div></div><div class="node" id="node-rev" style="left: 210px; top: 450px;"><div class="node-name">Reviewer</div><div class="node-role">리뷰어</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;rev&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;rev&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;rev&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;rev&#39;)"></div></div><div class="node" id="node-sec" style="left: 380px; top: 450px;"><div class="node-name">Security</div><div class="node-role">보안감사</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;sec&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;sec&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;sec&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;sec&#39;)"></div></div><div class="node" id="node-devops" style="left: 550px; top: 450px;"><div class="node-name">DevOps</div><div class="node-role">배포자</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError(&#39;devops&#39;)">× 에러 리셋</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel(&#39;devops&#39;)">📋 결과 보기</button><div class="port port-in" onmouseup="endConnection(event, &#39;devops&#39;)"></div><div class="port port-out" onmousedown="startConnection(event, &#39;devops&#39;)"></div></div></div>
+            </div>
+
+            <!-- ═══ 모니터링 뷰 (overlay) ═══ -->
+            <div id="monitor-view" class="monitor-view active">
+                <div class="monitor-inner">
+                    <div class="mon-head">
+                        <div>
+                            <h1>Stateflow</h1>
+                            <p id="mon-summary">16개 에이전트의 협업 흐름</p>
+                        </div>
+                        <div class="mon-stats">
+                            <div class="mon-stat">
+                                <div class="mon-stat-num" id="mon-stat-done">0</div>
+                                <div class="mon-stat-label">완료</div>
+                            </div>
+                            <div class="mon-stat">
+                                <div class="mon-stat-num acc" id="mon-stat-active">0</div>
+                                <div class="mon-stat-label">진행 중</div>
+                            </div>
+                            <div class="mon-stat">
+                                <div class="mon-stat-num" id="mon-stat-idle">16</div>
+                                <div class="mon-stat-label">대기</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mon-phases-wrap">
+                        <div class="mon-phases" id="mon-phases">
+                    <div class="mon-phase ">
+                        <div class="mon-phase-head">
+                            <div class="mon-phase-marker">
+                                <span class="mon-phase-num">01</span>
+                                <span class="mon-phase-bar"></span>
+                            </div>
+                            <div class="mon-phase-name">기획</div>
+                        </div>
+                        
+                        <div class="mon-node " data-agent-id="planner" onclick="onMonitorNodeClick(&#39;planner&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Planner</div>
+                            <div class="mon-node-ko">기획자</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="spec" onclick="onMonitorNodeClick(&#39;spec&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Spec Writer</div>
+                            <div class="mon-node-ko">명세서</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                        <div class="mon-node " data-agent-id="arch" onclick="onMonitorNodeClick(&#39;arch&#39;)">
+                            <span class="mon-port in"></span>
+                            <span class="mon-port out"></span>
+                            <div class="mon-node-title">Architect</div>
+                            <div class="mon-node-ko">설계자</div>
+                            <div class="mon-node-foot">
+                                <span class="mon-status"><span class="dot"></span>Idle</span>
+                                
+                            </div>
+                        </div>
+                    </div>
