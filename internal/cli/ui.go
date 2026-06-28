@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -67,6 +69,12 @@ func newUICmd() *cobra.Command {
 			http.HandleFunc("/api/providers/status", handleProviderStatus)
 			http.HandleFunc("/api/providers/connect", handleProviderConnect)
 			http.HandleFunc("/api/shutdown", handleShutdown)
+
+			// Serve split static assets (CSS/JS) from the embedded ui directory.
+			// Registered before the root handler so /ui/* routes resolve first.
+			if staticFS, err := fs.Sub(content.FS, "ui"); err == nil {
+				http.Handle("/ui/", http.StripPrefix("/ui/", http.FileServer(http.FS(staticFS))))
+			}
 			http.HandleFunc("/", handleDashboard)
 
 			go openBrowser("http://" + addr)
@@ -173,8 +181,18 @@ func handleFileWrite(w http.ResponseWriter, r *http.Request) {
 func handleDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	data, _ := content.FS.ReadFile("ui/dashboard.html")
-	_, _ = w.Write(data)
+	_, _ = w.Write(renderDashboard())
+}
+
+// renderDashboard assembles the dashboard shell with the body partials injected
+// at the <!--AUTOPUS_BODY--> marker. The body is split across two files to keep
+// every embedded source file under the 300-line limit.
+func renderDashboard() []byte {
+	shell, _ := content.FS.ReadFile("ui/dashboard.html")
+	body1, _ := content.FS.ReadFile("ui/dashboard-body-1.html")
+	body2, _ := content.FS.ReadFile("ui/dashboard-body-2.html")
+	body := append(body1, body2...)
+	return bytes.Replace(shell, []byte("<!--AUTOPUS_BODY-->"), body, 1)
 }
 
 func handleShutdown(w http.ResponseWriter, r *http.Request) {

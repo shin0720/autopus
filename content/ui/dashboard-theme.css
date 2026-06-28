@@ -1,0 +1,34 @@
+        /* ─── 다크 (기본) ─────────────────────────────── */
+        :root, [data-theme="dark"] {
+            --bg:#161A24; --bg2:#1E2330; --bg3:#252C3D; --border:#2D3548;
+            --bg-card:#232A3B; --bg-card-hi:#2A3245;
+            --accent:#FF9F70; --ok:#7DD8B0; --warn:#F5C97A; --err:#F08B7A;
+            --fg:#ECEAE0; --fg2:#A8A597; --fg3:#6B6859;
+            --line: rgba(255,255,255,0.06);
+            --line-2: rgba(255,255,255,0.11);
+            --shadow-card: inset 0 1px 0 rgba(255,255,255,0.025), 0 1px 0 rgba(0,0,0,0.20), 0 6px 14px -8px rgba(0,0,0,0.35);
+            /* backward-compat */
+            --bg-color:var(--bg); --sidebar-bg:var(--bg2); --border-color:var(--border);
+            --accent-blue:var(--accent); --accent-green:var(--ok); --accent-orange:var(--warn);
+            --accent-red:var(--err); --text-main:var(--fg); --text-dim:var(--fg2);
+            --bg-secondary:var(--bg3); --text-primary:var(--fg);
+        }
+        /* ─── 라이트 (워크북 미색) ───────────────────── */
+        [data-theme="light"] {
+            --bg:#F2EDE0; --bg2:#ECE6D4; --bg3:#FBF8EE; --border:rgba(35,30,22,0.13);
+            --bg-card:#FBF8EE; --bg-card-hi:#FFFCF3;
+            --accent:#D9532E; --ok:#3D7F5F; --warn:#9A6A28; --err:#B0492E;
+            --fg:#2A2620; --fg2:#5E594D; --fg3:#8A867A;
+            --line: rgba(35,30,22,0.08);
+            --line-2: rgba(35,30,22,0.13);
+            --shadow-card: 0 1px 0 rgba(35,30,22,0.04), 0 4px 10px -4px rgba(35,30,22,0.08);
+            --bg-color:var(--bg); --sidebar-bg:var(--bg2); --border-color:var(--border);
+            --accent-blue:var(--accent); --accent-green:var(--ok); --accent-orange:var(--warn);
+            --accent-red:var(--err); --text-main:var(--fg); --text-dim:var(--fg2);
+            --bg-secondary:var(--bg3); --text-primary:var(--fg);
+        }
+        body, .sidebar-left, .sidebar-right, .top-bar, .canvas-area, .terminal,
+        .node, .status-item, .btn-drive, .item, .overlay-panel, textarea {
+            transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+        }
+        .node-role { font-weight:500; }
