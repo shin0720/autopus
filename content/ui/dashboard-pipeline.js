@@ -66,6 +66,19 @@
             await runAgent(agentId, prompt, handoff);
         }
 
+        // autoFixAgent re-runs a node that is in the error state using its last
+        // recorded prompt. Falls back to opening the drawer when no prompt exists.
+        async function autoFixAgent(agentId) {
+            const ns = getNodeState(agentId);
+            if (!ns.lastPrompt) {
+                openDrawer(agentMap[agentId], '');
+                return;
+            }
+            const agent = agentMap[agentId];
+            appendTerminalLog('System', `🔄 [${agent ? agent.name : agentId}] 자동 재실행 시작...`);
+            await runAgent(agentId, ns.lastPrompt, null, ns.originalRequest || null);
+        }
+
         // nodeChecklists: Map<agentId, checklistItem[]>
         const nodeChecklists = new Map();
 

@@ -245,12 +245,21 @@
         function handleReject() {
             const currentId = workflowState.approval.pendingNodeId;
             if (!currentId) return;
+            const reasonEl = document.getElementById('reject-reason-input');
+            const reason = reasonEl ? reasonEl.value.trim() : '';
+            const nodeState = getNodeState(currentId);
+            nodeState.rejectReason = reason;
+            if (reasonEl) reasonEl.value = '';
             closePanel();
             workflowState.approval.lastDecision = 'rejected';
             setNodeStatus(currentId, 'rejected');
             publishWorkflowEvent('rejected', currentId, '결과가 반려되었습니다. 수정 지시를 입력하세요.');
             saveState();
-            openDrawer(agentMap[currentId], `다음 결과를 보완해서 다시 실행하세요.\n\n이전 결과:\n${lastResult ? lastResult.output : ''}`);
+            const prevOutput = lastResult ? lastResult.output : '';
+            const prefill = reason
+                ? `[반려 이유: ${reason}]\n\n다음 결과를 보완해서 다시 실행하세요.\n\n이전 결과:\n${prevOutput}`
+                : `다음 결과를 보완해서 다시 실행하세요.\n\n이전 결과:\n${prevOutput}`;
+            openDrawer(agentMap[currentId], prefill);
         }
 
         function handleRerunWithEdit() {
