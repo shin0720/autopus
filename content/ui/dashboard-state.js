@@ -73,7 +73,7 @@
         function getNodeState(id) {
             let node = workflowState.nodes.find((entry) => entry.id === id);
             if (!node) {
-                node = { id, status: '', x: '', y: '', output: null };
+                node = { id, status: '', x: '', y: '', output: null, rejectReason: '' };
                 workflowState.nodes.push(node);
             }
             return node;
