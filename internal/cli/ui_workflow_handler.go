@@ -123,15 +123,27 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "success", "path": dst})
 }
 
+type providerStatus struct {
+	ID        string `json:"id"`
+	Connected bool   `json:"connected"`
+	Version   string `json:"version,omitempty"`
+	Issue     string `json:"issue,omitempty"`
+}
+
 func handleProviderStatus(w http.ResponseWriter, r *http.Request) {
-	providers := []string{"claude", "codex", "gemini"}
-	status := make(map[string]bool, len(providers))
-	for _, name := range providers {
-		_, err := exec.LookPath(name)
-		status[name] = err == nil
+	names := []string{"claude", "codex", "gemini"}
+	result := make([]providerStatus, 0, len(names))
+	for _, name := range names {
+		st := providerStatus{ID: name}
+		if _, err := exec.LookPath(name); err == nil {
+			st.Connected = true
+		} else {
+			st.Issue = "CLI를 찾을 수 없습니다"
+		}
+		result = append(result, st)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(status)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func handleProviderConnect(w http.ResponseWriter, r *http.Request) {
@@ -141,19 +153,26 @@ func handleProviderConnect(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		Provider string `json:"provider"`
-		Key      string `json:"key"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	switch req.Provider {
-	case "claude":
-		_ = os.Setenv("ANTHROPIC_API_KEY", req.Key)
-		_ = os.Setenv("CLAUDE_API_KEY", req.Key)
-	case "gemini":
-		_ = os.Setenv("GEMINI_API_KEY", req.Key)
+	case "claude", "codex", "gemini":
+		// valid provider names
+	default:
+		http.Error(w, "알 수 없는 provider입니다: "+req.Provider, http.StatusBadRequest)
+		return
+	}
+	if _, err := exec.LookPath(req.Provider); err != nil {
+		http.Error(w, req.Provider+" CLI를 찾을 수 없습니다. PATH에 설치되어 있는지 확인하세요.", http.StatusBadRequest)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "connected", "provider": req.Provider})
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"status":   "detected",
+		"provider": req.Provider,
+		"message":  "CLI가 감지되었습니다. 인증이 필요한 경우 터미널에서 직접 진행하세요.",
+	})
 }
