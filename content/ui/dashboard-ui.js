@@ -120,19 +120,23 @@
         })();
 
         async function connectProvider(provider) {
-            const res = await fetch('/api/providers/connect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ provider })
-            });
-            if (!res.ok) {
-                const message = await res.text();
-                appendTerminalLog('System', `${provider} CLI 연결 실패: ${message}`);
-                alert(message);
-                return;
+            try {
+                const res = await fetch('/api/providers/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider })
+                });
+                if (!res.ok) {
+                    const message = await res.text();
+                    appendTerminalLog('System', `[${provider}] 연결 확인 실패: ${message}`);
+                    return;
+                }
+                const data = await res.json();
+                appendTerminalLog('System', `[${provider}] ${data.message || 'CLI가 감지되었습니다.'}`);
+                setTimeout(updateProviders, 1000);
+            } catch (e) {
+                appendTerminalLog('System', `[${provider}] 연결 확인 실패: ${e.message}`);
             }
-            appendTerminalLog('System', `${provider} CLI 창을 열었습니다. 로그인 또는 연결 후 상태가 자동 갱신됩니다.`);
-            setTimeout(updateProviders, 2000);
         }
 
         async function saveState() {

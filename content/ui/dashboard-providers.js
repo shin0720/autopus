@@ -129,7 +129,10 @@
                 const res = await fetch('/api/providers/status', { signal: controller.signal });
                 clearTimeout(tid);
                 if (!res.ok) return;
-                const providers = await res.json();
+                const raw = await res.json();
+                const providers = Array.isArray(raw)
+                    ? raw
+                    : Object.entries(raw).map(([id, connected]) => ({ id, connected }));
                 providerStatuses = providers;
                 if (selectedAgent) renderProviderCheckboxes(selectedAgent.id);
                 providers.forEach((provider) => {
@@ -142,7 +145,9 @@
                         : (provider.issue || 'CLI 실행 불가');
                     if (btn) btn.style.display = provider.connected ? 'none' : '';
                 });
-            } catch (_) {}
+            } catch (e) {
+                console.warn('[Autopus] provider status 조회 실패:', e.message);
+            }
         }
 
         function updateTokenCount() {
