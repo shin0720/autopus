@@ -87,16 +87,16 @@
                 el.id = 'node-' + agent.id;
                 el.style.left = node.x || agent.x + 'px';
                 el.style.top = node.y || agent.y + 'px';
-                el.innerHTML = `<div class="node-name">${agent.name}</div><div class="node-role">${agent.role}</div><div class="node-desc">${agent.desc}</div><div class="node-elapsed" id="elapsed-${agent.id}">⏳ 0:00 실행 중</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError('${agent.id}')">× 에러 리셋</button><button class="node-autofix-btn" onclick="event.stopPropagation();autoFixAgent('${agent.id}')">🔄 자동 재실행</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel('${agent.id}')">📋 결과 보기</button><button class="node-cancel-btn" onclick="event.stopPropagation();cancelAgent('${agent.id}')">⛔ 작업 취소</button><div class="port port-in" onmouseup="endConnection(event, '${agent.id}')"></div><div class="port port-out" onmousedown="startConnection(event, '${agent.id}')"></div>`;
+                el.innerHTML = `<div class="node-name">${agent.name}</div><div class="node-role">${agent.role}</div><div class="node-desc">${agent.desc}</div><div class="node-elapsed" id="elapsed-${agent.id}">⏳ 0:00 실행 중</div><button class="node-reset-btn" onclick="event.stopPropagation();resetNodeError('${agent.id}')">× 에러 리셋</button><button class="node-autofix-btn" onclick="event.stopPropagation();autoFixAgent('${agent.id}')">🔄 자동 재실행</button><button class="node-output-btn" onclick="event.stopPropagation();viewCompletedOutput('${agent.id}')">📋 출력 보기</button><button class="node-view-btn" onclick="event.stopPropagation();reopenApprovalPanel('${agent.id}')">📋 결과 보기</button><button class="node-cancel-btn" onclick="event.stopPropagation();cancelAgent('${agent.id}')">⛔ 작업 취소</button><div class="port port-in" onmouseup="endConnection(event, '${agent.id}')"></div><div class="port port-out" onmousedown="startConnection(event, '${agent.id}')"></div>`;
                 el.onmousedown = (event) => {
                     const t = event.target;
-                    if (!t.classList.contains('port') && !t.classList.contains('node-reset-btn') && !t.classList.contains('node-autofix-btn') && !t.classList.contains('node-view-btn') && !t.classList.contains('node-cancel-btn')) {
+                    if (!t.classList.contains('port') && !t.classList.contains('node-reset-btn') && !t.classList.contains('node-autofix-btn') && !t.classList.contains('node-output-btn') && !t.classList.contains('node-view-btn') && !t.classList.contains('node-cancel-btn')) {
                         startDragging(event, el);
                     }
                 };
                 el.onclick = (event) => {
                     const t = event.target;
-                    if (t.classList.contains('port') || t.classList.contains('node-reset-btn') || t.classList.contains('node-autofix-btn') || t.classList.contains('node-view-btn') || t.classList.contains('node-cancel-btn')) return;
+                    if (t.classList.contains('port') || t.classList.contains('node-reset-btn') || t.classList.contains('node-autofix-btn') || t.classList.contains('node-output-btn') || t.classList.contains('node-view-btn') || t.classList.contains('node-cancel-btn')) return;
                     const nodeState = getNodeState(agent.id);
                     if (nodeState.status === 'error') {
                         openDrawer(agent, nodeState.lastPrompt || '');

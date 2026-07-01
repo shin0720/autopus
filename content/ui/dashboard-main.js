@@ -245,3 +245,4 @@
         window.zoomIn = zoomIn;
         window.zoomOut = zoomOut;
         window.autoFixAgent = autoFixAgent;
+        window.viewCompletedOutput = viewCompletedOutput;
