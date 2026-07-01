@@ -66,8 +66,9 @@
             header.addEventListener('mousedown', (e) => {
                 if (e.target.tagName === 'BUTTON') return;
                 dragging = true;
-                ox = e.clientX - panel.offsetLeft;
-                oy = e.clientY - panel.offsetTop;
+                const r = panel.getBoundingClientRect();
+                ox = e.clientX - r.left;
+                oy = e.clientY - r.top;
                 header.style.cursor = 'grabbing';
                 e.preventDefault();
             });
@@ -76,10 +77,11 @@
                 handle.addEventListener('mousedown', (e) => {
                     resizing = true;
                     resizeDir = handle.dataset.dir;
+                    const r = panel.getBoundingClientRect();
                     startW = panel.offsetWidth;
                     startH = panel.offsetHeight;
-                    startL = panel.offsetLeft;
-                    startT = panel.offsetTop;
+                    startL = r.left;
+                    startT = r.top;
                     startMX = e.clientX;
                     startMY = e.clientY;
                     e.preventDefault();
