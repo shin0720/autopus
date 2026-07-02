@@ -66,8 +66,9 @@
             header.addEventListener('mousedown', (e) => {
                 if (e.target.tagName === 'BUTTON') return;
                 dragging = true;
-                ox = e.clientX - panel.offsetLeft;
-                oy = e.clientY - panel.offsetTop;
+                const r = panel.getBoundingClientRect();
+                ox = e.clientX - r.left;
+                oy = e.clientY - r.top;
                 header.style.cursor = 'grabbing';
                 e.preventDefault();
             });
@@ -76,10 +77,11 @@
                 handle.addEventListener('mousedown', (e) => {
                     resizing = true;
                     resizeDir = handle.dataset.dir;
+                    const r = panel.getBoundingClientRect();
                     startW = panel.offsetWidth;
                     startH = panel.offsetHeight;
-                    startL = panel.offsetLeft;
-                    startT = panel.offsetTop;
+                    startL = r.left;
+                    startT = r.top;
                     startMX = e.clientX;
                     startMY = e.clientY;
                     e.preventDefault();
@@ -89,18 +91,20 @@
 
             document.addEventListener('mousemove', (e) => {
                 if (dragging) {
-                    panel.style.left = (e.clientX - ox) + 'px';
-                    panel.style.top = Math.max(0, e.clientY - oy) + 'px';
+                    const maxLeft = Math.max(0, window.innerWidth  - panel.offsetWidth);
+                    const maxTop  = Math.max(0, window.innerHeight - panel.offsetHeight);
+                    panel.style.left = Math.min(Math.max(0, e.clientX - ox), maxLeft) + 'px';
+                    panel.style.top  = Math.min(Math.max(0, e.clientY - oy), maxTop)  + 'px';
                 }
                 if (resizing) {
                     const dx = e.clientX - startMX;
                     const dy = e.clientY - startMY;
-                    if (resizeDir.includes('e')) panel.style.width = Math.max(320, startW + dx) + 'px';
-                    if (resizeDir.includes('s')) panel.style.height = Math.max(200, startH + dy) + 'px';
+                    if (resizeDir.includes('e')) panel.style.width  = Math.min(Math.max(320, startW + dx), window.innerWidth  - startL) + 'px';
+                    if (resizeDir.includes('s')) panel.style.height = Math.min(Math.max(200, startH + dy), window.innerHeight - startT) + 'px';
                     if (resizeDir.includes('w')) {
                         const newW = Math.max(320, startW - dx);
                         panel.style.width = newW + 'px';
-                        panel.style.left = (startL + startW - newW) + 'px';
+                        panel.style.left = Math.max(0, startL + startW - newW) + 'px';
                     }
                     if (resizeDir.includes('n')) {
                         const newH = Math.max(200, startH - dy);

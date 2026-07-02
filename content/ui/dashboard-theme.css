@@ -34,3 +34,6 @@
         .node-role { font-weight:500; }
         .node-autofix-btn { display:none; background:var(--err); color:white; border:none; border-radius:3px; padding:2px 6px; font-size:9px; cursor:pointer; margin-top:4px; width:100%; }
         .node.error .node-autofix-btn { display:block; }
+        .node-output-btn { display:none; background:var(--ok); color:white; border:none; border-radius:3px; padding:2px 6px; font-size:9px; cursor:pointer; margin-top:4px; width:100%; }
+        .node.completed .node-output-btn { display:block; }
+        .node.rejected .node-output-btn { display:block; background:var(--warn); color:var(--bg); }
